@@ -1,14 +1,11 @@
 import asyncio
 import os
-import time
 from dataclasses import dataclass
 import aiohttp
 from dotenv import load_dotenv
 
 load_dotenv()
-
-# Optional: put your GitHub PAT in a .env as GITHUB_TOKEN to raise rate limits
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")  # optional
 
 @dataclass
 class GitHubActivity:
@@ -19,33 +16,30 @@ class GitHubActivity:
     actor: str
 
 async def fetch_events(session, owner, repo=None):
-    """
-    Fetches the latest events.
-    - If repo is None, fetches from /users/{owner}/events (user/org activity)
-    - Otherwise, /repos/{owner}/{repo}/events (repo activity)
-    """
     if repo:
         url = f"https://api.github.com/repos/{owner}/{repo}/events"
     else:
         url = f"https://api.github.com/users/{owner}/events"
-    headers = {
-        "Accept": "application/vnd.github+json"
-    }
+    headers = {"Accept": "application/vnd.github+json"}
     if GITHUB_TOKEN:
         headers["Authorization"] = f"Bearer {GITHUB_TOKEN}"
+    print(f"[DEBUG] GET {url}")
     async with session.get(url, headers=headers) as resp:
+        print(f"[DEBUG]   → Status: {resp.status}")
+        text = await resp.text()
+        print(f"[DEBUG]   → Body (first 500 chars):\n{text[:500]!r}\n")
         resp.raise_for_status()
         return await resp.json()
 
-async def print_new_events(owner, repo=None, poll_interval=5):
+async def print_new_events(owner, repo=None, poll_interval=10):
     seen = set()
     async with aiohttp.ClientSession() as session:
         while True:
             try:
                 events = await fetch_events(session, owner, repo)
-                # Filter out events we already printed
+                if not events:
+                    print("[DEBUG] No events in response.")
                 new = [e for e in events if e["id"] not in seen]
-                # Print oldest first for readability
                 for e in reversed(new):
                     seen.add(e["id"])
                     act = GitHubActivity(
@@ -56,7 +50,6 @@ async def print_new_events(owner, repo=None, poll_interval=5):
                         actor=e["actor"]["login"]
                     )
                     print(f"[{act.created_at}] {act.actor} → {act.repo}: {act.type}")
-                # Wait for the next poll
                 await asyncio.sleep(poll_interval)
             except Exception as exc:
                 print("Error fetching events:", exc)
@@ -64,28 +57,12 @@ async def print_new_events(owner, repo=None, poll_interval=5):
 
 if __name__ == "__main__":
     import argparse
-
-    parser = argparse.ArgumentParser(
-        description="GitHub Activity Monitor"
-    )
-    parser.add_argument(
-        "owner",
-        help="GitHub username or organization"
-    )
-    parser.add_argument(
-        "--repo",
-        help="(Optional) specific repository name under the owner",
-        default=None
-    )
-    parser.add_argument(
-        "--interval",
-        help="Polling interval in seconds (default: 60)",
-        type=int,
-        default=60
-    )
+    parser = argparse.ArgumentParser()
+    parser.add_argument("owner")
+    parser.add_argument("--repo", default=None)
+    parser.add_argument("--interval", type=int, default=10)
     args = parser.parse_args()
 
-    print(f"Monitoring GitHub {'repo' if args.repo else 'user'} "
-          f"‘{args.owner}'{('/' + args.repo) if args.repo else ''}"
+    print(f"Monitoring {args.owner}" + (f"/{args.repo}" if args.repo else "") +
           f" every {args.interval}s…\n")
     asyncio.run(print_new_events(args.owner, args.repo, args.interval))
