@@ -1,10 +1,11 @@
-from pprint import pprint
-import asyncio
 import os
 import sys
 import aiohttp
+import asyncio
 from dotenv import load_dotenv
 from datetime import datetime
+from pprint import pprint
+
 
 load_dotenv()
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")  # optional for higher rate limits
