@@ -5,7 +5,7 @@ import aiohttp
 from dotenv import load_dotenv
 
 load_dotenv()
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")  # optional
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")  # optional, for higher rate limits
 
 @dataclass
 class GitHubActivity:
@@ -17,30 +17,32 @@ class GitHubActivity:
 
 async def fetch_events(session, owner, repo=None):
     if repo:
-        url = f"https://api.github.com/repos/{owner}/{repo}/events"
+        url = f"https://api.github.com/repos/{owner}/{repo}/events?per_page=100"
     else:
-        url = f"https://api.github.com/users/{owner}/events"
+        url = f"https://api.github.com/users/{owner}/events?per_page=100"
     headers = {"Accept": "application/vnd.github+json"}
     if GITHUB_TOKEN:
         headers["Authorization"] = f"Bearer {GITHUB_TOKEN}"
-    print(f"[DEBUG] GET {url}")
     async with session.get(url, headers=headers) as resp:
-        print(f"[DEBUG]   → Status: {resp.status}")
-        text = await resp.text()
-        print(f"[DEBUG]   → Body (first 500 chars):\n{text[:500]!r}\n")
         resp.raise_for_status()
         return await resp.json()
 
-async def print_new_events(owner, repo=None, poll_interval=10):
+async def print_new_events(owner, repo=None, poll_interval=60):
     seen = set()
     async with aiohttp.ClientSession() as session:
         while True:
             try:
                 events = await fetch_events(session, owner, repo)
                 if not events:
-                    print("[DEBUG] No events in response.")
-                new = [e for e in events if e["id"] not in seen]
-                for e in reversed(new):
+                    print("[DEBUG] No events returned.")
+                else:
+                    # Debug dump of the first few event types
+                    types = [e["type"] for e in events[:5]]
+                    print(f"[DEBUG] Fetched {len(events)} events. Types: {types}")
+
+                # Filter for PushEvents
+                pushes = [e for e in events if e["type"] == "PushEvent" and e["id"] not in seen]
+                for e in reversed(pushes):  # oldest first
                     seen.add(e["id"])
                     act = GitHubActivity(
                         id=e["id"],
@@ -57,12 +59,12 @@ async def print_new_events(owner, repo=None, poll_interval=10):
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument("owner")
-    parser.add_argument("--repo", default=None)
-    parser.add_argument("--interval", type=int, default=10)
+    parser = argparse.ArgumentParser(description="GitHub PushEvent Monitor")
+    parser.add_argument("owner", help="GitHub org/user")
+    parser.add_argument("--repo", help="Repository name (optional)", default=None)
+    parser.add_argument("--interval", type=int, default=60, help="Poll interval in seconds")
     args = parser.parse_args()
 
-    print(f"Monitoring {args.owner}" + (f"/{args.repo}" if args.repo else "") +
-          f" every {args.interval}s…\n")
+    target = f"{args.owner}/{args.repo}" if args.repo else args.owner
+    print(f"Monitoring PushEvents on {target} every {args.interval}s…\n")
     asyncio.run(print_new_events(args.owner, args.repo, args.interval))
