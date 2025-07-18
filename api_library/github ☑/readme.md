@@ -1,17 +1,19 @@
 # GitHub Commit Monitor
 
-A simple Python script that watches a GitHub repository for new commits and prints both a concise summary line and full metadata for each one.
+A Python script that watches for new commits and prints both a concise summary line and full metadata for each one.
 
 ## 📋 Features
 
-* Polls the GitHub Commits API every **10 seconds**
+* Polls GitHub every **N seconds** (default 10s)
+* Supports watching either:
+  * A **single repo**: `<owner>/<repo>`
+  * **All repos** under an owner: `<owner>`
 
 * Detects and reports only **new** commits
-
 * Prints a one-line summary for each commit:
 
   ```
-  [2025-07-18T15:26:13Z] Remy Tuyeras: a39b14b – Fix typo in README
+  [2025-07-18T15:26:13Z] Summoner-Network/summoner-agents ▶ Remy Tuyeras: a39b14b – Fix typo in README
   ```
 
 * Follows summary with a **pretty-printed JSON** block containing:
@@ -76,63 +78,49 @@ To raise your rate limit (from 60→5 000 requests/hour) and access private repo
 ## ⚙️ Usage
 
 ```bash
-python github_commit_agent.py <owner> <repo>
+# 1) Single repo:
+python github_commit_agent.py <owner> --repo <repo> [--interval N]
+
+# 2) Entire account:
+python github_commit_agent.py <owner> [--interval N]
 ```
 
 * `<owner>`: GitHub username or organization
-* `<repo>`: Repository name
+* `--repo <repo>`: (optional) specific repository name
+* `--interval N`: polling interval in seconds (default: 10)
 
-Example:
+Examples:
 
 ```bash
-python github_commit_agent.py Summoner-Network summoner-agents
+# Watch just one repo every 10s
+python github_commit_agent.py Summoner-Network --repo summoner-agents
+
+# Watch all repos under Summoner-Network every 30s
+python github_commit_agent.py Summoner-Network --interval 30
 ```
-
-The script will print an initial “Last commit” line, then every 10 seconds:
-
-1. A summary line for each new commit
-2. A `pprint`-style JSON dictionary with detailed metadata
-
 
 ## 🔧 How It Works
 
-1. **Fetch recent commits**
-   Calls
+1. **Repo discovery**
 
-   ```
-   GET https://api.github.com/repos/{owner}/{repo}/commits?per_page=30
-   ```
+   * If `--repo` is provided, monitors only that repo.
+   * Otherwise, lists **all** repos under the owner via `/users/{owner}/repos`.
 
-   Authenticated if `GITHUB_TOKEN` is set.
+2. **Commit polling**
 
-2. **Track the most-recent SHA**
+   * Calls `/repos/{owner}/{repo}/commits?per_page=30` every `interval` seconds.
+   * Tracks the most-recent commit SHA per repo as a baseline.
 
-   * On first run, records the latest commit without printing details.
-   * On subsequent polls, it gathers all SHAs that are newer than the recorded one.
+3. **New-commit fetch & display**
 
-3. **Detail fetch & output**
-   For each new SHA, it calls
+   * For each unseen SHA, fetches `/commits/{sha}` to get full metadata.
+   * Prints:
 
-   ```
-   GET https://api.github.com/repos/{owner}/{repo}/commits/{sha}
-   ```
-
-   to retrieve full metadata, then prints:
-
-   * **Summary line**: timestamp, author, short SHA, commit subject
-   * **Metadata block**: full message, URL, stats, list of modified files
+     1. **Summary line**: `[timestamp] owner/repo ▶ author: short-SHA – subject`
+     2. **Metadata block** via `pprint()`: full message, URL, stats, files
 
 4. **Repeat**
-   Sleeps for 10 seconds, then repeats.
+   Sleeps for `interval` seconds, then repeats.
 
 
-## 🔄 Customization
-
-* **Polling interval**
-  Change the `interval` value in `monitor_commits(...)`, or modify the `asyncio.sleep(interval)` call.
-
-* **Commit count**
-  Adjust `per_page` in `fetch_commits(...)` to fetch more or fewer recent commits.
-
-* **Output format**
-  Tweak the `print(…)` and `pprint(info)` sections to suit your needs (e.g., JSON-only, log to file, send over TCP).
+Customize `--interval` and `per_page` as needed, or adapt print/pprint sections for JSON-only output or TCP transport.
