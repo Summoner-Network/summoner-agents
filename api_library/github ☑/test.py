@@ -4,9 +4,10 @@ import os
 import sys
 import aiohttp
 from dotenv import load_dotenv
+from datetime import datetime
 
 load_dotenv()
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")  # optional, for higher rate limits
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")  # optional for higher rate limits
 
 async def fetch_commits(session, owner, repo, per_page=30):
     url = f"https://api.github.com/repos/{owner}/{repo}/commits?per_page={per_page}"
@@ -34,28 +35,38 @@ async def monitor_commits(owner, repo, interval=10):
             if not commits:
                 print("No commits returned.")
             else:
-                # First run: set the baseline to the latest commit
+                # First run: set baseline to latest commit, print “Last commit”
                 if seen_sha is None:
                     seen_sha = commits[0]["sha"]
-                    print(f"Last seen commit: {seen_sha[:7]}")
+                    info = commits[0]["commit"]
+                    ts = info["author"]["date"]
+                    msg = info["message"].splitlines()[0]
+                    print(f"[{ts}] Last commit: {seen_sha[:7]} - {msg}")
                 else:
-                    # Gather any commits newer than our last seen SHA
+                    # Gather any commits newer than seen_sha
                     new = []
                     for c in commits:
                         if c["sha"] == seen_sha:
                             break
                         new.append(c)
 
-                    # For each new commit (oldest first), fetch details and pprint
+                    # For each new commit (oldest first) print summary + pprint details
                     for c in reversed(new):
                         sha = c["sha"]
                         detail = await fetch_commit_details(session, owner, repo, sha)
 
+                        # Summary line
+                        author = detail["commit"]["author"]["name"]
+                        date   = detail["commit"]["author"]["date"]
+                        subject = detail["commit"]["message"].splitlines()[0]
+                        print(f"[{date}] {author}: {sha[:7]} - {subject}")
+
+                        # Full JSON-style dict
                         info = {
                             "sha": sha,
-                            "author": detail["commit"]["author"]["name"],
-                            "date": detail["commit"]["author"]["date"],
-                            "message": detail["commit"]["message"].splitlines()[0],
+                            "author": author,
+                            "date": date,
+                            "message": detail["commit"]["message"],
                             "url": detail["html_url"],
                             "stats": detail.get("stats", {}),
                             "files": [
@@ -69,7 +80,8 @@ async def monitor_commits(owner, repo, interval=10):
                             ]
                         }
                         pprint(info)
-                    # Update baseline to the most recent commit
+                        print()  # blank line for readability
+
                     seen_sha = commits[0]["sha"]
 
             await asyncio.sleep(interval)
