@@ -30,11 +30,11 @@ To raise your rate limit (from 60→5 000 requests/hour) and access private repo
 1. **Log in & navigate to Developer settings**
 
    * Sign in at github.com
-   * Click your avatar → **Settings** → **Developer settings**
+   * Click your avatar → **Settings** → [**Developer settings**](https://github.com/settings/apps)
 
 2. **Create a new token**
 
-   * Select **Personal access tokens** → **Tokens (classic)**
+   * Select **Personal access tokens** → [**Tokens (classic)**](https://github.com/settings/tokens)
    * Click **Generate new token (classic)**
 
 3. **Configure token details**
