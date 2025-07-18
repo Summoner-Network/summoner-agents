@@ -1,0 +1,2 @@
+asyncpraw
+python-dotenv
