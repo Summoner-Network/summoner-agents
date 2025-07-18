@@ -25,7 +25,7 @@ async def fetch_commits(session, owner, repo, per_page=30):
         resp.raise_for_status()
         return await resp.json()
 
-async def monitor_commits(owner, repo, interval=60):
+async def monitor_commits(owner, repo, interval=10):
     seen_sha = None
     async with aiohttp.ClientSession() as session:
         while True:
@@ -67,5 +67,5 @@ if __name__ == "__main__":
         sys.exit(1)
 
     owner, repo = sys.argv[1], sys.argv[2]
-    print(f"Monitoring commits on {owner}/{repo} every 60s…\n")
-    asyncio.run(monitor_commits(owner, repo, interval=60))
+    print(f"Monitoring commits on {owner}/{repo} every 10s…\n")
+    asyncio.run(monitor_commits(owner, repo, interval=10))
