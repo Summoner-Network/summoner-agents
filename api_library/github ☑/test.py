@@ -37,7 +37,7 @@ async def fetch_events(session, owner, repo=None):
         resp.raise_for_status()
         return await resp.json()
 
-async def print_new_events(owner, repo=None, poll_interval=60):
+async def print_new_events(owner, repo=None, poll_interval=5):
     seen = set()
     async with aiohttp.ClientSession() as session:
         while True:
