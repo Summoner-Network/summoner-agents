@@ -23,6 +23,42 @@ A simple Python script that watches a GitHub repository for new commits and prin
 
 * Optional **`GITHUB_TOKEN`** support to raise rate limits and access private repos
 
+## 🔑 Generating a GitHub Personal Access Token
+
+To raise your rate limit (from 60→5 000 requests/hour) and access private repositories, create a Personal Access Token (PAT) and store it in your `.env`.
+
+1. **Log in & navigate to Developer settings**
+
+   * Sign in at github.com
+   * Click your avatar → **Settings** → **Developer settings**
+
+2. **Create a new token**
+
+   * Select **Personal access tokens** → **Tokens (classic)**
+   * Click **Generate new token (classic)**
+
+3. **Configure token details**
+
+   * **Name**: e.g. “GitHub Commit Monitor”
+   * **Expiration**: choose as needed (e.g. 30 days or “No expiration”)
+   * **Scopes** (minimum):
+
+     * `public_repo` (public repos)
+     * `repo` (if you need private-repo access)
+
+4. **Generate & copy**
+
+   * Click **Generate token**
+   * Copy the token string immediately (you won’t see it again)
+
+5. **Store in `.env`**
+
+   ```env
+   GITHUB_TOKEN=ghp_yourGeneratedTokenHere
+   ```
+
+   Make sure your `.env` is listed in `.gitignore`.
+
 
 ## 🚀 Installation
 

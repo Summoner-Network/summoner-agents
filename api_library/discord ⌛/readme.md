@@ -32,7 +32,6 @@ API docs [here](https://discordpy.readthedocs.io/)
    * Bot Permissions: check at least “Send Messages” and “Read Messages”
    * Copy the generated URL, open it in your browser, and invite the bot to your server.
 
----
 
 ### 2. Store Token Securely in .env
 
@@ -47,43 +46,8 @@ DISCORD_TOKEN=your_bot_token_here
 Then install python-dotenv if you haven't:
 
 ```bash
-pip install python-dotenv
+pip install -r requirements.txt
 ```
-
----
-
-### 3. Updated Working Code (using .env)
-
-```python
-import discord
-import os
-from dotenv import load_dotenv
-
-# Load .env file
-load_dotenv()
-TOKEN = os.getenv('DISCORD_TOKEN')
-
-intents = discord.Intents.default()
-intents.message_content = True  # Required for reading messages
-
-client = discord.Client(intents=intents)
-
-@client.event
-async def on_ready():
-    print(f'Logged in as {client.user}')
-
-@client.event
-async def on_message(message):
-    if message.author == client.user:
-        return
-
-    if message.content.startswith('$hello'):
-        await message.channel.send('Hello!')
-
-client.run(TOKEN)
-```
-
----
 
 ## ✅ Common Mistakes That Trigger “Improper token” Error
 

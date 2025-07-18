@@ -8,13 +8,13 @@ from pprint import pprint
 
 
 load_dotenv()
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")  # optional for higher rate limits
+TOKEN = os.getenv("GITHUB_TOKEN")  # optional for higher rate limits
 
 async def fetch_commits(session, owner, repo, per_page=30):
     url = f"https://api.github.com/repos/{owner}/{repo}/commits?per_page={per_page}"
     headers = {"Accept": "application/vnd.github+json"}
-    if GITHUB_TOKEN:
-        headers["Authorization"] = f"token {GITHUB_TOKEN}"
+    if TOKEN:
+        headers["Authorization"] = f"token {TOKEN}"
     async with session.get(url, headers=headers) as resp:
         resp.raise_for_status()
         return await resp.json()
@@ -22,8 +22,8 @@ async def fetch_commits(session, owner, repo, per_page=30):
 async def fetch_commit_details(session, owner, repo, sha):
     url = f"https://api.github.com/repos/{owner}/{repo}/commits/{sha}"
     headers = {"Accept": "application/vnd.github+json"}
-    if GITHUB_TOKEN:
-        headers["Authorization"] = f"token {GITHUB_TOKEN}"
+    if TOKEN:
+        headers["Authorization"] = f"token {TOKEN}"
     async with session.get(url, headers=headers) as resp:
         resp.raise_for_status()
         return await resp.json()
