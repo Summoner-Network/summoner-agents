@@ -3,10 +3,8 @@ import asyncpraw
 from dotenv import load_dotenv
 import os
 
-# Load the .env file
 load_dotenv()
 
-# Load credentials from environment variables
 CLIENT_ID = os.getenv("REDDIT_CLIENT_ID")
 CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET")
 USERNAME = os.getenv("REDDIT_USERNAME")
