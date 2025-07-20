@@ -30,8 +30,8 @@
     <tr>
         <th style="width: 10%; text-align: center;">Agent Name</th>
         <th style="width: 30%; text-align: center;">Description</th>
-        <th style="width: 15%; text-align: center;">Level</th>
-        <th style="width: 15%; text-align: center;">Use Case</th>
+        <th style="width: 15%; text-align: center;">Learning Level</th>
+        <th style="width: 15%; text-align: center;">Application</th>
         <th style="width: 10%; text-align: center;">Features</th>
         <th style="width: 3%; text-align: center;">DB</th>
         <th style="width: 3%; text-align: center;">Queue</th>
@@ -79,8 +79,8 @@
     <tr>
         <th style="width: 10%; text-align: center;">Agent Name</th>
         <th style="width: 30%; text-align: center;">Description</th>
-        <th style="width: 15%; text-align: center;">Level</th>
-        <th style="width: 15%; text-align: center;">Use Case</th>
+        <th style="width: 15%; text-align: center;">Learning Level</th>
+        <th style="width: 15%; text-align: center;">Application</th>
         <th style="width: 10%; text-align: center;">Features</th>
         <th style="width: 3%; text-align: center;">DB</th>
         <th style="width: 3%; text-align: center;">Queue</th>
@@ -128,8 +128,8 @@
     <tr>
         <th style="width: 10%; text-align: center;">Agent Name</th>
         <th style="width: 30%; text-align: center;">Description</th>
-        <th style="width: 15%; text-align: center;">Level</th>
-        <th style="width: 15%; text-align: center;">Use Case</th>
+        <th style="width: 15%; text-align: center;">Learning Level</th>
+        <th style="width: 15%; text-align: center;">Application</th>
         <th style="width: 10%; text-align: center;">Features</th>
         <th style="width: 3%; text-align: center;">DB</th>
         <th style="width: 3%; text-align: center;">Queue</th>
@@ -169,8 +169,8 @@
     <tr>
         <th style="width: 10%; text-align: center;">Agent Name</th>
         <th style="width: 30%; text-align: center;">Description</th>
-        <th style="width: 15%; text-align: center;">Level</th>
-        <th style="width: 15%; text-align: center;">Use Case</th>
+        <th style="width: 15%; text-align: center;">Learning Level</th>
+        <th style="width: 15%; text-align: center;">Application</th>
         <th style="width: 10%; text-align: center;">Features</th>
         <th style="width: 3%; text-align: center;">DB</th>
         <th style="width: 3%; text-align: center;">Queue</th>
@@ -234,8 +234,8 @@
     <tr>
         <th style="width: 10%; text-align: center;">Agent Name</th>
         <th style="width: 30%; text-align: center;">Description</th>
-        <th style="width: 15%; text-align: center;">Level</th>
-        <th style="width: 15%; text-align: center;">Use Case</th>
+        <th style="width: 15%; text-align: center;">Learning Level</th>
+        <th style="width: 15%; text-align: center;">Application</th>
         <th style="width: 10%; text-align: center;">Features</th>
         <th style="width: 3%; text-align: center;">DB</th>
         <th style="width: 3%; text-align: center;">Queue</th>
@@ -275,8 +275,8 @@
     <tr>
         <th style="width: 10%; text-align: center;">Agent Name</th>
         <th style="width: 30%; text-align: center;">Description</th>
-        <th style="width: 15%; text-align: center;">Level</th>
-        <th style="width: 15%; text-align: center;">Use Case</th>
+        <th style="width: 15%; text-align: center;">Learning Level</th>
+        <th style="width: 15%; text-align: center;">Application</th>
         <th style="width: 10%; text-align: center;">Features</th>
         <th style="width: 3%; text-align: center;">DB</th>
         <th style="width: 3%; text-align: center;">Queue</th>
@@ -308,8 +308,8 @@
     <tr>
         <th style="width: 10%; text-align: center;">Agent Name</th>
         <th style="width: 30%; text-align: center;">Description</th>
-        <th style="width: 15%; text-align: center;">Level</th>
-        <th style="width: 15%; text-align: center;">Use Case</th>
+        <th style="width: 15%; text-align: center;">Learning Level</th>
+        <th style="width: 15%; text-align: center;">Application</th>
         <th style="width: 10%; text-align: center;">Features</th>
         <th style="width: 3%; text-align: center;">DB</th>
         <th style="width: 3%; text-align: center;">Queue</th>
@@ -421,8 +421,8 @@
     <tr>
         <th style="width: 10%; text-align: center;">Agent Name</th>
         <th style="width: 30%; text-align: center;">Description</th>
-        <th style="width: 15%; text-align: center;">Level</th>
-        <th style="width: 15%; text-align: center;">Use Case</th>
+        <th style="width: 15%; text-align: center;">Learning Level</th>
+        <th style="width: 15%; text-align: center;">Application</th>
         <th style="width: 10%; text-align: center;">Features</th>
         <th style="width: 3%; text-align: center;">DB</th>
         <th style="width: 3%; text-align: center;">Queue</th>
