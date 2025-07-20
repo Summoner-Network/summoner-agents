@@ -45,7 +45,7 @@
     <tbody>
     <tr>
         <td> <code><strong>SendAgent0</strong> </code></td>
-        <td>Demonstrate use of <code>@send</code></td>
+        <td style="font-size: 0.8em;">Demonstrate use of <code>@send</code></td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
         <td><img src="https://img.shields.io/badge/Emit-%20?color=9e2fc5"alt=""></td>
         <td><code>core</code></td>
@@ -53,7 +53,7 @@
     </tr>
     <tr>
         <td><code><strong>RcvAgent0</strong></code></td>
-        <td>Demonstrate use of <code>@receive</code></td>
+        <td style="font-size: 0.8em;">Demonstrate use of <code>@receive</code></td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
         <td><img src="https://img.shields.io/badge/Collect-%20?color=712fc5"alt=""></td>
         <td><code>core</code></td>
@@ -61,7 +61,7 @@
     </tr>
     <tr>
         <td><code><strong>EchoAgent0</strong></code></td>
-        <td>Combine both @send and receive</td>
+        <td style="font-size: 0.8em;">Combine both @send and receive</td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
         <td><img src="https://img.shields.io/badge/Redirect-%20?color=482fc5"alt=""></td>
         <td><code>core</code></td>
@@ -94,7 +94,7 @@
     <tbody>
     <tr>
         <td><code>ratelimit_0</code></td>
-        <td>Trigger backpressure from server</td>
+        <td style="font-size: 0.8em;">Trigger backpressure from server</td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
         <td><img src="https://img.shields.io/badge/Red_Team-%20?color=cd280a" alt=""></td>
         <td><code>core</code></td>
@@ -102,7 +102,7 @@
     </tr>
     <tr>
         <td><code>hs_init_0</code></td>
-        <td>Explore an initial handshake design</td>
+        <td style="font-size: 0.8em;">Explore an initial handshake design</td>
         <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
         <td><img src="https://img.shields.io/badge/Handshake-%20?color=cd710a" alt=""></td>
         <td><code>core</code></td>
@@ -110,7 +110,7 @@
     </tr>
     <tr>
         <td><code>hs_final_0</code></td>
-        <td>Explore a final handshake design</td>
+        <td style="font-size: 0.8em;">Explore a final handshake design</td>
         <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
         <td><img src="https://img.shields.io/badge/Handshake-%20?color=cd710a" alt=""></td>
         <td><code>core</code></td>
@@ -143,7 +143,7 @@
     <tbody>
     <tr>
         <td><code><strong>ChatAgent</strong></code></td>
-        <td>Chat agent as a user interface</td>
+        <td style="font-size: 0.8em;">Chat agent as a user interface</td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
         <td><img src="https://img.shields.io/badge/Interaction-%20?color=119ace" alt=""></td>
         <td><code>core</code></td>
@@ -151,7 +151,7 @@
     </tr>
     <tr>
         <td><code><strong>CmdAgent</strong></code></td>
-        <td>Chat agent to send and receve commands (user interface)</td>
+        <td style="font-size: 0.8em;">Chat agent to send and receve commands (user interface)</td>
         <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
         <td><img src="https://img.shields.io/badge/Control-%20?color=2277f1" alt=""></td>
         <td><code>core</code></td>
@@ -184,7 +184,7 @@
     <tbody>
     <tr>
         <td><code>reporter</code></td>
-        <td>...</td>
+        <td style="font-size: 0.8em;">...</td>
         <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
         <td><img src="https://img.shields.io/badge/Redirect-%20?color=482fc5" alt=""></td>
         <td><code>core</code></td>
@@ -192,7 +192,7 @@
     </tr>
     <tr>
         <td><code>storage</code></td>
-        <td>...</td>
+        <td style="font-size: 0.8em;">...</td>
         <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
         <td><img src="https://img.shields.io/badge/Collect-%20?color=712fc5" alt=""></td>
         <td><code>core</code></td>
@@ -200,7 +200,7 @@
     </tr>
     <tr>
         <td><code>subscribe</code></td>
-        <td>...</td>
+        <td style="font-size: 0.8em;">...</td>
         <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
         <td><img src="https://img.shields.io/badge/Emit-%20?color=9e2fc5" alt=""></td>
         <td><code>core</code></td>
@@ -208,7 +208,7 @@
     </tr>
     <tr>
         <td><code>event_emiter</code></td>
-        <td>...</td>
+        <td style="font-size: 0.8em;">...</td>
         <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
         <td><img src="https://img.shields.io/badge/Emit-%20?color=9e2fc5" alt=""></td>
         <td><code>core</code></td>
@@ -216,7 +216,7 @@
     </tr>
     <tr>
         <td><code>question</code></td>
-        <td>...</td>
+        <td style="font-size: 0.8em;">...</td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
         <td><img src="https://img.shields.io/badge/Interaction-%20?color=119ace" alt=""></td>
         <td><code>core</code></td>
@@ -224,7 +224,7 @@
     </tr>
     <tr>
         <td><code>answer</code></td>
-        <td>...</td>
+        <td style="font-size: 0.8em;">...</td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
         <td><img src="https://img.shields.io/badge/Interaction-%20?color=119ace" alt=""></td>
         <td><code>core</code></td>
@@ -257,7 +257,7 @@
     <tbody>
     <tr>
         <td><code>seller</code></td>
-        <td>...</td>
+        <td style="font-size: 0.8em;">...</td>
         <td><img src="https://img.shields.io/badge/LVL_4-%20?color=df6719" alt=""></td>
         <td><img src="https://img.shields.io/badge/Negotiation-%20?color=f1c822" alt=""></td>
         <td><code>core</code></td>
@@ -265,7 +265,7 @@
     </tr>
     <tr>
         <td><code>buyer</code></td>
-        <td>...</td>
+        <td style="font-size: 0.8em;">...</td>
         <td><img src="https://img.shields.io/badge/LVL_4-%20?color=df6719" alt=""></td>
         <td><img src="https://img.shields.io/badge/Negotiation-%20?color=f1c822" alt=""></td>
         <td><code>core</code></td>
@@ -298,7 +298,7 @@
     <tbody>
     <tr>
         <td><code>connector</code></td>
-        <td>...</td>
+        <td style="font-size: 0.8em;">...</td>
         <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
         <td><img src="https://img.shields.io/badge/MCP-%20?color=1122ce" alt=""></td>
         <td><code>core</code></td>
@@ -331,7 +331,7 @@
     <tbody>
     <tr>
         <td><code>wikipedia</code></td>
-        <td>...</td>
+        <td style="font-size: 0.8em;">...</td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
         <td><img src="https://img.shields.io/badge/Registry-%20?color=bd1edd" alt=""></td>
         <td><code>core</code></td>
@@ -339,7 +339,7 @@
     </tr>
     <tr>
         <td><code>arxiv</code></td>
-        <td>...</td>
+        <td style="font-size: 0.8em;">...</td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
         <td><img src="https://img.shields.io/badge/Registry-%20?color=bd1edd" alt=""></td>
         <td><code>core</code></td>
@@ -347,7 +347,7 @@
     </tr>
     <tr>
         <td><code>pubmed</code></td>
-        <td>...</td>
+        <td style="font-size: 0.8em;">...</td>
         <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
         <td><img src="https://img.shields.io/badge/Registry-%20?color=bd1edd" alt=""></td>
         <td><code>core</code></td>
@@ -355,7 +355,7 @@
     </tr>
     <tr>
         <td><code>github</code></td>
-        <td>...</td>
+        <td style="font-size: 0.8em;">...</td>
         <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
         <td><img src="https://img.shields.io/badge/App-%20?color=f1227a" alt=""></td>
         <td><code>core</code></td>
@@ -363,7 +363,7 @@
     </tr>
     <tr>
         <td><code>reddit</code></td>
-        <td>...</td>
+        <td style="font-size: 0.8em;">...</td>
         <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
         <td><img src="https://img.shields.io/badge/App-%20?color=f1227a" alt=""></td>
         <td><code>core</code></td>
@@ -371,7 +371,7 @@
     </tr>
     <tr>
         <td><code>notion</code></td>
-        <td>...</td>
+        <td style="font-size: 0.8em;">...</td>
         <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
         <td><img src="https://img.shields.io/badge/App-%20?color=f1227a" alt=""></td>
         <td><code>core</code></td>
@@ -379,7 +379,7 @@
     </tr>
     <tr>
         <td><code>slack</code></td>
-        <td>...</td>
+        <td style="font-size: 0.8em;">...</td>
         <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
         <td><img src="https://img.shields.io/badge/App-%20?color=f1227a" alt=""></td>
         <td><code>core</code></td>
@@ -387,7 +387,7 @@
     </tr>
     <tr>
         <td><code>summary (openai)</code></td>
-        <td>...</td>
+        <td style="font-size: 0.8em;">...</td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
         <td><img src="https://img.shields.io/badge/LLM-%20?color=18b9cc" alt=""></td>
         <td><code>core</code></td>
@@ -395,7 +395,7 @@
     </tr>
     <tr>
         <td><code>parsing (openai)</code></td>
-        <td>...</td>
+        <td style="font-size: 0.8em;">...</td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
         <td><img src="https://img.shields.io/badge/LLM-%20?color=18b9cc" alt=""></td>
         <td><code>core</code></td>
@@ -403,7 +403,7 @@
     </tr>
     <tr>
         <td><code>clustering (openai)</code></td>
-        <td>...</td>
+        <td style="font-size: 0.8em;">...</td>
         <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
         <td><img src="https://img.shields.io/badge/LLM-%20?color=18b9cc" alt=""></td>
         <td><code>core</code></td>
@@ -411,7 +411,7 @@
     </tr>
     <tr>
         <td><code>search (openai)</code></td>
-        <td>...</td>
+        <td style="font-size: 0.8em;">...</td>
         <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
         <td><img src="https://img.shields.io/badge/LLM-%20?color=18b9cc" alt=""></td>
         <td><code>core</code></td>
@@ -444,7 +444,7 @@
     <tbody>
     <tr>
         <td><code>smart_tools</code></td>
-        <td>...</td>
+        <td style="font-size: 0.8em;">...</td>
         <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
         <td><img src="https://img.shields.io/badge/Smart_tools-%20?color=dd581e" alt=""></td>
         <td><code>smart-tools</code></td>
