@@ -16,10 +16,10 @@
 | **DB**          | ✅ if the agent uses a persistent or in-memory database (`asqlite`, etc.). |
 | **Queue**       | ✅ if the agent uses asynchronous queues (e.g. `asyncio.Queue`).           |
 | **Flows**       | ✅ if the agent uses a modular or multi-step flow architecture.            |
-| **Triggers**    | ✅ if the agent uses triggers (event-driven mechanisms).                   |
+| **Trigg.**    | ✅ if the agent uses triggers (event-driven mechanisms).                   |
 | **Hooks**       | ✅ if the agent allows hooks for message preprocessing/postprocessing.     |
-| **Template**    | ✅ if the agent is designed as a reusable base class for extension.        |
-| **Composable**  | ✅ if the agent is intended to integrate with other agents in a system.    |
+| **Temp.**    | ✅ if the agent is designed as a template to start a more complex project.       |
+| **Comp.**  | ✅ if the agent is intended to integrate with other agents in a system.    |
 
 
 ### Core Messaging Agents
@@ -30,16 +30,16 @@
     <tr>
         <th style="width: 10%; text-align: center;">Agent Name</th>
         <th style="width: 30%; text-align: center;">Description</th>
-        <th style="width: 10%; text-align: center;">Level</th>
-        <th style="width: 10%; text-align: center;">Use Case</th>
+        <th style="width: 15%; text-align: center;">Level</th>
+        <th style="width: 15%; text-align: center;">Use Case</th>
         <th style="width: 10%; text-align: center;">Features</th>
-        <th style="width: 5%; text-align: center;">DB</th>
-        <th style="width: 5%; text-align: center;">Queue</th>
-        <th style="width: 5%; text-align: center;">Flows</th>
-        <th style="width: 5%; text-align: center;">Triggers</th>
-        <th style="width: 5%; text-align: center;">Hooks</th>
-        <th style="width: 5%; text-align: center;">Template</th>
-        <th style="width: 5%; text-align: center;">Composable</th>
+        <th style="width: 3%; text-align: center;">DB</th>
+        <th style="width: 3%; text-align: center;">Queue</th>
+        <th style="width: 3%; text-align: center;">Flows</th>
+        <th style="width: 3%; text-align: center;">Trigg.</th>
+        <th style="width: 3%; text-align: center;">Hooks</th>
+        <th style="width: 3%; text-align: center;">Temp.</th>
+        <th style="width: 3%; text-align: center;">Comp.</th>
     </tr>
     </thead>
     <tbody>
@@ -79,16 +79,16 @@
     <tr>
         <th style="width: 10%; text-align: center;">Agent Name</th>
         <th style="width: 30%; text-align: center;">Description</th>
-        <th style="width: 10%; text-align: center;">Level</th>
-        <th style="width: 10%; text-align: center;">Use Case</th>
+        <th style="width: 15%; text-align: center;">Level</th>
+        <th style="width: 15%; text-align: center;">Use Case</th>
         <th style="width: 10%; text-align: center;">Features</th>
-        <th style="width: 5%; text-align: center;">DB</th>
-        <th style="width: 5%; text-align: center;">Queue</th>
-        <th style="width: 5%; text-align: center;">Flows</th>
-        <th style="width: 5%; text-align: center;">Triggers</th>
-        <th style="width: 5%; text-align: center;">Hooks</th>
-        <th style="width: 5%; text-align: center;">Template</th>
-        <th style="width: 5%; text-align: center;">Composable</th>
+        <th style="width: 3%; text-align: center;">DB</th>
+        <th style="width: 3%; text-align: center;">Queue</th>
+        <th style="width: 3%; text-align: center;">Flows</th>
+        <th style="width: 3%; text-align: center;">Trigg.</th>
+        <th style="width: 3%; text-align: center;">Hooks</th>
+        <th style="width: 3%; text-align: center;">Temp.</th>
+        <th style="width: 3%; text-align: center;">Comp.</th>
     </tr>
     </thead>
     <tbody>
@@ -128,16 +128,16 @@
     <tr>
         <th style="width: 10%; text-align: center;">Agent Name</th>
         <th style="width: 30%; text-align: center;">Description</th>
-        <th style="width: 10%; text-align: center;">Level</th>
-        <th style="width: 10%; text-align: center;">Use Case</th>
+        <th style="width: 15%; text-align: center;">Level</th>
+        <th style="width: 15%; text-align: center;">Use Case</th>
         <th style="width: 10%; text-align: center;">Features</th>
-        <th style="width: 5%; text-align: center;">DB</th>
-        <th style="width: 5%; text-align: center;">Queue</th>
-        <th style="width: 5%; text-align: center;">Flows</th>
-        <th style="width: 5%; text-align: center;">Triggers</th>
-        <th style="width: 5%; text-align: center;">Hooks</th>
-        <th style="width: 5%; text-align: center;">Template</th>
-        <th style="width: 5%; text-align: center;">Composable</th>
+        <th style="width: 3%; text-align: center;">DB</th>
+        <th style="width: 3%; text-align: center;">Queue</th>
+        <th style="width: 3%; text-align: center;">Flows</th>
+        <th style="width: 3%; text-align: center;">Trigg.</th>
+        <th style="width: 3%; text-align: center;">Hooks</th>
+        <th style="width: 3%; text-align: center;">Temp.</th>
+        <th style="width: 3%; text-align: center;">Comp.</th>
     </tr>
     </thead>
     <tbody>
@@ -169,16 +169,16 @@
     <tr>
         <th style="width: 10%; text-align: center;">Agent Name</th>
         <th style="width: 30%; text-align: center;">Description</th>
-        <th style="width: 10%; text-align: center;">Level</th>
-        <th style="width: 10%; text-align: center;">Use Case</th>
+        <th style="width: 15%; text-align: center;">Level</th>
+        <th style="width: 15%; text-align: center;">Use Case</th>
         <th style="width: 10%; text-align: center;">Features</th>
-        <th style="width: 5%; text-align: center;">DB</th>
-        <th style="width: 5%; text-align: center;">Queue</th>
-        <th style="width: 5%; text-align: center;">Flows</th>
-        <th style="width: 5%; text-align: center;">Triggers</th>
-        <th style="width: 5%; text-align: center;">Hooks</th>
-        <th style="width: 5%; text-align: center;">Template</th>
-        <th style="width: 5%; text-align: center;">Composable</th>
+        <th style="width: 3%; text-align: center;">DB</th>
+        <th style="width: 3%; text-align: center;">Queue</th>
+        <th style="width: 3%; text-align: center;">Flows</th>
+        <th style="width: 3%; text-align: center;">Trigg.</th>
+        <th style="width: 3%; text-align: center;">Hooks</th>
+        <th style="width: 3%; text-align: center;">Temp.</th>
+        <th style="width: 3%; text-align: center;">Comp.</th>
     </tr>
     </thead>
     <tbody>
@@ -234,16 +234,16 @@
     <tr>
         <th style="width: 10%; text-align: center;">Agent Name</th>
         <th style="width: 30%; text-align: center;">Description</th>
-        <th style="width: 10%; text-align: center;">Level</th>
-        <th style="width: 10%; text-align: center;">Use Case</th>
+        <th style="width: 15%; text-align: center;">Level</th>
+        <th style="width: 15%; text-align: center;">Use Case</th>
         <th style="width: 10%; text-align: center;">Features</th>
-        <th style="width: 5%; text-align: center;">DB</th>
-        <th style="width: 5%; text-align: center;">Queue</th>
-        <th style="width: 5%; text-align: center;">Flows</th>
-        <th style="width: 5%; text-align: center;">Triggers</th>
-        <th style="width: 5%; text-align: center;">Hooks</th>
-        <th style="width: 5%; text-align: center;">Template</th>
-        <th style="width: 5%; text-align: center;">Composable</th>
+        <th style="width: 3%; text-align: center;">DB</th>
+        <th style="width: 3%; text-align: center;">Queue</th>
+        <th style="width: 3%; text-align: center;">Flows</th>
+        <th style="width: 3%; text-align: center;">Trigg.</th>
+        <th style="width: 3%; text-align: center;">Hooks</th>
+        <th style="width: 3%; text-align: center;">Temp.</th>
+        <th style="width: 3%; text-align: center;">Comp.</th>
     </tr>
     </thead>
     <tbody>
@@ -275,16 +275,16 @@
     <tr>
         <th style="width: 10%; text-align: center;">Agent Name</th>
         <th style="width: 30%; text-align: center;">Description</th>
-        <th style="width: 10%; text-align: center;">Level</th>
-        <th style="width: 10%; text-align: center;">Use Case</th>
+        <th style="width: 15%; text-align: center;">Level</th>
+        <th style="width: 15%; text-align: center;">Use Case</th>
         <th style="width: 10%; text-align: center;">Features</th>
-        <th style="width: 5%; text-align: center;">DB</th>
-        <th style="width: 5%; text-align: center;">Queue</th>
-        <th style="width: 5%; text-align: center;">Flows</th>
-        <th style="width: 5%; text-align: center;">Triggers</th>
-        <th style="width: 5%; text-align: center;">Hooks</th>
-        <th style="width: 5%; text-align: center;">Template</th>
-        <th style="width: 5%; text-align: center;">Composable</th>
+        <th style="width: 3%; text-align: center;">DB</th>
+        <th style="width: 3%; text-align: center;">Queue</th>
+        <th style="width: 3%; text-align: center;">Flows</th>
+        <th style="width: 3%; text-align: center;">Trigg.</th>
+        <th style="width: 3%; text-align: center;">Hooks</th>
+        <th style="width: 3%; text-align: center;">Temp.</th>
+        <th style="width: 3%; text-align: center;">Comp.</th>
     </tr>
     </thead>
     <tbody>
@@ -308,16 +308,16 @@
     <tr>
         <th style="width: 10%; text-align: center;">Agent Name</th>
         <th style="width: 30%; text-align: center;">Description</th>
-        <th style="width: 10%; text-align: center;">Level</th>
-        <th style="width: 10%; text-align: center;">Use Case</th>
+        <th style="width: 15%; text-align: center;">Level</th>
+        <th style="width: 15%; text-align: center;">Use Case</th>
         <th style="width: 10%; text-align: center;">Features</th>
-        <th style="width: 5%; text-align: center;">DB</th>
-        <th style="width: 5%; text-align: center;">Queue</th>
-        <th style="width: 5%; text-align: center;">Flows</th>
-        <th style="width: 5%; text-align: center;">Triggers</th>
-        <th style="width: 5%; text-align: center;">Hooks</th>
-        <th style="width: 5%; text-align: center;">Template</th>
-        <th style="width: 5%; text-align: center;">Composable</th>
+        <th style="width: 3%; text-align: center;">DB</th>
+        <th style="width: 3%; text-align: center;">Queue</th>
+        <th style="width: 3%; text-align: center;">Flows</th>
+        <th style="width: 3%; text-align: center;">Trigg.</th>
+        <th style="width: 3%; text-align: center;">Hooks</th>
+        <th style="width: 3%; text-align: center;">Temp.</th>
+        <th style="width: 3%; text-align: center;">Comp.</th>
     </tr>
     </thead>
     <tbody>
@@ -421,16 +421,16 @@
     <tr>
         <th style="width: 10%; text-align: center;">Agent Name</th>
         <th style="width: 30%; text-align: center;">Description</th>
-        <th style="width: 10%; text-align: center;">Level</th>
-        <th style="width: 10%; text-align: center;">Use Case</th>
+        <th style="width: 15%; text-align: center;">Level</th>
+        <th style="width: 15%; text-align: center;">Use Case</th>
         <th style="width: 10%; text-align: center;">Features</th>
-        <th style="width: 5%; text-align: center;">DB</th>
-        <th style="width: 5%; text-align: center;">Queue</th>
-        <th style="width: 5%; text-align: center;">Flows</th>
-        <th style="width: 5%; text-align: center;">Triggers</th>
-        <th style="width: 5%; text-align: center;">Hooks</th>
-        <th style="width: 5%; text-align: center;">Template</th>
-        <th style="width: 5%; text-align: center;">Composable</th>
+        <th style="width: 3%; text-align: center;">DB</th>
+        <th style="width: 3%; text-align: center;">Queue</th>
+        <th style="width: 3%; text-align: center;">Flows</th>
+        <th style="width: 3%; text-align: center;">Trigg.</th>
+        <th style="width: 3%; text-align: center;">Hooks</th>
+        <th style="width: 3%; text-align: center;">Temp.</th>
+        <th style="width: 3%; text-align: center;">Comp.</th>
     </tr>
     </thead>
     <tbody>
