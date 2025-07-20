@@ -29,10 +29,10 @@
     <thead>
     <tr>
         <th style="width: 10%; text-align: center;">Agent Name</th>
-        <th style="width: 30%; text-align: center;">Description</th>
-        <th style="width: 15%; text-align: center;">Learning Level</th>
-        <th style="width: 15%; text-align: center;">Application</th>
-        <th style="width: 10%; text-align: center;">Features</th>
+        <th style="width: 33%; text-align: center;">Description</th>
+        <th style="width: 12%; text-align: center;">Learning Level</th>
+        <th style="width: 12%; text-align: center;">Application</th>
+        <th style="width: 12%; text-align: center;">Features</th>
         <th style="width: 3%; text-align: center;">DB</th>
         <th style="width: 3%; text-align: center;">Queue</th>
         <th style="width: 3%; text-align: center;">Flows</th>
@@ -44,26 +44,26 @@
     </thead>
     <tbody>
     <tr>
-        <td><code>send_0</code></td>
-        <td>Demonstrate use of @send</td>
-        <td><img src="https://img.shields.io/badge/Beginner-2fc56c" alt=""></td>
-        <td><img src="https://img.shields.io/badge/Messaging-blue"alt=""></td>
+        <td> <code><strong>send_0</strong> </code></td>
+        <td>Demonstrate use of <code>@send</code></td>
+        <td><img src="https://img.shields.io/badge/Beginner-%20?color=rgba(38, 188, 148, 1)" alt=""></td>
+        <td><img src="https://img.shields.io/badge/Broadcast-%20?color=rgba(117, 33, 243, 1)"alt=""></td>
         <td><code>core</code></td>
-        <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td>
+        <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>✅</td><td>✅</td>
     </tr>
     <tr>
         <td><code>receive_0</code></td>
-        <td>Demonstrate use of @receive</td>
-        <td><img src="https://img.shields.io/badge/Beginner-2fc56c" alt=""></td>
-        <td><img src="https://img.shields.io/badge/Messaging-blue"alt=""></td>
+        <td>Demonstrate use of <code>@receive</code></td>
+        <td><img src="https://img.shields.io/badge/Beginner-%20?color=rgba(38, 188, 148, 1)" alt=""></td>
+        <td><img src="https://img.shields.io/badge/Collect-%20?color=rgba(79, 33, 243, 1)"alt=""></td>
         <td><code>core</code></td>
         <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td>
     </tr>
     <tr>
         <td><code>echo</code></td>
         <td>Combine both @send and receive</td>
-        <td><img src="https://img.shields.io/badge/Beginner-2fc56c" alt=""></td>
-        <td><img src="https://img.shields.io/badge/Messaging-blue"alt=""></td>
+        <td><img src="https://img.shields.io/badge/Beginner-%20?color=rgba(38, 188, 148, 1)" alt=""></td>
+        <td><img src="https://img.shields.io/badge/Redirect-%20?color=rgba(37, 33, 243, 1)"alt=""></td>
         <td><code>core</code></td>
         <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td>
     </tr>
@@ -95,7 +95,7 @@
     <tr>
         <td><code>ratelimit_0</code></td>
         <td>Trigger backpressure from server</td>
-        <td><img src="https://img.shields.io/badge/Beginner-2fc56c" alt=""></td>
+        <td><img src="https://img.shields.io/badge/Beginner-%20?color=rgba(38, 188, 148, 1)" alt=""></td>
         <td><img src="https://img.shields.io/badge/Red_Team-blue" alt=""></td>
         <td><code>core</code></td>
         <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td>
@@ -103,7 +103,7 @@
     <tr>
         <td><code>hs_init_0</code></td>
         <td>Explore an initial handshake design</td>
-        <td><img src="https://img.shields.io/badge/Beginner-2fc56c" alt=""></td>
+        <td><img src="https://img.shields.io/badge/Beginner-%20?color=rgba(38, 188, 148, 1)" alt=""></td>
         <td><img src="https://img.shields.io/badge/Handshake-blue" alt=""></td>
         <td><code>core</code></td>
         <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td>
@@ -111,7 +111,7 @@
     <tr>
         <td><code>hs_final_0</code></td>
         <td>Explore a final handshake design</td>
-        <td><img src="https://img.shields.io/badge/Beginner-2fc56c" alt=""></td>
+        <td><img src="https://img.shields.io/badge/Beginner-%20?color=rgba(38, 188, 148, 1)" alt=""></td>
         <td><img src="https://img.shields.io/badge/Handshake-blue" alt=""></td>
         <td><code>core</code></td>
         <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td>
@@ -144,7 +144,7 @@
     <tr>
         <td><code>chat_0</code></td>
         <td>Chat agent as a user interface</td>
-        <td><img src="https://img.shields.io/badge/Beginner-2fc56c" alt=""></td>
+        <td><img src="https://img.shields.io/badge/Beginner-%20?color=rgba(38, 188, 148, 1)" alt=""></td>
         <td><img src="https://img.shields.io/badge/Interaction-blue" alt=""></td>
         <td><code>core</code></td>
         <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td>
@@ -152,7 +152,7 @@
     <tr>
         <td><code>cmd_chat_0</code></td>
         <td>Chat agent to send and receve commands (user interface)</td>
-        <td><img src="https://img.shields.io/badge/Beginner-2fc56c" alt=""></td>
+        <td><img src="https://img.shields.io/badge/Beginner-%20?color=rgba(38, 188, 148, 1)" alt=""></td>
         <td><img src="https://img.shields.io/badge/Interaction-blue" alt=""></td>
         <td><code>core</code></td>
         <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td>
@@ -185,7 +185,7 @@
     <tr>
         <td><code>reporter</code></td>
         <td>...</td>
-        <td><img src="https://img.shields.io/badge/Beginner-2fc56c" alt=""></td>
+        <td><img src="https://img.shields.io/badge/Beginner-%20?color=rgba(38, 188, 148, 1)" alt=""></td>
         <td><img src="https://img.shields.io/badge/Interaction-blue" alt=""></td>
         <td><code>core</code></td>
         <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td>
@@ -193,7 +193,7 @@
     <tr>
         <td><code>storage</code></td>
         <td>...</td>
-        <td><img src="https://img.shields.io/badge/Beginner-2fc56c" alt=""></td>
+        <td><img src="https://img.shields.io/badge/Beginner-%20?color=rgba(38, 188, 148, 1)" alt=""></td>
         <td><img src="https://img.shields.io/badge/Interaction-blue" alt=""></td>
         <td><code>core</code></td>
         <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td>
@@ -201,7 +201,7 @@
     <tr>
         <td><code>subscribe</code></td>
         <td>...</td>
-        <td><img src="https://img.shields.io/badge/Beginner-2fc56c" alt=""></td>
+        <td><img src="https://img.shields.io/badge/Beginner-%20?color=rgba(38, 188, 148, 1)" alt=""></td>
         <td><img src="https://img.shields.io/badge/Interaction-blue" alt=""></td>
         <td><code>core</code></td>
         <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td>
@@ -209,7 +209,7 @@
     <tr>
         <td><code>event_emiter</code></td>
         <td>...</td>
-        <td><img src="https://img.shields.io/badge/Beginner-2fc56c" alt=""></td>
+        <td><img src="https://img.shields.io/badge/Beginner-%20?color=rgba(38, 188, 148, 1)" alt=""></td>
         <td><img src="https://img.shields.io/badge/Interaction-blue" alt=""></td>
         <td><code>core</code></td>
         <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td>
@@ -217,7 +217,7 @@
     <tr>
         <td><code>question</code></td>
         <td>...</td>
-        <td><img src="https://img.shields.io/badge/Beginner-2fc56c" alt=""></td>
+        <td><img src="https://img.shields.io/badge/Beginner-%20?color=rgba(38, 188, 148, 1)" alt=""></td>
         <td><img src="https://img.shields.io/badge/Interaction-blue" alt=""></td>
         <td><code>core</code></td>
         <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td>
@@ -250,7 +250,7 @@
     <tr>
         <td><code>seller</code></td>
         <td>...</td>
-        <td><img src="https://img.shields.io/badge/Beginner-2fc56c" alt=""></td>
+        <td><img src="https://img.shields.io/badge/Beginner-%20?color=rgba(38, 188, 148, 1)" alt=""></td>
         <td><img src="https://img.shields.io/badge/Interaction-blue" alt=""></td>
         <td><code>core</code></td>
         <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td>
@@ -258,7 +258,7 @@
     <tr>
         <td><code>buyer</code></td>
         <td>...</td>
-        <td><img src="https://img.shields.io/badge/Beginner-2fc56c" alt=""></td>
+        <td><img src="https://img.shields.io/badge/Beginner-%20?color=rgba(38, 188, 148, 1)" alt=""></td>
         <td><img src="https://img.shields.io/badge/Interaction-blue" alt=""></td>
         <td><code>core</code></td>
         <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td>
@@ -291,7 +291,7 @@
     <tr>
         <td><code>connector</code></td>
         <td>...</td>
-        <td><img src="https://img.shields.io/badge/Beginner-2fc56c" alt=""></td>
+        <td><img src="https://img.shields.io/badge/Beginner-%20?color=rgba(38, 188, 148, 1)" alt=""></td>
         <td><img src="https://img.shields.io/badge/Interaction-blue" alt=""></td>
         <td><code>core</code></td>
         <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td>
@@ -324,7 +324,7 @@
     <tr>
         <td><code>wikipedia</code></td>
         <td>...</td>
-        <td><img src="https://img.shields.io/badge/Beginner-2fc56c" alt=""></td>
+        <td><img src="https://img.shields.io/badge/Beginner-%20?color=rgba(38, 188, 148, 1)" alt=""></td>
         <td><img src="https://img.shields.io/badge/Interaction-blue" alt=""></td>
         <td><code>core</code></td>
         <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td>
@@ -332,7 +332,7 @@
     <tr>
         <td><code>arxiv</code></td>
         <td>...</td>
-        <td><img src="https://img.shields.io/badge/Beginner-2fc56c" alt=""></td>
+        <td><img src="https://img.shields.io/badge/Beginner-%20?color=rgba(38, 188, 148, 1)" alt=""></td>
         <td><img src="https://img.shields.io/badge/Interaction-blue" alt=""></td>
         <td><code>core</code></td>
         <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td>
@@ -340,7 +340,7 @@
     <tr>
         <td><code>pubmed</code></td>
         <td>...</td>
-        <td><img src="https://img.shields.io/badge/Beginner-2fc56c" alt=""></td>
+        <td><img src="https://img.shields.io/badge/Beginner-%20?color=rgba(38, 188, 148, 1)" alt=""></td>
         <td><img src="https://img.shields.io/badge/Interaction-blue" alt=""></td>
         <td><code>core</code></td>
         <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td>
@@ -348,7 +348,7 @@
     <tr>
         <td><code>github</code></td>
         <td>...</td>
-        <td><img src="https://img.shields.io/badge/Beginner-2fc56c" alt=""></td>
+        <td><img src="https://img.shields.io/badge/Beginner-%20?color=rgba(38, 188, 148, 1)" alt=""></td>
         <td><img src="https://img.shields.io/badge/Interaction-blue" alt=""></td>
         <td><code>core</code></td>
         <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td>
@@ -356,7 +356,7 @@
     <tr>
         <td><code>reddit</code></td>
         <td>...</td>
-        <td><img src="https://img.shields.io/badge/Beginner-2fc56c" alt=""></td>
+        <td><img src="https://img.shields.io/badge/Beginner-%20?color=rgba(38, 188, 148, 1)" alt=""></td>
         <td><img src="https://img.shields.io/badge/Interaction-blue" alt=""></td>
         <td><code>core</code></td>
         <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td>
@@ -364,7 +364,7 @@
     <tr>
         <td><code>notion</code></td>
         <td>...</td>
-        <td><img src="https://img.shields.io/badge/Beginner-2fc56c" alt=""></td>
+        <td><img src="https://img.shields.io/badge/Beginner-%20?color=rgba(38, 188, 148, 1)" alt=""></td>
         <td><img src="https://img.shields.io/badge/Interaction-blue" alt=""></td>
         <td><code>core</code></td>
         <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td>
@@ -372,7 +372,7 @@
     <tr>
         <td><code>slack</code></td>
         <td>...</td>
-        <td><img src="https://img.shields.io/badge/Beginner-2fc56c" alt=""></td>
+        <td><img src="https://img.shields.io/badge/Beginner-%20?color=rgba(38, 188, 148, 1)" alt=""></td>
         <td><img src="https://img.shields.io/badge/Interaction-blue" alt=""></td>
         <td><code>core</code></td>
         <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td>
@@ -380,7 +380,7 @@
     <tr>
         <td><code>summary (openai)</code></td>
         <td>...</td>
-        <td><img src="https://img.shields.io/badge/Beginner-2fc56c" alt=""></td>
+        <td><img src="https://img.shields.io/badge/Beginner-%20?color=rgba(38, 188, 148, 1)" alt=""></td>
         <td><img src="https://img.shields.io/badge/Interaction-blue" alt=""></td>
         <td><code>core</code></td>
         <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td>
@@ -388,7 +388,7 @@
     <tr>
         <td><code>parsing (openai)</code></td>
         <td>...</td>
-        <td><img src="https://img.shields.io/badge/Beginner-2fc56c" alt=""></td>
+        <td><img src="https://img.shields.io/badge/Beginner-%20?color=rgba(38, 188, 148, 1)" alt=""></td>
         <td><img src="https://img.shields.io/badge/Interaction-blue" alt=""></td>
         <td><code>core</code></td>
         <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td>
@@ -396,7 +396,7 @@
     <tr>
         <td><code>clustering (openai)</code></td>
         <td>...</td>
-        <td><img src="https://img.shields.io/badge/Beginner-2fc56c" alt=""></td>
+        <td><img src="https://img.shields.io/badge/Beginner-%20?color=rgba(38, 188, 148, 1)" alt=""></td>
         <td><img src="https://img.shields.io/badge/Interaction-blue" alt=""></td>
         <td><code>core</code></td>
         <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td>
@@ -404,7 +404,7 @@
     <tr>
         <td><code>search (openai)</code></td>
         <td>...</td>
-        <td><img src="https://img.shields.io/badge/Beginner-2fc56c" alt=""></td>
+        <td><img src="https://img.shields.io/badge/Beginner-%20?color=rgba(38, 188, 148, 1)" alt=""></td>
         <td><img src="https://img.shields.io/badge/Interaction-blue" alt=""></td>
         <td><code>core</code></td>
         <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td>
@@ -437,7 +437,7 @@
     <tr>
         <td><code>smart_tools</code></td>
         <td>...</td>
-        <td><img src="https://img.shields.io/badge/Beginner-2fc56c" alt=""></td>
+        <td><img src="https://img.shields.io/badge/Beginner-%20?color=rgba(38, 188, 148, 1)" alt=""></td>
         <td><img src="https://img.shields.io/badge/Interaction-blue" alt=""></td>
         <td><code>smart-tools</code></td>
         <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td>
