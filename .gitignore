@@ -4,6 +4,7 @@ save/
 native_build
 summoner-sdk
 tests
+ideas.md
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
