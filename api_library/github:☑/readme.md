@@ -51,7 +51,7 @@ To raise your rate limit (from 60→5 000 requests/hour) and access private repo
 4. **Generate & copy**
 
    * Click **Generate token**
-   * Copy the token string immediately (you won’t see it again)
+   * Copy the token string immediately (you won't see it again)
 
 5. **Store in `.env`**
 

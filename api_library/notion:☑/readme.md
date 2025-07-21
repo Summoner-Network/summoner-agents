@@ -69,5 +69,5 @@ The Notion API returns a list of **blocks** that make up your page. Each block h
 | `child_page`         | A linked sub-page                        |
 | `equation`           | LaTeX-style math equations               |
 
-⚠️ **Note**: Some blocks (like toggles or list items) can have their own nested children. To retrieve them, you must call `blocks.children.list` again with the child block’s ID.
+⚠️ **Note**: Some blocks (like toggles or list items) can have their own nested children. To retrieve them, you must call `blocks.children.list` again with the child block's ID.
 

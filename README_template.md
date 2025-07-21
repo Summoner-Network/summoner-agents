@@ -36,7 +36,7 @@ Next, define your SDK composition by editing the [`build.txt`](#buildtxt--test_b
 source build_sdk.sh setup
 ```
 
-You’re now ready to begin development.
+You're now ready to begin development.
 
 ## How to Run `build_sdk.sh`
 
@@ -53,7 +53,7 @@ You can invoke `build_sdk.sh` in two ways:
    ./build_sdk.sh <command> [variant]
    ```
 
-   After executing `build_sdk.sh setup`, the script will have created and populated the `venv/`, but you’ll need to activate it manually:
+   After executing `build_sdk.sh setup`, the script will have created and populated the `venv/`, but you'll need to activate it manually:
 
    ```bash
    source venv/bin/activate
@@ -76,7 +76,7 @@ You can invoke `build_sdk.sh` in two ways:
 | `delete`      | —                                             | Remove `summoner-sdk/`, `venv/`, `native_build/`, and any generated `test_server*` files.                                                       |
 | `reset`       | —                                             | Equivalent to running `delete` followed by `setup` (fresh clone + install).                                                                     |
 | `deps`        | —                                             | Reinstall Rust & Python dependencies in the existing `venv/` by rerunning `reinstall_python_sdk.sh`.                                            |
-| `test_server` | —                                             | Launch a small demo server against the SDK in `venv/`, calling your package’s `hello_summoner()`.                                  |
+| `test_server` | —                                             | Launch a small demo server against the SDK in `venv/`, calling your package's `hello_summoner()`.                                  |
 | `clean`       | —                                             | Remove only build artifacts in `native_build/` and any `test_*.py`, `test_*.json`, or `test_*.log` files (preserves `venv/`).                   |
 
 
@@ -168,7 +168,7 @@ In the existing `venv/`, reruns the Rust/Python dependency installer:
 bash summoner-sdk/reinstall_python_sdk.sh rust_server_sdk
 ```
 
-Useful if you’ve updated core or your Rust SDK.
+Useful if you've updated core or your Rust SDK.
 
 **Usage**
 
@@ -184,7 +184,7 @@ bash build_sdk.sh deps
 Runs a small demo server **against the SDK** installed in `venv/`. It:
 
 1. Activates `venv/`
-2. Copies the core’s `desktop_data/default_config.json` → `test_server_config.json`
+2. Copies the core's `desktop_data/default_config.json` → `test_server_config.json`
 3. Generates `test_server.py`:
 
    ```python
@@ -266,7 +266,7 @@ https://github.com/Summoner-Network/starter-template.git
 
 ### Filtered Format (include specific folders)
 
-To include only specific subfolders from a repository’s `tooling/` directory, add a colon `:` after the URL, followed by the names of the folders you want (one per line):
+To include only specific subfolders from a repository's `tooling/` directory, add a colon `:` after the URL, followed by the names of the folders you want (one per line):
 
 ```txt
 # Only include feature1 and feature2 from this repo

@@ -6,7 +6,7 @@ API docs [here](https://slack.dev/python-slack-sdk/)
 
 ## ✅ Here is how to generate the `xoxb-` (Bot User) token:
 
-### 1. **Go to: OAuth & Permissions** tab in your app’s settings
+### 1. **Go to: OAuth & Permissions** tab in your app's settings
 
 URL format:
 
@@ -50,7 +50,7 @@ SLACK_BOT_TOKEN=xoxb-...
 
 ## ✅ Here is how to generate the `xapp-` (App-Level) token:
 
-### 1. **Go to: Socket Mode** settings in your app’s dashboard
+### 1. **Go to: Socket Mode** settings in your app's dashboard
 
 URL format:
 

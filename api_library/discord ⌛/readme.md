@@ -53,7 +53,7 @@ pip install -r requirements.txt
 
 | Mistake                            | Fix                                                |
 | ---------------------------------- | -------------------------------------------------- |
-| Pasting the token with quotes      | Don’t use quotes around the token in .env          |
+| Pasting the token with quotes      | Don't use quotes around the token in .env          |
 | Extra spaces/newlines              | Make sure no whitespace before/after the token     |
 | Using client secret instead        | Use the bot token from Bot tab, not OAuth2 secrets |
 | Not enabling message intent        | Enable “Message Content Intent” on bot dashboard   |

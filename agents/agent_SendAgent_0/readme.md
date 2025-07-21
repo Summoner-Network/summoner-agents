@@ -9,9 +9,11 @@ Once launched, the agent connects to the server and emits the message `"Hello Se
 
 ## SDK Features Used
 
-- `SummonerClient`: creates and manages the agent instance.
-- `@send(route=...)`: registers a function that emits a message periodically.
-- `agent.run(...)`: connects the client to the server and initiates the async lifecycle.
+| Feature                         | Description                                                      |
+|---------------------------------|------------------------------------------------------------------|
+| `SummonerClient(...)`           | Creates and manages the agent instance                           |
+| `@client.send(route=...)`       | Registers a function that emits a message periodically           |
+| `client.run(...)`               | Connects the client to the server and initiates the async lifecycle |
 
 
 ## How to Run
@@ -20,7 +22,10 @@ First, ensure the Summoner server is running:
 
 ```bash
 python server.py
-````
+```
+
+> [!TIP]
+> You can use the option `--config configs/server_config_nojsonlogs.json` for cleaner terminal output and log files.
 
 Then run the agent:
 
@@ -29,8 +34,6 @@ python agents/agent_SendAgent_0/agent.py
 ```
 
 ## Simulation Scenarios (Optional)
-
-> This section can be used to describe multi-agent tests involving `SendAgent`, or to compare behaviors when run alongside echo, relay, or throttling agents.
 
 *(Not populated yet)*
 

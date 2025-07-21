@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e  # only -e, no -u so sourcing doesn’t abort on unset vars
+set -e  # only -e, no -u so sourcing doesn't abort on unset vars
 
 # ─────────────────────────────────────────────────────
 # Detect if script is being sourced or executed
@@ -108,7 +108,7 @@ clone_native() {
 }
 
 # ─────────────────────────────────────────────────────
-# Merge one native repo’s tooling/
+# Merge one native repo's tooling/
 # ─────────────────────────────────────────────────────
 merge_tooling() {
   repo_url=$1; shift

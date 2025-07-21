@@ -27,7 +27,7 @@ python arxiv_monitor.py "cryptography" "lattice-based crypto" 30
 
 ## How it works
 
-* Uses ArXiv’s public Atom API (`/api/query`).
+* Uses ArXiv's public Atom API (`/api/query`).
 * Sorts by submission date, descending.
 * Tracks the last seen entry per topic.
 * On each poll, prints any new papers (oldest→newest) with both a summary line and detailed metadata.

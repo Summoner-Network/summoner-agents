@@ -161,8 +161,8 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 | **Features**    | Key Summoner SDK capability demonstrated (e.g. `core`, `kobold`).         |
 | **DB**          | ✅ if the agent uses a persistent or in-memory database (`asqlite`, etc.). |
 | **Queue**       | ✅ if the agent relies on asynchronous queues (`asyncio.Queue`, etc.).     |
-| **Flows**       | ✅ if the agent follows a modular multi-step flow structure.               |
-| **Trigg.**      | ✅ if the agent is event-driven using triggers.                            |
+| **Flows**       | ✅ if the agent follows a modular, trigger-driven flow structure.          |
+| **Logs**        | ✅ if the agent demonstrates information logging via its `logger` attribute.  |
 | **Hooks**       | ✅ if the agent defines hooks for pre/postprocessing of messages.          |
 | **Temp.**       | ✅ if the agent is designed to serve as a reusable template.               |
 | **Comp.**       | ✅ if the agent is composable within a larger multi-agent system.          |
@@ -182,7 +182,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
         <th style="width: 3%; text-align: center;">DB</th>
         <th style="width: 3%; text-align: center;">Queue</th>
         <th style="width: 3%; text-align: center;">Flows</th>
-        <th style="width: 3%; text-align: center;">Trigg.</th>
+        <th style="width: 3%; text-align: center;">Logs</th>
         <th style="width: 3%; text-align: center;">Hooks</th>
         <th style="width: 3%; text-align: center;">Temp.</th>
         <th style="width: 3%; text-align: center;">Comp.</th>
@@ -196,6 +196,14 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
         <td><code>core</code></td>
         <td><img src="https://img.shields.io/badge/Emit-%20?color=9e2fc5"alt=""></td>
         <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
+        <td> <code><strong><a href="agents/agent_SendAgent_1/">SendAgent_1</a></strong></code></td>
+        <td style="font-size: 0.8em;">Demonstrate the use of <code>@send</code> and <code>@hook</code> with <code>Direction.SEND</code></td>
+        <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
+        <td><code>core</code></td>
+        <td><img src="https://img.shields.io/badge/Emit-%20?color=9e2fc5"alt=""></td>
+        <td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
     </tr>
     <tr>
         <td><code><strong>RcvAgent0</strong></code></td>
@@ -231,7 +239,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
         <th style="width: 3%; text-align: center;">DB</th>
         <th style="width: 3%; text-align: center;">Queue</th>
         <th style="width: 3%; text-align: center;">Flows</th>
-        <th style="width: 3%; text-align: center;">Trigg.</th>
+        <th style="width: 3%; text-align: center;">Logs</th>
         <th style="width: 3%; text-align: center;">Hooks</th>
         <th style="width: 3%; text-align: center;">Temp.</th>
         <th style="width: 3%; text-align: center;">Comp.</th>
@@ -280,7 +288,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
         <th style="width: 3%; text-align: center;">DB</th>
         <th style="width: 3%; text-align: center;">Queue</th>
         <th style="width: 3%; text-align: center;">Flows</th>
-        <th style="width: 3%; text-align: center;">Trigg.</th>
+        <th style="width: 3%; text-align: center;">Logs</th>
         <th style="width: 3%; text-align: center;">Hooks</th>
         <th style="width: 3%; text-align: center;">Temp.</th>
         <th style="width: 3%; text-align: center;">Comp.</th>
@@ -321,7 +329,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
         <th style="width: 3%; text-align: center;">DB</th>
         <th style="width: 3%; text-align: center;">Queue</th>
         <th style="width: 3%; text-align: center;">Flows</th>
-        <th style="width: 3%; text-align: center;">Trigg.</th>
+        <th style="width: 3%; text-align: center;">Logs</th>
         <th style="width: 3%; text-align: center;">Hooks</th>
         <th style="width: 3%; text-align: center;">Temp.</th>
         <th style="width: 3%; text-align: center;">Comp.</th>
@@ -394,7 +402,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
         <th style="width: 3%; text-align: center;">DB</th>
         <th style="width: 3%; text-align: center;">Queue</th>
         <th style="width: 3%; text-align: center;">Flows</th>
-        <th style="width: 3%; text-align: center;">Trigg.</th>
+        <th style="width: 3%; text-align: center;">Logs</th>
         <th style="width: 3%; text-align: center;">Hooks</th>
         <th style="width: 3%; text-align: center;">Temp.</th>
         <th style="width: 3%; text-align: center;">Comp.</th>
@@ -435,7 +443,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
         <th style="width: 3%; text-align: center;">DB</th>
         <th style="width: 3%; text-align: center;">Queue</th>
         <th style="width: 3%; text-align: center;">Flows</th>
-        <th style="width: 3%; text-align: center;">Trigg.</th>
+        <th style="width: 3%; text-align: center;">Logs</th>
         <th style="width: 3%; text-align: center;">Hooks</th>
         <th style="width: 3%; text-align: center;">Temp.</th>
         <th style="width: 3%; text-align: center;">Comp.</th>
@@ -468,7 +476,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
         <th style="width: 3%; text-align: center;">DB</th>
         <th style="width: 3%; text-align: center;">Queue</th>
         <th style="width: 3%; text-align: center;">Flows</th>
-        <th style="width: 3%; text-align: center;">Trigg.</th>
+        <th style="width: 3%; text-align: center;">Logs</th>
         <th style="width: 3%; text-align: center;">Hooks</th>
         <th style="width: 3%; text-align: center;">Temp.</th>
         <th style="width: 3%; text-align: center;">Comp.</th>
@@ -581,7 +589,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
         <th style="width: 3%; text-align: center;">DB</th>
         <th style="width: 3%; text-align: center;">Queue</th>
         <th style="width: 3%; text-align: center;">Flows</th>
-        <th style="width: 3%; text-align: center;">Trigg.</th>
+        <th style="width: 3%; text-align: center;">Logs</th>
         <th style="width: 3%; text-align: center;">Hooks</th>
         <th style="width: 3%; text-align: center;">Temp.</th>
         <th style="width: 3%; text-align: center;">Comp.</th>
