@@ -71,7 +71,7 @@
 </table>
 </div>
 
-### Security & Flow-Control Agents
+### Security and Flow-Control Agents
 
 <div style="display: flex; justify-content: center;">
 <table style="border-collapse: collapse; width: 95%; text-align: center;">
