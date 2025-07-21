@@ -1,13 +1,9 @@
 from summoner.client import SummonerClient
 import argparse
-import asyncio
 
-client = SummonerClient(name="SendAgent_0")
+client = SummonerClient(name="Agent")
 
-@client.send(route="")
-async def custom_send():
-    await asyncio.sleep(1)
-    return "Hello Server!"
+# ...
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run a Summoner client with a specified config.")
