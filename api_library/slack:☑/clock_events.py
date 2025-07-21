@@ -13,9 +13,10 @@ async def good_morning_scheduler(client: WebClient):
             sent_today = False
 
         # Between 09:00 and 09:10, send once
-        if time(9, 0) <= current_time < time(11, 30) and not sent_today:
-            
-            await client.chat_postMessage(
+        if time(9, 0) <= current_time < time(9, 10) and not sent_today:
+                   
+            await asyncio.to_thread(
+                    client.chat_postMessage,
                     channel="gm-ga-ge-gn",
                     text= (
                             "🌞 Good morning, everyone! I am the Official SummonerBot on Slack."

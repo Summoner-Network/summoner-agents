@@ -6,6 +6,7 @@ summoner-sdk
 tests
 ideas.md
 logs/
+private_*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
