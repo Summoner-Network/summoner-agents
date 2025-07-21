@@ -191,7 +191,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
     <tbody>
     <tr>
         <td> <code><strong><a href="agents/agent_SendAgent_0/">SendAgent_0</a></strong></code></td>
-        <td style="font-size: 0.8em;">Demonstrate use of <code>@send</code></td>
+        <td style="font-size: 0.8em;">Demonstrate the use of <code>@send</code></td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
         <td><code>core</code></td>
         <td><img src="https://img.shields.io/badge/Emit-%20?color=9e2fc5"alt=""></td>
@@ -199,7 +199,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
     </tr>
     <tr>
         <td><code><strong>RcvAgent0</strong></code></td>
-        <td style="font-size: 0.8em;">Demonstrate use of <code>@receive</code></td>
+        <td style="font-size: 0.8em;">Demonstrate the use of <code>@receive</code></td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
          <td><code>core</code></td>
         <td><img src="https://img.shields.io/badge/Collect-%20?color=712fc5"alt=""></td>
@@ -361,7 +361,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
         <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
     </tr>
     <tr>
-        <td><code><strong>QUestion</strong></code></td>
+        <td><code><strong>Question</strong></code></td>
         <td style="font-size: 0.8em;">...</td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
          <td><code>core</code></td>
