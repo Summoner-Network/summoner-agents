@@ -1,25 +1,171 @@
 # Summoner Agent Library
 
-## Agent formatting and desktop app compatibility
+<p align="center">
+<img width="250px" src="img/merchants_rounded.png" />
+</p>
 
-## Agent collection
+## Table of Contents
 
-### Legends
+* [Agent Format and Desktop App Compatibility](#agent-format-and-desktop-app-compatibility)
+
+  * [Repository Structure](#repository-structure)
+  * [Required Structure for Agent Folders](#required-structure-for-agent-folders)
+
+* [Running an Agent](#running-an-agent)  
+
+  * [Activate the Virtual Environment](#activate-the-virtual-environment)  
+  * [Launch the Summoner Server](#launch-the-summoner-server)  
+  * [Run the Agent](#run-the-agent)  
+
+* [Agent Collection](#agent-collection)
+
+  * [Legend](#legend)
+  * [Core Messaging Agents](#core-messaging-agents)
+  * [Security and Flow-Control Agents](#security-and-flow-control-agents)
+  * [Interaction Agents](#interaction-agents)
+  * [Orchestration Agents](#orchestration-agents)
+  * [Negotiation Agents](#negotiation-agents)
+  * [Connector Agents (Composability)](#connector-agents-composability)
+  * [API-based Agents](#api-based-agents)
+  * [Code Exchange Agents](#code-exchange-agents)
+
+
+## Agent Format and Desktop App Compatibility
+
+This repository contains a collection of agent examples designed to run within the Summoner framework. These agents are organized in a structured and standardized format to ensure compatibility with the Summoner desktop application.
+
+### Repository Structure
+
+* Agent examples are located in the `agents/` directory.
+* Supporting materials such as API adapters or shared tools are located in `api_library/`.
+
+Each subdirectory within `agents/` must follow a specific structure to be recognized and imported correctly by the desktop application (see the [Required Structure for Agent Folders](#required-structure-for-agent-folders) section below).
+
+### Required Structure for Agent Folders
+
+Each folder inside `agents/` **must** comply with the following **strict formatting rules**:
+
+#### ✅ **Mandatory Requirements**
+
+* The folder name **must** follow the naming pattern:
+
+  ```
+  agent_<name>
+  ```
+
+* The folder **must contain** a file named `agent.py` which includes the agent's entry point:
+
+  ```python
+  agent.run()  # should be called within an asyncio context
+  ```
+
+* All imports from the Summoner SDK should follow one of the two forms:
+
+  ```python
+  from summoner.<module_name> import <function_or_class>
+  # or
+  import summoner
+  ```
+
+* The folder **must include** a `requirements.txt` file:
+
+  * This file will be used by the desktop app to install the agent's dependencies.
+  * If running agents locally from this repository, the SDK must first be installed using:
+
+    ```bash
+    source build_sdk.sh setup
+    ```
+  * Then install agent dependencies using:
+
+    ```bash
+    pip install -r agents/agent_<name>/requirements.txt
+    ```
+
+#### 🟡 **Optional Guidelines**
+
+* The folder **may include** any additional Python files or resources needed by `agent.py`. There are no restrictions on file layout beyond the rules listed above.
+
+
+Here is a well-structured and clear section you can add to your README to explain how to run an agent. It separates environment setup, server launch, and agent execution, while noting where agent-specific overrides might apply:
+
+
+## Running an Agent
+
+To run an agent within the Summoner framework, follow these steps. This involves launching a server and then starting the agent process.
+
+### Activate the Virtual Environment
+
+If you have opened a new terminal, make sure to activate the virtual environment that was created during the SDK installation:
+
+```bash
+source venv/bin/activate  # For POSIX systems (Linux/macOS)
+```
+
+> If you have not installed the SDK yet, run:
+>
+> ```bash
+> source build_sdk.sh setup
+> ```
+
+
+### Launch the Summoner Server
+
+The Summoner server is defined in the root file `server.py`. It can be run using either default or custom configurations.
+
+#### Run with Default Config:
+
+```bash
+python server.py
+```
+
+#### Run with Custom Config:
+
+Configuration files are located in the `configs/` directory. Some agents may require a specific server configuration — refer to the README file inside the agent's folder for details.
+
+```bash
+python server.py --config configs/<specific_config>.json
+```
+
+
+### Run the Agent
+
+Once the server is running, you can launch an agent. Most agents are located in folders under `agents/` and follow the naming pattern `agent_<name>`.
+
+#### Run with Default Behavior:
+
+```bash
+python agents/agent_<name>/agent.py
+```
+
+#### Run with Custom Agent Config:
+
+Some agents require additional configuration (e.g., socket parameters, logging, backpressure behavior). These are usually stored in a file like `<specific_config>.json` in the `configs/` folder.
+
+```bash
+python agents/agent_<name>/agent.py --config configs/<specific_config>.json
+```
+
+> 📌 Always consult the README inside the agent's folder for any overrides, environment variables, or preconditions specific to that agent.
+
+
+## Agent Collection
+
+### Legend
 
 | Column          | Description                                                               |
 | --------------- | ------------------------------------------------------------------------- |
-| **Agent Name**  | The name of the agent. |
-| **Description** | Short explanation of the agent's behavior or purpose.                     |
-| **Level**  | Suggested difficulty level.       |
-| **Application**    | The intended application (e.g. messaging, orchestration, negotiation).    |
-| **Features**    | Main summoner feature (repo) show cased through the agent code      |
+| **Agent Name**  | Name or identifier of the agent.                                          |
+| **Description** | Brief summary of the agent's functionality.                               |
+| **Level**       | Difficulty level (e.g. Level 1 = Beginner).                               |
+| **Application** | Primary use case (e.g. messaging, orchestration, negotiation).            |
+| **Features**    | Key Summoner SDK capability demonstrated (e.g. `core`, `kobold`).         |
 | **DB**          | ✅ if the agent uses a persistent or in-memory database (`asqlite`, etc.). |
-| **Queue**       | ✅ if the agent uses asynchronous queues (e.g. `asyncio.Queue`).           |
-| **Flows**       | ✅ if the agent uses a modular or multi-step flow architecture.            |
-| **Trigg.**    | ✅ if the agent uses triggers (event-driven mechanisms).                   |
-| **Hooks**       | ✅ if the agent uses hooks for message preprocessing/postprocessing.     |
-| **Temp.**    | ✅ if the agent is designed as a template to start a more complex project.       |
-| **Comp.**  | ✅ if the agent is intended to integrate with other agents in a system.    |
+| **Queue**       | ✅ if the agent relies on asynchronous queues (`asyncio.Queue`, etc.).     |
+| **Flows**       | ✅ if the agent follows a modular multi-step flow structure.               |
+| **Trigg.**      | ✅ if the agent is event-driven using triggers.                            |
+| **Hooks**       | ✅ if the agent defines hooks for pre/postprocessing of messages.          |
+| **Temp.**       | ✅ if the agent is designed to serve as a reusable template.               |
+| **Comp.**       | ✅ if the agent is composable within a larger multi-agent system.          |
 
 
 ### Core Messaging Agents
@@ -44,7 +190,7 @@
     </thead>
     <tbody>
     <tr>
-        <td> <code><strong>SendAgent0</strong></code></td>
+        <td> <code><strong><a href="agents/agent_SendAgent_0/">SendAgent_0</a></strong></code></td>
         <td style="font-size: 0.8em;">Demonstrate use of <code>@send</code></td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
         <td><code>core</code></td>
