@@ -43,7 +43,7 @@ Then run the agent:
 python agents/agent_SendAgent_1/agent.py
 ```
 
-## Simulation Scenarios (Optional)
+## Simulation Scenarios
 
 *(Not populated yet)*
 

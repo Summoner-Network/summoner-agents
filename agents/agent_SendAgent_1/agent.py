@@ -20,7 +20,7 @@ async def sign(msg: Union[dict, str]) -> Optional[Union[dict, str]]:
     return msg
 
 @client.send(route="")
-async def custom_send() -> str:
+async def hello_server() -> str:
     await asyncio.sleep(1)
     return "Hello Server!"
 

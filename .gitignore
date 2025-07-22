@@ -7,6 +7,7 @@ tests
 ideas.md
 logs/
 private_*
+*.db
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

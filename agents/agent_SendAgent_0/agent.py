@@ -5,7 +5,7 @@ import asyncio
 client = SummonerClient(name="SendAgent_0")
 
 @client.send(route="")
-async def custom_send() -> str:
+async def hello_server() -> str:
     await asyncio.sleep(1)
     return "Hello Server!"
 
