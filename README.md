@@ -145,7 +145,8 @@ Some agents require additional configuration (e.g., socket parameters, logging, 
 python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 ```
 
-> 📌 Always consult the README inside the agent's folder for any overrides, environment variables, or preconditions specific to that agent.
+> [!TIP]
+> Always consult the README inside the agent's folder for any overrides, environment variables, or preconditions specific to that agent.
 
 
 ## Agent Collection
@@ -206,12 +207,12 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
         <td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
     </tr>
     <tr>
-        <td><code><strong>RcvAgent0</strong></code></td>
+        <td><code><strong><a href="agents/agent_RecvAgent_0/">RecvAgent_0</a></strong></code></td>
         <td style="font-size: 0.8em;">Demonstrate the use of <code>@receive</code></td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
          <td><code>core</code></td>
         <td><img src="https://img.shields.io/badge/Collect-%20?color=712fc5"alt=""></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
+        <td>✅</td><td>✗</td><td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td>
     </tr>
     <tr>
         <td><code><strong>EchoAgent0</strong></code></td>
