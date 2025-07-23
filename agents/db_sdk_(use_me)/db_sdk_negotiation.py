@@ -2,24 +2,27 @@ import random
 import uuid
 from datetime import datetime
 from pathlib import Path
-from db_sdk import Model, Field
+from db_sdk import Model, Field, Database
 from typing import Optional
 
-# ─────── Module-level DB path ───────
+# ─────── Module-level DB path and connection ───────
 DB_PATH: Optional[Path] = None
+_DB_CONN: Optional[Database] = None
 
 def configure_db_path(path: Path):
     """
     Configure the SQLite file path for this agent.
     Call this before any of the async functions below.
     """
-    global DB_PATH
+    global DB_PATH, _DB_CONN
     DB_PATH = path
-
-def _db() -> Path:
-    assert DB_PATH is not None, "You must call configure_db_path() first"
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    return DB_PATH
+    _DB_CONN = Database(DB_PATH)
+
+
+def _db() -> Database:
+    assert _DB_CONN is not None, "You must call configure_db_path() first"
+    return _DB_CONN
 
 # ─────── Model Definitions ───────
 
@@ -82,9 +85,9 @@ async def get_state(agent_id: str) -> Optional[dict]:
     Return the state row as a dict, or None if missing.
     """
     db = _db()
-    rows = await State.filter(
+    rows = await State.find(
         db,
-        filter={"agent_id": agent_id},
+        where={"agent_id": agent_id},
         fields=["transaction_id","current_offer","agreement",
                 "negotiation_active","limit_acceptable_price","price_shift"]
     )
@@ -95,7 +98,7 @@ async def get_active_agents() -> list[str]:
     Return list of agent_ids with an active negotiation.
     """
     db = _db()
-    rows = await State.filter(db, filter={"negotiation_active": 1}, fields=["agent_id"])
+    rows = await State.find(db, where={"negotiation_active": 1}, fields=["agent_id"])
     return [r["agent_id"] for r in rows]
 
 # ─────── History Helpers ───────
@@ -121,9 +124,9 @@ async def get_history(agent_id: str) -> list[dict]:
     Return list of {'success':…, 'txid':…} for this agent, ordered by insertion.
     """
     db = _db()
-    return await History.filter(
+    return await History.find(
         db,
-        filter={"agent_id": agent_id},
+        where={"agent_id": agent_id},
         fields=["success","txid"],
         order_by="id"
     )
@@ -184,3 +187,13 @@ async def start_negotiation_buyer(agent_id: str, txid: str) -> str:
         transaction_id=txid
     )
     return txid
+
+# ─────── Shutdown ───────
+
+async def close_db():
+    """
+    Close the shared Database connection.
+    """
+    global _DB_CONN
+    if _DB_CONN is not None:
+        await _DB_CONN.close()

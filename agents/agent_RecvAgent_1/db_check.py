@@ -4,7 +4,7 @@ from db_models import Message
 from db_sdk import Database
 
 # path to this agent's database
-db_path = Path(__file__).parent / "RecvAgent_0.db"
+db_path = Path(__file__).parent / "RecvAgent_1.db"
 db = Database(db_path)
 
 async def main():

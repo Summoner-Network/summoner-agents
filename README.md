@@ -215,8 +215,24 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
         <td>✅</td><td>✗</td><td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td>
     </tr>
     <tr>
+        <td><code><strong><a href="agents/agent_RecvAgent_0/">RecvAgent_1</a></strong></code></td>
+        <td style="font-size: 0.8em;">Demonstrate the use of <code>@receive</code> and <code>@hook</code> with <code>Direction.RECEIVE</code></td>
+        <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
+         <td><code>core</code></td>
+        <td><img src="https://img.shields.io/badge/Collect-%20?color=712fc5"alt=""></td>
+        <td>✅</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
+        <td><code><strong><a href="agents/agent_RecvAgent_0/">RecvAgent_2</a></strong></code></td>
+        <td style="font-size: 0.8em;">Demonstrate the use of <code>@receive</code> and <code>@hook</code> to implement validation, banning, and message filtering</td>
+        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
+         <td><code>core</code></td>
+        <td><img src="https://img.shields.io/badge/Collect-%20?color=712fc5"alt=""></td>
+        <td>✅</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
         <td><code><strong>EchoAgent0</strong></code></td>
-        <td style="font-size: 0.8em;">Combine both @send and receive</td>
+        <td style="font-size: 0.8em;">Combine both  <code>@send</code> and  <code>@receive</code></td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
          <td><code>core</code></td>
         <td><img src="https://img.shields.io/badge/Redirect-%20?color=482fc5"alt=""></td>

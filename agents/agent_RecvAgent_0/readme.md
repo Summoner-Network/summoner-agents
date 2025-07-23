@@ -8,7 +8,7 @@ This agent demonstrates how to receive messages from the Summoner server and per
 2. Each time a message arrives with keys `"addr"` and `"content"`:  
    - Logs a receipt line via `client.logger`:  
      ```
-     INFO - Received message from Client @(SocketAddress=127.0.0.1:58402)
+     INFO - Received message from Client @(SocketAddress=127.0.0.1:58402).
      ```  
    - Stores the `(addr, content)` pair in the database.  
    - Queries how many messages have been stored so far for that address and logs:  
@@ -17,7 +17,7 @@ This agent demonstrates how to receive messages from the Summoner server and per
      ```  
 3. The agent runs until you stop it (e.g. Ctrl+C).  
 
-While it’s running, you can inspect the live data with the provided [`db_check.py`](db_check.py) script (see [**How to Run**](#how-to-run)).
+While it's running, you can inspect the live data with the provided [`db_check.py`](db_check.py) script (see [**How to Run**](#how-to-run)).
 
 
 ## SDK Features Used
@@ -25,11 +25,12 @@ While it’s running, you can inspect the live data with the provided [`db_check
 | Feature                            | Description                                                              |
 |------------------------------------|--------------------------------------------------------------------------|
 | `SummonerClient(name)`             | Instantiates and manages the agent                                       |
-| `@client.receive(route=...)`        | Registers an async handler for incoming messages                         |
+| `@client.receive(route=...)`       | Registers an async handler for incoming messages                         |
 | `client.logger`                    | Logs runtime events and debugging information                            |
-| `Message.create_table(db_path)`    | Ensures the `messages` table exists (async ORM from `db_sdk`)            |
-| `Message.insert(db_path, ...)`     | Inserts a new row into `messages`                                        |
-| `Message.filter(db_path, ...)`     | Fetches stored rows matching a filter (e.g. by `addr`)                   |
+| `client.loop.run_until_complete(...)` | Executes a coroutine on the client's internal asyncio loop (e.g., table creation) |
+| `Message.create_table(db)`         | Ensures the `messages` table exists (async ORM from `db_sdk`)            |
+| `Message.insert(db, ...)`          | Inserts a new row into `messages`                                        |
+| `Message.find(db, ...)`            | Fetches stored rows matching a filter (e.g. by `address`)                   |
 | `client.run(...)`                  | Connects to the server and starts the asyncio event loop                 |
 
 
