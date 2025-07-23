@@ -33,7 +33,7 @@ A variant of [`EchoAgent_0`](../agent_EchoAgent_0/) that uses a receive hook to 
 4. The cycle continues indefinitely until the client is stopped (e.g., Ctrl+C).
 
 
-> [!NOTE]
+> 📝 **Note:**
 > The receive hook here is similar to the one used in [`RecvAgent_1`](../agent_RecvAgent_1/agent.py), showing how validation logic can be reused modularly across agents using Summoner's hook system.
 
 </details>

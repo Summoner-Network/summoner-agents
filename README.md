@@ -56,7 +56,7 @@ This will:
 * Create a Python virtual environment in `./venv`
 * Install the `summoner` SDK and its dependencies
 
-> [!TIP]
+> 📝 **Note:**
 > If you open a new terminal later, remember to activate the environment:
 >
 > ```bash
@@ -81,7 +81,7 @@ This will:
 2. Recreate it and install the latest SDK version
 3. Rebuild any native components or dependencies
 
-> [!TIP]
+> 💡 **Tip:**
 > If you're using a shell other than bash (e.g., zsh or fish), make sure to **source** the script:
 >
 > ```bash
@@ -163,7 +163,7 @@ If you have opened a new terminal, make sure to activate the virtual environment
 source venv/bin/activate  # For POSIX systems (Linux/macOS)
 ```
 
-> [!NOTE]
+> 📝 **Note:**
 > If you have not installed the SDK yet, run:
 >
 > ```bash
@@ -207,7 +207,7 @@ Some agents require additional configuration (e.g., socket parameters, logging, 
 python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 ```
 
-> [!TIP]
+> 💡 **Tip:**
 > Always consult the README inside the agent's folder for any overrides, environment variables, or preconditions specific to that agent.
 </details>
 
