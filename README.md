@@ -341,12 +341,28 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
     </thead>
     <tbody>
     <tr>
-        <td><code><strong>Agent0</strong></code></td>
-        <td style="font-size: 0.8em;">Test backpressure from server</td>
+        <td><code><strong><a href="agents/agent_RateLimitAgent_0/">RateLimitAgent_0</a></strong></code></td>
+        <td style="font-size: 0.8em;">Test server backpressure using <code>@send</code> and <code>@receive</code></td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
-         <td><code>core</code></td>
+         <td><code>core</code> </td>
         <td><img src="https://img.shields.io/badge/Red_Team-%20?color=cd280a" alt=""></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
+        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
+        <td><code><strong><a href="agents/agent_RateLimitAgent_1/">RateLimitAgent_1</a></strong></code></td>
+        <td style="font-size: 0.8em;">Tests server backpressure using <code>@send(multi=True)</code> and <code>@receive</code> to simulate concurrent sends</td>
+        <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
+         <td><code>core</code> </td>
+        <td><img src="https://img.shields.io/badge/Red_Team-%20?color=cd280a" alt=""></td>
+        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
+        <td><code><strong><a href="agents/agent_RateLimitAgent_2/">RateLimitAgent_2</a></strong></code></td>
+        <td style="font-size: 0.8em;">Tests backpressure using <code>@send(multi=True)</code> and terminates via <code>.quit()</code> in <code>@receive<code></td>
+        <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
+         <td><code>core</code> <code>traveling</code> </td>
+        <td><img src="https://img.shields.io/badge/Red_Team-%20?color=cd280a" alt=""></td>
+        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td>
     </tr>
     <tr>
         <td><code><strong>Agent0</strong></code></td>
