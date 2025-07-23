@@ -70,7 +70,7 @@ async def sign(msg: Any) -> Optional[dict]:
 
 
 @client.receive(route="")
-async def collect(msg: dict):
+async def collect(msg: dict) -> None:
     from_id = msg.get("from")
     content = msg.get("content")
     from_id = from_id if isinstance(from_id, str) else json.dumps(from_id)

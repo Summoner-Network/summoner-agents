@@ -6,6 +6,11 @@
 
 ## Table of Contents
 
+* [SDK setup](#sdk-setup)
+
+  * [Initial Installation](#initial-installation)
+  * [Reinstalling the Summoner SDK](#reinstalling-the-summoner-sdk)
+
 * [Agent Format and Desktop App Compatibility](#agent-format-and-desktop-app-compatibility)
 
   * [Repository Structure](#repository-structure)
@@ -30,9 +35,65 @@
   * [Code Exchange Agents](#code-exchange-agents)
 
 
+
+## SDK Setup
+<details>
+<summary><b>(Click to expand)</b> This section outlines how to install the Summoner SDK and how to reset it if the repository has been updated. More information on how to build the SDK and manage its folders is explained in the <a href="README_template.md">template's README</a> from which this repository was cloned.</summary>
+
+
+### Initial Installation
+
+To install the Summoner SDK:
+
+```bash
+git clone https://github.com/Summoner-Network/summoner-agents.git
+cd summoner-agents
+source build_sdk.sh setup
+```
+
+This will:
+
+* Create a Python virtual environment in `./venv`
+* Install the `summoner` SDK and its dependencies
+
+> [!TIP]
+> If you open a new terminal later, remember to activate the environment:
+>
+> ```bash
+> source venv/bin/activate
+> ```
+
+### Reinstalling the Summoner SDK
+
+If the SDK core codebase or any of its modules have been updated, you can reset and reinstall everything with one command:
+
+```bash
+# From your project root:
+bash build_sdk.sh reset
+
+# Or, if you typically source the script:
+source build_sdk.sh reset
+```
+
+This will:
+
+1. Remove the existing virtual environment
+2. Recreate it and install the latest SDK version
+3. Rebuild any native components or dependencies
+
+> [!TIP]
+> If you're using a shell other than bash (e.g., zsh or fish), make sure to **source** the script:
+>
+> ```bash
+> source build_sdk.sh reset
+> ```
+
+</details>
+
 ## Agent Format and Desktop App Compatibility
 
-This repository contains a collection of agent examples designed to run within the Summoner framework. These agents are organized in a structured and standardized format to ensure compatibility with the Summoner desktop application.
+<details>
+<summary><b>(Click to expand)</b> This repository contains a collection of agent examples designed to run within the Summoner framework. These agents are organized in a structured and standardized format to ensure compatibility with the Summoner desktop application.</summary>
 
 ### Repository Structure
 
@@ -87,11 +148,12 @@ Each folder inside `agents/` **must** comply with the following **strict formatt
 
 
 Here is a well-structured and clear section you can add to your README to explain how to run an agent. It separates environment setup, server launch, and agent execution, while noting where agent-specific overrides might apply:
-
+</details>
 
 ## Running an Agent
 
-To run an agent within the Summoner framework, follow these steps. This involves launching a server and then starting the agent process.
+<details>
+<summary><b>(Click to expand)</b> To run an agent within the Summoner framework, follow these steps. This involves launching a server and then starting the agent process.</summary>
 
 ### Activate the Virtual Environment
 
@@ -101,12 +163,12 @@ If you have opened a new terminal, make sure to activate the virtual environment
 source venv/bin/activate  # For POSIX systems (Linux/macOS)
 ```
 
+> [!NOTE]
 > If you have not installed the SDK yet, run:
 >
 > ```bash
 > source build_sdk.sh setup
 > ```
-
 
 ### Launch the Summoner Server
 
@@ -147,7 +209,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 
 > [!TIP]
 > Always consult the README inside the agent's folder for any overrides, environment variables, or preconditions specific to that agent.
-
+</details>
 
 ## Agent Collection
 
@@ -167,7 +229,6 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 | **Hooks**       | ✅ if the agent defines hooks for pre/postprocessing of messages.          |
 | **Temp.**       | ✅ if the agent is designed to serve as a reusable template.               |
 | **Comp.**       | ✅ if the agent is composable within a larger multi-agent system.          |
-
 
 ### Core Messaging Agents
 
@@ -202,7 +263,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
         <td> <code><strong><a href="agents/agent_SendAgent_1/">SendAgent_1</a></strong></code></td>
         <td style="font-size: 0.8em;">Demonstrate the use of <code>@send</code> and <code>@hook</code> with <code>Direction.SEND</code></td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
-        <td><code>core</code></td>
+        <td><code>core</code> <code>DID</code></td>
         <td><img src="https://img.shields.io/badge/Emit-%20?color=9e2fc5"alt=""></td>
         <td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
     </tr>
@@ -215,7 +276,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
         <td>✅</td><td>✗</td><td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td>
     </tr>
     <tr>
-        <td><code><strong><a href="agents/agent_RecvAgent_0/">RecvAgent_1</a></strong></code></td>
+        <td><code><strong><a href="agents/agent_RecvAgent_1/">RecvAgent_1</a></strong></code></td>
         <td style="font-size: 0.8em;">Demonstrate the use of <code>@receive</code> and <code>@hook</code> with <code>Direction.RECEIVE</code></td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
          <td><code>core</code></td>
@@ -223,20 +284,36 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
         <td>✅</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
     </tr>
     <tr>
-        <td><code><strong><a href="agents/agent_RecvAgent_0/">RecvAgent_2</a></strong></code></td>
+        <td><code><strong><a href="agents/agent_RecvAgent_2/">RecvAgent_2</a></strong></code></td>
         <td style="font-size: 0.8em;">Demonstrate the use of <code>@receive</code> and <code>@hook</code> to implement validation, banning, and message filtering</td>
         <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
-         <td><code>core</code></td>
+         <td><code>core</code> <code>validation</code> <code>reputation</code></td>
         <td><img src="https://img.shields.io/badge/Collect-%20?color=712fc5"alt=""></td>
         <td>✅</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
     </tr>
     <tr>
-        <td><code><strong>EchoAgent0</strong></code></td>
-        <td style="font-size: 0.8em;">Combine both  <code>@send</code> and  <code>@receive</code></td>
+        <td><code><strong><a href="agents/agent_EchoAgent_0/">EchoAgent_0</a></strong></code></td>
+        <td style="font-size: 0.8em;">Combine both  <code>@send</code> and <code>@receive</code></td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
          <td><code>core</code></td>
         <td><img src="https://img.shields.io/badge/Redirect-%20?color=482fc5"alt=""></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
+        <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
+        <td><code><strong><a href="agents/agent_EchoAgent_1/">EchoAgent_1</a></strong></code></td>
+        <td style="font-size: 0.8em;">Combine both <code>@send</code> and <code>@receive</code> with a receiving <code>hook</code></td>
+        <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
+         <td><code>core</code> <code>validation</code></td>
+        <td><img src="https://img.shields.io/badge/Redirect-%20?color=482fc5"alt=""></td>
+        <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
+        <td><code><strong><a href="agents/agent_EchoAgent_2/">EchoAgent_2</a></strong></code></td>
+        <td style="font-size: 0.8em;">Combine <code>@send</code> and <code>@receive</code> handlers with sending and receiving <code>hooks</code> checking for validation and signing messages</td>
+        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
+         <td><code>core</code> <code>validation</code> <code>DID</code> <code>agent</code></td>
+        <td><img src="https://img.shields.io/badge/Redirect-%20?color=482fc5"alt=""></td>
+        <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
     </tr>
     </tbody>
 </table>
