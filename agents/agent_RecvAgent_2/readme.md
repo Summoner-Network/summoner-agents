@@ -10,6 +10,11 @@ It stores three types of data using the async ORM provided by [`db_sdk.py`](db_s
 
 ## Behavior
 
+
+<details>
+<summary><b>(Click to expand)</b> The agent goes through these steps:</summary>
+<br>
+
 1. On startup, the agent initializes the database with three tables:  
    - `messages`: stores all accepted messages  
    - `validations`: logs whether each message was valid  
@@ -61,9 +66,9 @@ It stores three types of data using the async ORM provided by [`db_sdk.py`](db_s
 4. The agent runs until you stop it (e.g. Ctrl+C).  
    On shutdown, it closes the database connection cleanly.
 
-While it's running, you can inspect the data with the provided [`db_check.py`](db_check.py) script (see [**How to Run**](#how-to-run)).
+While it is running, you can inspect the data with the provided [`db_check.py`](db_check.py) script (see [**How to Run**](#how-to-run)).
 
----
+</details>
 
 ## SDK Features Used
 
@@ -81,7 +86,6 @@ While it's running, you can inspect the data with the provided [`db_check.py`](d
 | `Model.find(...)`                            | Fetches stored rows matching a filter                                    |
 | `client.run(...)`                            | Connects to the server and starts the asyncio event loop                 |
 
----
 
 ## How to Run
 

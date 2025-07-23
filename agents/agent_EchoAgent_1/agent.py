@@ -4,7 +4,7 @@ from typing import Any, Union, Optional
 import argparse, json
 import asyncio
 
-client = SummonerClient(name="EchoAgent_0")
+client = SummonerClient(name="EchoAgent_1")
 
 # Initialized in setup()
 message_buffer = None  

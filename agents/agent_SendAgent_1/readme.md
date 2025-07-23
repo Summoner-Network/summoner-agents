@@ -4,6 +4,10 @@ This agent builds on [`SendAgent_0`](../agent_SendAgent_0/) by adding a pre-send
 
 ## Behavior
 
+<details>
+<summary><b>(Click to expand)</b> The agent goes through these steps:</summary>
+<br>
+
 1. On startup, the agent generates a UUID (stored in `my_id`).  
 2. Every second, the `custom_send` coroutine returns the string `"Hello Server!"`.  
 3. Before sending, the `sign` hook is invoked:
@@ -13,6 +17,7 @@ This agent builds on [`SendAgent_0`](../agent_SendAgent_0/) by adding a pre-send
 5. The server logs each incoming JSON in the terminal and/or in the `logs/SendAgent_1.log` file
 6. The agent continues until manually stopped (e.g. Ctrl+C).
 
+</details>
 
 ## SDK Features Used
 

@@ -8,8 +8,8 @@ import asyncio
 import tempfile
 from pathlib import Path
 
-# Copy the db_sdk code here (you'll need to paste your updated db_sdk.py content)
-# For now, I'll assume it's imported
+# Copy the db_sdk code here (you will need to paste your updated db_sdk.py content)
+# For now, we assume it is imported
 try:
     from db_sdk import Database, Model, Field
 except ImportError:

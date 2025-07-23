@@ -24,7 +24,7 @@ class MyAgent(SummonerClient):
         id_dict: dict = json.load(open("agents/agent_EchoAgent_2/id.json","r"))
         self.my_id = id_dict.get("uuid")
 
-client = MyAgent(name="EchoAgent_0")
+client = MyAgent(name="EchoAgent_1")
 
 # ---[ Hooks ]---
 @client.hook(direction=Direction.RECEIVE)

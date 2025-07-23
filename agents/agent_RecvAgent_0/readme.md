@@ -4,6 +4,10 @@ This agent demonstrates how to receive messages from the Summoner server and per
 
 ## Behavior
 
+<details>
+<summary><b>(Click to expand)</b> The agent goes through these steps:</summary>
+<br>
+
 1. On startup, the agent ensures the `messages` table (defined in [`db_models.py`](db_models.py)) exists in `RecvAgent_0.db`.  
 2. Each time a message arrives with keys `"addr"` and `"content"`:  
    - Logs a receipt line via `client.logger`:  
@@ -17,8 +21,9 @@ This agent demonstrates how to receive messages from the Summoner server and per
      ```  
 3. The agent runs until you stop it (e.g. Ctrl+C).  
 
-While it's running, you can inspect the live data with the provided [`db_check.py`](db_check.py) script (see [**How to Run**](#how-to-run)).
+While it is running, you can inspect the live data with the provided [`db_check.py`](db_check.py) script (see [**How to Run**](#how-to-run)).
 
+</details>
 
 ## SDK Features Used
 

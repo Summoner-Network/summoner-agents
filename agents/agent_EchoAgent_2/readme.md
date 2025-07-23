@@ -1,63 +1,115 @@
-# Describe the Agent Here
+# `EchoAgent_2`
 
-```
+An advanced echo agent that buffers, validates, and signs messages before re-sending them with a 1-second delay. It demonstrates how to subclass `SummonerClient` to create an enhanced agent class, use both receive- and send-hooks, and maintain state via an internal queue.
+
+This agent builds on the progression of [`EchoAgent_0`](../agent_EchoAgent_0/) and [`EchoAgent_1`](../agent_EchoAgent_1/) by combining both receive and send logic with signature propagation, showing how compositional relay behavior can be implemented.
+
+## Behavior
+
+<details>
+<summary><b>(Click to expand)</b> The agent goes through these steps:</summary>
+<br>
+
+1. On startup, the `setup` coroutine initializes an `asyncio.Queue` named `message_buffer`.  
+2. `MyAgent`, a subclass of `SummonerClient`, loads a persistent UUID (`my_id`) from `agents/agent_EchoAgent_2/id.json`.  
+3. Incoming messages invoke the receive-hook (`@client.hook(Direction.RECEIVE)`):
+   - If it’s a string starting with `"Warning:"`, logs a warning and drops the message.  
+   - If it’s not a dict with `"addr"` and `"content"`, logs:
+     ```
+     [hook:recv] missing address/content
+     ```
+     and drops it.  
+   - Otherwise, logs:
+     ```
+     [hook:recv] <addr> passed validation
+     ```
+     and forwards the message to the receive handler.  
+4. The receive handler (`@client.receive(route="")`) serializes `content`, enqueues it into `message_buffer`, and logs:
+     ```
+     Buffered message from:(SocketAddress=<addr>).
+     ```
+5. Before sending, the send-hook (`@client.hook(Direction.SEND)`) logs:
+     ```
+     [hook:send] sign <first-5-chars-of-UUID>
+     ```
+   It wraps strings into `{"message":…}`, adds `{"from": my_id}`, and forwards the message to the send handler.  
+6. The send handler (`@client.send(route="")`) awaits `message_buffer.get()`, sleeps 1 second, and returns the signed content.  
+7. Steps 3–6 repeat until the client is stopped (Ctrl+C).
+
+</details>
+
+## SDK Features Used
+
+| Feature                                | Description                                                   |
+|----------------------------------------|---------------------------------------------------------------|
+| `class MyAgent(SummonerClient)`        | Subclasses `SummonerClient` to load a persistent UUID         |
+| `SummonerClient(...)`                  | Instantiates and manages the agent                            |
+| `@client.hook(Direction.RECEIVE)`      | Validates or drops incoming messages before main handling     |
+| `@client.hook(Direction.SEND)`         | Signs outgoing messages by adding a `from` field with UUID    |
+| `@client.receive(route=...)`           | Buffers validated messages into the queue                     |
+| `@client.send(route=...)`              | Emits buffered, signed messages periodically                  |
+| `client.logger`                        | Logs hook activity, buffering, and send lifecycle events      |
+| `client.loop.run_until_complete(...)`  | Runs the `setup` coroutine to initialize the message queue    |
+| `client.run(...)`                  | Connects to the server and starts the asyncio event loop  |
+
+## How to Run
+
+First, start the Summoner server:
+
+```bash
 python server.py
-```
+````
 
-```
-python agents/agent_SendAgent_0/agent.py
-```
-
-```
-python agents/agent_RecvAgent_2/agent.py
-```
-
-```
-[DEBUG] Loaded config from: configs/client_config.json
-2025-07-23 09:40:45.344 - RecvAgent_2 - INFO - Connected to server @(host=127.0.0.1, port=8888)
-2025-07-23 09:40:45.509 - RecvAgent_2 - INFO - [hook:recv] 127.0.0.1:49577 -> Banned? False
-2025-07-23 09:40:45.512 - RecvAgent_2 - INFO - [hook:recv] 127.0.0.1:49577 invalid -> checking if ban is required...
-2025-07-23 09:40:46.512 - RecvAgent_2 - INFO - [hook:recv] 127.0.0.1:49577 -> Banned? False
-2025-07-23 09:40:46.515 - RecvAgent_2 - INFO - [hook:recv] 127.0.0.1:49577 invalid -> checking if ban is required...
-2025-07-23 09:40:47.511 - RecvAgent_2 - INFO - [hook:recv] 127.0.0.1:49577 -> Banned? False
-2025-07-23 09:40:47.513 - RecvAgent_2 - INFO - [hook:recv] 127.0.0.1:49577 invalid -> checking if ban is required...
-
-... (20 of these)
-
-2025-07-23 09:41:03.539 - RecvAgent_2 - INFO - [hook:recv] 127.0.0.1:49577 invalid -> checking if ban is required...
-2025-07-23 09:41:04.538 - RecvAgent_2 - INFO - [hook:recv] 127.0.0.1:49577 -> Banned? False
-2025-07-23 09:41:04.545 - RecvAgent_2 - INFO - [hook:recv] 127.0.0.1:49577 invalid -> checking if ban is required...
-2025-07-23 09:41:04.546 - RecvAgent_2 - INFO - [hook:recv] 127.0.0.1:49577 has been banned
-2025-07-23 09:41:05.542 - RecvAgent_2 - INFO - [hook:recv] 127.0.0.1:49577 -> Banned? True
-2025-07-23 09:41:06.541 - RecvAgent_2 - INFO - [hook:recv] 127.0.0.1:49577 -> Banned? True
-2025-07-23 09:41:07.542 - RecvAgent_2 - INFO - [hook:recv] 127.0.0.1:49577 -> Banned? True
-2025-07-23 09:41:08.544 - RecvAgent_2 - INFO - [hook:recv] 127.0.0.1:49577 -> Banned? True
-```
+> [!TIP]
+> You can use the option `--config configs/server_config_nojsonlogs.json` for cleaner terminal output and log files.
 
 
-```
+Then launch `EchoAgent_2`:
+
+```bash
 python agents/agent_EchoAgent_2/agent.py
-[DEBUG] Loaded config from: configs/client_config.json
-2025-07-23 09:41:11.129 - EchoAgent_0 - INFO - Connected to server @(host=127.0.0.1, port=8888)
-2025-07-23 09:41:11.548 - EchoAgent_0 - INFO - [hook:recv] 127.0.0.1:49577 passed validation
-2025-07-23 09:41:11.548 - EchoAgent_0 - INFO - Buffered message from:(SocketAddress=127.0.0.1:49577).
-2025-07-23 09:41:12.549 - EchoAgent_0 - INFO - [hook:recv] 127.0.0.1:49577 passed validation
-2025-07-23 09:41:12.550 - EchoAgent_0 - INFO - [hook:send] sign 6fb3f
 ```
 
 
+## Simulation Scenarios
+
+This scenario shows how `EchoAgent_2` rescues structurally invalid messages from [`SendAgent_0`](../agent_SendAgent_0/) so that [RecvAgent_2](../agent_RecvAgent_2/) can accept them.
+
+```bash
+# Terminal 1: server
+python server.py
+
+# Terminal 2: validating receiver (RecvAgent_2)
+python agents/agent_RecvAgent_2/agent.py
+
+# Terminal 3: raw sender (SendAgent_0)
+python agents/agent_SendAgent_0/agent.py
+
+# Terminal 4: echo relay (EchoAgent_2)
+python agents/agent_EchoAgent_2/agent.py
 ```
-2025-07-23 09:41:12.550 - RecvAgent_2 - INFO - [hook:recv] 127.0.0.1:49577 -> Banned? True
-2025-07-23 09:41:12.552 - RecvAgent_2 - INFO - [hook:recv] 127.0.0.1:49583 -> Banned? False
-2025-07-23 09:41:12.556 - RecvAgent_2 - INFO - [hook:recv] 127.0.0.1:49583 valid, id=6fb3f...
-2025-07-23 09:41:12.557 - RecvAgent_2 - INFO - Received message from Agent @(id=6fb3f...)
-2025-07-23 09:41:12.559 - RecvAgent_2 - INFO - Agent @(id=6fb3f...) has now 1 messages stored.
-2025-07-23 09:41:13.550 - RecvAgent_2 - INFO - [hook:recv] 127.0.0.1:49577 -> Banned? True
-2025-07-23 09:41:13.552 - RecvAgent_2 - INFO - [hook:recv] 127.0.0.1:49583 -> Banned? False
-2025-07-23 09:41:13.555 - RecvAgent_2 - INFO - [hook:recv] 127.0.0.1:49583 valid, id=6fb3f...
-2025-07-23 09:41:13.555 - RecvAgent_2 - INFO - Received message from Agent @(id=6fb3f...)
-2025-07-23 09:41:13.558 - RecvAgent_2 - INFO - Agent @(id=6fb3f...) has now 2 messages stored.
-2025-07-23 09:41:14.553 - RecvAgent_2 - INFO - [hook:recv] 127.0.0.1:49577 -> Banned? True
-2025-07-23 09:41:14.555 - RecvAgent_2 - INFO - [hook:recv] 127.0.0.1:49583 -> Banned? False
-2025-07-23 09:41:14.558 - RecvAgent_2 - INFO - [hook:recv] 127.0.0.1:49583 valid, id=6fb3f...
-```
+
+* **`RecvAgent_2`** initially rejects and bans `SendAgent_0` after repeated invalid messages:
+
+  ```
+  [hook:recv] 127.0.0.1:49577 invalid -> checking if ban is required...
+  ...
+  [hook:recv] 127.0.0.1:49577 has been banned
+  ```
+* Once **`EchoAgent_2`** runs, it buffers and re-sends each message with a valid `"from"` field:
+
+    ```
+    [hook:recv] 127.0.0.1:49577 passed validation
+    Buffered message from:(SocketAddress=127.0.0.1:49577).
+    [hook:send] sign 6fb3f
+    ```
+
+* **`RecvAgent_2`** then accepts and stores the relayed messages:
+
+  ```
+  [hook:recv] 127.0.0.1:53195 valid, id=6fb3f...
+  Received message from Agent @(id=6fb3f...)
+  Agent @(id=6fb3f...) has now 1 messages stored.
+  ```
+
+This demonstrates how `EchoAgent_2` can compose with a validating agent to form a robust, layered processing pipeline.

@@ -4,6 +4,10 @@ This agent builds on `RecvAgent_0` by introducing a **validation hook** using th
 
 ## Behavior
 
+<details>
+<summary><b>(Click to expand)</b> The agent goes through these steps:</summary>
+<br>
+
 1. On startup, the agent ensures the `messages` table (defined in [`db_models.py`](db_models.py)) exists in `RecvAgent_1.db`.  
 2. When a message is received:  
    - A **hook** (`@client.hook`) checks that the message is a dictionary with `"addr"` and `"content"`.  
@@ -28,7 +32,9 @@ This agent builds on `RecvAgent_0` by introducing a **validation hook** using th
        ```  
 3. The agent runs until you stop it (e.g. Ctrl+C).  
 
-While it's running, you can inspect the live data with the provided [`db_check.py`](db_check.py) script (see [**How to Run**](#how-to-run)).
+While it is running, you can inspect the live data with the provided [`db_check.py`](db_check.py) script (see [**How to Run**](#how-to-run)).
+
+</details>
 
 ## SDK Features Used
 
