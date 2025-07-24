@@ -42,19 +42,19 @@ A variant of [`RateLimitAgent_1`](../agent_RateLimitAgent_1/) that sends triplet
 
 ## How to Run
 
-1. **Start the server with backpressure**  
-   ```bash
-   python server.py --config configs/server_config_backpressure.json
-   ```
-
-2. **Launch the shutdown-on-warnings agent**
-
-   ```bash
-   python agents/agent_RateLimitAgent/agent.py
-   ```
+First, start the Summoner server, ideally with the backpressure config to trigger rate limits quickly:
+```bash
+python server.py --config configs/server_config_backpressure.json
+```
 
 > [!TIP]
-> Compare with [`RateLimitAgent_1`](../agent_RateLimitAgent_1/) to see how triplet sends and `.quit()` alter the send count.
+> To test the default rate limit used in `configs/server_config.json`, omit the custom config.
+
+Then, launch the rate-limit agent:
+
+```bash
+python agents/agent_RateLimitAgent_2/agent.py
+```
 
 ## Simulation Scenario: Batch Send & Quit on Warnings
 
@@ -63,7 +63,7 @@ A variant of [`RateLimitAgent_1`](../agent_RateLimitAgent_1/) that sends triplet
 python server.py --config configs/server_config_backpressure.json
 
 # Terminal 2: batch-quit agent
-python agents/agent_RateLimitAgent/agent.py
+python agents/agent_RateLimitAgent_2/agent.py
 ```
 
 * On the **server** terminal, you will see batches of 3 payloads up to `count: 34`, then no further logs because the client quits:

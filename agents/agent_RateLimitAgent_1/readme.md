@@ -1,4 +1,3 @@
-````markdown
 # `RateLimitAgent_1`
 
 A variant of [`RateLimitAgent_0`](../agent_RateLimitAgent_0/) that uses `multi=True` to emit batches of messages at once, allowing it to hit the server’s rate limit in just two sends. It builds on the send/receive tracking of `RateLimitAgent_0` while demonstrating bulk emission.
@@ -35,18 +34,19 @@ A variant of [`RateLimitAgent_0`](../agent_RateLimitAgent_0/) that uses `multi=T
 
 ## How to Run
 
-1. **Start the server with backpressure**  
-   ```bash
-   python server.py --config configs/server_config_backpressure.json
-````
+First, start the Summoner server, ideally with the backpressure config to trigger rate limits quickly:
+```bash
+python server.py --config configs/server_config_backpressure.json
+```
 
-2. **Launch the batch-send agent**
+> [!TIP]
+> To test the default rate limit used in `configs/server_config.json`, omit the custom config.
 
-   ```bash
-   python agents/agent_RateLimitAgent_1/agent.py
-   ```
+Then, launch the rate-limit agent:
 
-💡 **Tip:** Compare with [`RateLimitAgent_0`](../agent_RateLimitAgent_0/) to see how `multi=True` accelerates rate-limit triggering.
+```bash
+python agents/agent_RateLimitAgent_1/agent.py
+```
 
 ## Simulation Scenario
 
@@ -82,3 +82,6 @@ python agents/agent_RateLimitAgent_1/agent.py
   ```
 
 This demonstrates how bulk emission with `multi=True` can be used to rapidly test server rate-limit defenses.
+
+> [!NOTE] 
+> Compare with [`RateLimitAgent_0`](../agent_RateLimitAgent_0/) to see how `multi=True` accelerates rate-limit triggering.

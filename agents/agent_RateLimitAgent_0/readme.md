@@ -40,20 +40,20 @@ A simple test agent that sends large payloads at a steady rate, tracks send coun
 
 ## How to Run
 
-1. **Start the Summoner server with backpressure**  
-   Use the backpressure config to trigger rate limits quickly:
-   ```bash
-   python server.py --config configs/server_config_backpressure.json
-   ```
-
-2. **Launch the rate-limit agent**
-
-   ```bash
-   python agents/agent_RateLimitAgent_0/agent.py
-   ```
+First, start the Summoner server, ideally with the backpressure config to trigger rate limits quickly:
+```bash
+python server.py --config configs/server_config_backpressure.json
+```
 
 > [!TIP]
 > To test the default rate limit used in `configs/server_config.json`, omit the custom config.
+
+Then, launch the rate-limit agent:
+
+```bash
+python agents/agent_RateLimitAgent_0/agent.py
+```
+
 
 ## Simulation Scenarios
 
