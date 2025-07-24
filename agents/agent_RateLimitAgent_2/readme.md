@@ -58,6 +58,8 @@ python agents/agent_RateLimitAgent_2/agent.py
 
 ## Simulation Scenarios
 
+Run the agent against a server set to 100 messages/min:
+
 ```bash
 # Terminal 1: server
 python server.py --config configs/server_config_backpressure.json

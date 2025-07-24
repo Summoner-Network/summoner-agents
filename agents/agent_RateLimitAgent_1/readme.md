@@ -50,7 +50,7 @@ python agents/agent_RateLimitAgent_1/agent.py
 
 ## Simulation Scenarios
 
-Run against a server set to 100 msgs/min:
+Run the agent against a server set to 100 messages/min:
 
 ```bash
 # Terminal 1: server
