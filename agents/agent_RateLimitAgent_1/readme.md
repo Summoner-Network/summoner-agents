@@ -48,7 +48,7 @@ Then, launch the rate-limit agent:
 python agents/agent_RateLimitAgent_1/agent.py
 ```
 
-## Simulation Scenario
+## Simulation Scenarios
 
 Run against a server set to 100 msgs/min:
 

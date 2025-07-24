@@ -56,7 +56,7 @@ Then, launch the rate-limit agent:
 python agents/agent_RateLimitAgent_2/agent.py
 ```
 
-## Simulation Scenario: Batch Send & Quit on Warnings
+## Simulation Scenarios
 
 ```bash
 # Terminal 1: server
