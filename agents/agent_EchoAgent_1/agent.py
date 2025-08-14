@@ -20,17 +20,17 @@ async def sign(msg: Any) -> Optional[dict]:
         client.logger.warning(msg.replace("Warning:", "[From Server]"))
         return # None outputs are not passed to @receive handlers
     
-    if not (isinstance(msg, dict) and "addr" in msg and "content" in msg):
+    if not (isinstance(msg, dict) and "remote_addr" in msg and "content" in msg):
         client.logger.info("[hook:recv] missing address/content")
         return # None outputs are not passed to @receive handlers
     
-    client.logger.info(f"[hook:recv] {msg['addr']} passed validation")
+    client.logger.info(f"[hook:recv] {msg["remote_addr"]} passed validation")
     return msg
 
 
 @client.receive(route="")
 async def custom_receive(msg: Any) -> None:
-    address = msg["addr"]
+    address = msg["remote_addr"]
     content = json.dumps(msg["content"])
     await message_buffer.put(content)
     client.logger.info(f"Buffered message from:(SocketAddress={address}).")

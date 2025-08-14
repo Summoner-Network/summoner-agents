@@ -11,7 +11,7 @@ Once launched, the agent connects to the server and emits the message `"Hello Se
 
 | Feature                         | Description                                                      |
 |---------------------------------|------------------------------------------------------------------|
-| `SummonerClient(...)`           | Creates and manages the agent instance                           |
+| `SummonerClient(name=...)`           | Creates and manages the agent instance                           |
 | `@client.send(route=...)`       | Registers a function that emits a message periodically           |
 | `client.run(...)`               | Connects the client to the server and initiates the async lifecycle |
 

@@ -12,7 +12,7 @@ A variant of [`EchoAgent_0`](../agent_EchoAgent_0/) that uses a receive hook to 
 2. When a message arrives (`@client.receive`):
    - It first goes through a `@client.hook(direction=Direction.RECEIVE)` function:
      - If it is a string starting with `"Warning:"`, logs a warning with the `"Warning:"` prefix replaced by `[From Server]` and drops the message.  
-     - If it is not a dict with `"addr"` and `"content"`, logs:
+     - If it is not a dict with `"remote_addr"` and `"content"`, logs:
        ```
        [hook:recv] missing address/content
        ```
@@ -42,7 +42,7 @@ A variant of [`EchoAgent_0`](../agent_EchoAgent_0/) that uses a receive hook to 
 
 | Feature                                | Description                                           |
 |----------------------------------------|-------------------------------------------------------|
-| `SummonerClient(...)`                  | Instantiates and manages the agent                    |
+| `SummonerClient(name=...)`                  | Instantiates and manages the agent                    |
 | `@client.hook(direction=RECEIVE)`      | Filters and validates incoming messages               |
 | `@client.receive(route=...)`           | Handles messages that passed the hook check           |
 | `@client.send(route=...)`              | Emits buffered messages periodically                  |

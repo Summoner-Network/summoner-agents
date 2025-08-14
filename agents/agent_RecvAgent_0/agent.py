@@ -14,8 +14,8 @@ db = Database(db_path)
 
 @client.receive(route="")
 async def collect(msg: Any) -> None:
-    if isinstance(msg, dict) and "addr" in msg and "content" in msg:
-        address = msg["addr"]
+    if isinstance(msg, dict) and "remote_addr" in msg and "content" in msg:
+        address = msg["remote_addr"]
         content = msg["content"]
         address = address if isinstance(address, str) else json.dumps(address)
         content = content if isinstance(content, str) else json.dumps(content)

@@ -66,17 +66,17 @@ Or from your dashboard:
 
 ### 2. **Enable Socket Mode**
 
-Flip the toggle to **“Enable Socket Mode”**.
+Flip the toggle to **"Enable Socket Mode"**.
 
 
 
 ### 3. **Create an App-Level Token**
 
-Under **App-Level Tokens**, click **“Generate Token”**.
+Under **App-Level Tokens**, click **"Generate Token"**.
 
 * **Name:** e.g. `SummonerBot Socket Token`
 * **Scopes:** at minimum `connections:write` (plus `authorizations:read` or `app_configurations:write` if needed)
-* Click **“Save”**.
+* Click **"Save"**.
 
 Slack will then show a token that looks like:
 

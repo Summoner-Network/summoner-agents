@@ -50,7 +50,7 @@ async def test_quick_start():
     # 5) Query records:
     rows = await Message.find(
         db,
-        where={"addr": "127.0.0.1:8888"}
+        where={"remote_addr": "127.0.0.1:8888"}
     )
     print("Found rows:", rows)
     assert len(rows) == 1

@@ -11,11 +11,11 @@ API docs [here](https://discordpy.readthedocs.io/)
 
 1. Go to: [https://discord.com/developers/applications](https://discord.com/developers/applications)
 
-2. Click “New Application” → Give it a name.
+2. Click "New Application" → Give it a name.
 
-3. Go to “Bot” → Click “Add Bot” → Confirm.
+3. Go to "Bot" → Click "Add Bot" → Confirm.
 
-4. Under “Bot” tab:
+4. Under "Bot" tab:
 
    * Copy the bot token (click "Reset Token" if needed).
    * Enable the following:
@@ -27,9 +27,9 @@ API docs [here](https://discordpy.readthedocs.io/)
 
 5. Invite your bot to a server:
 
-   * Go to “OAuth2” → “URL Generator”
+   * Go to "OAuth2" → "URL Generator"
    * Scopes: check bot
-   * Bot Permissions: check at least “Send Messages” and “Read Messages”
+   * Bot Permissions: check at least "Send Messages" and "Read Messages"
    * Copy the generated URL, open it in your browser, and invite the bot to your server.
 
 
@@ -49,13 +49,13 @@ Then install python-dotenv if you haven't:
 pip install -r requirements.txt
 ```
 
-## ✅ Common Mistakes That Trigger “Improper token” Error
+## ✅ Common Mistakes That Trigger "Improper token" Error
 
 | Mistake                            | Fix                                                |
 | ---------------------------------- | -------------------------------------------------- |
 | Pasting the token with quotes      | Don't use quotes around the token in .env          |
 | Extra spaces/newlines              | Make sure no whitespace before/after the token     |
 | Using client secret instead        | Use the bot token from Bot tab, not OAuth2 secrets |
-| Not enabling message intent        | Enable “Message Content Intent” on bot dashboard   |
+| Not enabling message intent        | Enable "Message Content Intent" on bot dashboard   |
 | Not using client.run(TOKEN) safely | Use os.getenv and never hardcode tokens in code    |
 

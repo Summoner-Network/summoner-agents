@@ -23,7 +23,7 @@ This agent builds on [`SendAgent_0`](../agent_SendAgent_0/) by adding a pre-send
 
 | Feature                                   | Description                                                       |
 |-------------------------------------------|-------------------------------------------------------------------|
-| `SummonerClient(...)`                     | Creates and manages the agent instance                            |
+| `SummonerClient(name=...)`                     | Creates and manages the agent instance                            |
 | `@client.hook(direction=Direction.SEND)`  | Intercepts and transforms outgoing messages                       |
 | `client.logger`                           | Built-in logger for recording runtime events and debugging info   |
 | `@client.send(route=...)`                 | Registers an async function that emits a message periodically     |

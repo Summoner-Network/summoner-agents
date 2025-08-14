@@ -11,7 +11,7 @@ A simple echo agent that buffers incoming messages and re-sends them after a 1-s
 1. On startup, the `setup` coroutine initializes an `asyncio.Queue` named `message_buffer`.  
 2. When a message arrives (`@client.receive`):
    - If it is a string starting with `"Warning:"`, logs a warning with the `"Warning:"` prefix replaced by `[From Server]`.  
-   - If it is a dict with `"addr"` and `"content"`, serializes the content and enqueues it into `message_buffer`, logging:
+   - If it is a dict with `"remote_addr"` and `"content"`, serializes the content and enqueues it into `message_buffer`, logging:
      ```
      Buffered message from:(SocketAddress=<addr>)
      ```
@@ -27,7 +27,7 @@ A simple echo agent that buffers incoming messages and re-sends them after a 1-s
 
 | Feature                                | Description                                           |
 |----------------------------------------|-------------------------------------------------------|
-| `SummonerClient(...)`                  | Instantiates and manages the agent                    |
+| `SummonerClient(name=...)`                  | Instantiates and manages the agent                    |
 | `@client.receive(route=...)`           | Handles incoming messages                             |
 | `@client.send(route=...)`              | Emits buffered messages periodically                  |
 | `client.logger`                        | Logs runtime events and debugging information         |

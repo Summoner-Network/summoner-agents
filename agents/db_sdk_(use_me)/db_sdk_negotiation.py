@@ -121,7 +121,7 @@ async def add_history(agent_id: str, success: int, txid: str) -> bool:
 
 async def get_history(agent_id: str) -> list[dict]:
     """
-    Return list of {'success':…, 'txid':…} for this agent, ordered by insertion.
+    Return list of {'success':..., 'txid':...} for this agent, ordered by insertion.
     """
     db = _db()
     return await History.find(

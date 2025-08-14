@@ -8,6 +8,8 @@ ideas.md
 logs/
 private_*
 *.db
+test.py
+id_agent_*.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -41,8 +41,8 @@ To raise your rate limit (from 60→5 000 requests/hour) and access private repo
 
 3. **Configure token details**
 
-   * **Name**: e.g. “GitHub Commit Monitor”
-   * **Expiration**: choose as needed (e.g. 30 days or “No expiration”)
+   * **Name**: e.g. "GitHub Commit Monitor"
+   * **Expiration**: choose as needed (e.g. 30 days or "No expiration")
    * **Scopes** (minimum):
 
      * `public_repo` (public repos)

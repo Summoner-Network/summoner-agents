@@ -15,15 +15,15 @@ db = Database(db_path)
 
 @client.hook(direction=Direction.RECEIVE)
 async def sign(msg: Any) -> Optional[dict]:
-    if not (isinstance(msg, dict) and "addr" in msg and "content" in msg):
+    if not (isinstance(msg, dict) and "remote_addr" in msg and "content" in msg):
         client.logger.info("[hook:recv] missing address/content")
         return # None outputs are not passed to @receive handlers
-    client.logger.info(f"[hook:recv] {msg['addr']} passed validation")
+    client.logger.info(f"[hook:recv] {msg["remote_addr"]} passed validation")
     return msg
 
 @client.receive(route="")
 async def collect(msg: Any) -> None:
-    address = msg["addr"]
+    address = msg["remote_addr"]
     content = msg["content"]
     address = address if isinstance(address, str) else json.dumps(address)
     content = content if isinstance(content, str) else json.dumps(content)

@@ -18,8 +18,8 @@ async def custom_receive(msg: Any) -> None:
     if isinstance(msg, str) and msg.startswith("Warning:"):
         client.logger.warning(msg.replace("Warning:", "[From Server]"))
 
-    if isinstance(msg, dict) and "addr" in msg and "content" in msg:
-        address = msg["addr"]
+    if isinstance(msg, dict) and "remote_addr" in msg and "content" in msg:
+        address = msg["remote_addr"]
         content = json.dumps(msg["content"])
         await message_buffer.put(content)
         client.logger.info(f"Buffered message from:(SocketAddress={address}).")

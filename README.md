@@ -365,20 +365,20 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
         <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td>
     </tr>
     <tr>
-        <td><code><strong>Agent0</strong></code></td>
-        <td style="font-size: 0.8em;">Explore an initial handshake design</td>
-        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
-         <td><code>core</code></td>
+        <td><code><strong><a href="agents/agent_HSAgent_0/">HSAgent_0</a></strong></code></td>
+        <td style="font-size: 0.8em;">Explore a handshake design to initiate and finalize an exchange</td>
+        <td><img src="https://img.shields.io/badge/LVL_4-%20?color=DF7919" alt=""></td>
+         <td><code>core</code> <code>validation</code> <code>DID</code></td>
         <td><img src="https://img.shields.io/badge/Handshake-%20?color=cd710a" alt=""></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
+        <td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✗</td>
     </tr>
     <tr>
-        <td><code><strong>Agent0</strong></code></td>
-        <td style="font-size: 0.8em;">Explore a final handshake design</td>
-        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
-         <td><code>core</code></td>
+        <td><code><strong><a href="agents/agent_HSAgent_1/">HSAgent_1</a></strong></code></td>
+        <td style="font-size: 0.8em;">Explore a cryptographic handshake design with persistent, encrypted identity (DID) to initiate and finalize an exchange</td>
+        <td><img src="https://img.shields.io/badge/LVL_5-%20?color=DF4119" alt=""></td>
+         <td><code>core</code> <code>validation</code> <code>DID</code></td>
         <td><img src="https://img.shields.io/badge/Handshake-%20?color=cd710a" alt=""></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
+        <td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✗</td>
     </tr>
     </tbody>
 </table>
@@ -522,7 +522,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
     <tr>
         <td><code><strong>Seller</strong></code></td>
         <td style="font-size: 0.8em;">...</td>
-        <td><img src="https://img.shields.io/badge/LVL_4-%20?color=df6719" alt=""></td>
+        <td><img src="https://img.shields.io/badge/LVL_4-%20?color=DF7919" alt=""></td>
          <td><code>core</code></td>
         <td><img src="https://img.shields.io/badge/Negotiation-%20?color=f1c822" alt=""></td>
         <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
@@ -530,7 +530,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
     <tr>
         <td><code><strong>Buyer</strong></code></td>
         <td style="font-size: 0.8em;">...</td>
-        <td><img src="https://img.shields.io/badge/LVL_4-%20?color=df6719" alt=""></td>
+        <td><img src="https://img.shields.io/badge/LVL_4-%20?color=DF7919" alt=""></td>
          <td><code>core</code></td>
         <td><img src="https://img.shields.io/badge/Negotiation-%20?color=f1c822" alt=""></td>
         <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>

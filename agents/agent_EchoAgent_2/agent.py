@@ -32,11 +32,11 @@ async def sign(msg: Any) -> Optional[dict]:
         agent.logger.warning(msg.replace("Warning:", "[From Server]"))
         return # None outputs are not passed to @receive handlers
     
-    if not (isinstance(msg, dict) and "addr" in msg and "content" in msg):
+    if not (isinstance(msg, dict) and "remote_addr" in msg and "content" in msg):
         agent.logger.info("[hook:recv] missing address/content")
         return # None outputs are not passed to @receive handlers
     
-    agent.logger.info(f"[hook:recv] {msg['addr']} passed validation")
+    agent.logger.info(f"[hook:recv] {msg["remote_addr"]} passed validation")
     return msg
 
 @agent.hook(direction=Direction.SEND)
@@ -53,7 +53,7 @@ async def sign(msg: Any) -> Optional[dict]:
 # ---[ Receive and Send Handlers ]---
 @agent.receive(route="")
 async def custom_receive(msg: Any) -> None:
-    address = msg["addr"]
+    address = msg["remote_addr"]
     content = json.dumps(msg["content"])
     await message_buffer.put(content)
     agent.logger.info(f"Buffered message from:(SocketAddress={address}).")

@@ -240,7 +240,11 @@ class Model(metaclass=ModelMeta):
                 vals.append(v)
         for k, expr in auto_updates.items():
             set_parts.append(f"{k} = {expr}")
-
+        
+        if not set_parts:
+            # Nothing to do
+            return
+        
         set_sql = ", ".join(set_parts)
         where_sql = " AND ".join(f"{k} = ?" for k in where.keys())
         vals.extend(where.values())
@@ -274,6 +278,10 @@ class Model(metaclass=ModelMeta):
         if existing:
             return existing[0], False
         params = {**kwargs, **(defaults or {})}
-        await cls.insert(db_conn, **params)
-        created_record = await cls.find(db_conn, where=kwargs)
-        return created_record[0], True
+        await cls.insert_or_ignore(db_conn, **params)
+        created = await cls.find(db_conn, where=kwargs)
+        if created:
+            return created[0], True
+        # If still missing, it means the row existed but was filtered; return that.
+        fallback = await cls.find(db_conn, where=kwargs)
+        return fallback[0], False

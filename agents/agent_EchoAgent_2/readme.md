@@ -14,7 +14,7 @@ This agent builds on the progression of [`EchoAgent_0`](../agent_EchoAgent_0/) a
 2. `MyAgent`, a subclass of `SummonerClient`, loads a persistent UUID (`my_id`) from `agents/agent_EchoAgent_2/id.json`.  
 3. Incoming messages invoke the receive-hook (`@client.hook(Direction.RECEIVE)`):
    - If it's a string starting with `"Warning:"`, logs a warning and drops the message.  
-   - If it's not a dict with `"addr"` and `"content"`, logs:
+   - If it's not a dict with `"remote_addr"` and `"content"`, logs:
      ```
      [hook:recv] missing address/content
      ```
@@ -32,7 +32,7 @@ This agent builds on the progression of [`EchoAgent_0`](../agent_EchoAgent_0/) a
      ```
      [hook:send] sign <first-5-chars-of-UUID>
      ```
-   It wraps strings into `{"message":…}`, adds `{"from": my_id}`, and forwards the message to the send handler.  
+   It wraps strings into `{"message":...}`, adds `{"from": my_id}`, and forwards the message to the send handler.  
 6. The send handler (`@client.send(route="")`) awaits `message_buffer.get()`, sleeps 1 second, and returns the signed content.  
 7. Steps 3–6 repeat until the client is stopped (Ctrl+C).
 
@@ -43,7 +43,7 @@ This agent builds on the progression of [`EchoAgent_0`](../agent_EchoAgent_0/) a
 | Feature                                | Description                                                   |
 |----------------------------------------|---------------------------------------------------------------|
 | `class MyAgent(SummonerClient)`        | Subclasses `SummonerClient` to load a persistent UUID         |
-| `SummonerClient(...)`                  | Instantiates and manages the agent                            |
+| `SummonerClient(name=...)`                  | Instantiates and manages the agent                            |
 | `@client.hook(Direction.RECEIVE)`      | Validates or drops incoming messages before main handling     |
 | `@client.hook(Direction.SEND)`         | Signs outgoing messages by adding a `from` field with UUID    |
 | `@client.receive(route=...)`           | Buffers validated messages into the queue                     |
@@ -58,13 +58,13 @@ First, start the Summoner server:
 
 ```bash
 python server.py
-````
+```
 
 > [!TIP]
 > You can use the option `--config configs/server_config_nojsonlogs.json` for cleaner terminal output and log files.
 
 
-Then launch `EchoAgent_2`:
+Then run the agent:
 
 ```bash
 python agents/agent_EchoAgent_2/agent.py

@@ -9,7 +9,7 @@ This agent demonstrates how to receive messages from the Summoner server and per
 <br>
 
 1. On startup, the agent ensures the `messages` table (defined in [`db_models.py`](db_models.py)) exists in `RecvAgent_0.db`.  
-2. Each time a message arrives with keys `"addr"` and `"content"`:  
+2. Each time a message arrives with keys `"remote_addr"` and `"content"`:  
    - Logs a receipt line via `client.logger`:  
      ```
      INFO - Received message from Client @(SocketAddress=127.0.0.1:58402).
@@ -29,10 +29,11 @@ While it is running, you can inspect the live data with the provided [`db_check.
 
 | Feature                            | Description                                                              |
 |------------------------------------|--------------------------------------------------------------------------|
-| `SummonerClient(name)`             | Instantiates and manages the agent                                       |
+| `SummonerClient(name=...)`             | Instantiates and manages the agent                                       |
 | `@client.receive(route=...)`       | Registers an async handler for incoming messages                         |
 | `client.logger`                    | Logs runtime events and debugging information                            |
 | `client.loop.run_until_complete(...)` | Executes a coroutine on the client's internal asyncio loop (e.g., table creation) |
+| `Database(db_path)`                            | Single async connection to SQLite            |
 | `Message.create_table(db)`         | Ensures the `messages` table exists (async ORM from `db_sdk`)            |
 | `Message.insert(db, ...)`          | Inserts a new row into `messages`                                        |
 | `Message.find(db, ...)`            | Fetches stored rows matching a filter (e.g. by `address`)                   |

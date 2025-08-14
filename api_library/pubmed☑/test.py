@@ -14,7 +14,7 @@ BASE = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
 ESEARCH = f"{BASE}/esearch.fcgi"
 EFETCH  = f"{BASE}/efetch.fcgi"
 
-async def esearch(session, term, retmax=20):
+async def esearch(session, term, retmax=1):
     params = {
         "db": "pubmed",
         "term": term,
@@ -38,39 +38,55 @@ async def efetch(session, pmid):
     async with session.get(EFETCH, params=params) as resp:
         resp.raise_for_status()
         text = await resp.text()
-    # Parse the minimal fields we want
-    doc = xmltodict.parse(text)["PubmedArticleSet"]["PubmedArticle"][0]
-    article = doc["MedlineCitation"]["Article"]
-    title = article["ArticleTitle"]
-    journal = article["Journal"]["Title"]
-    pubdate = article["Journal"]["JournalIssue"]["PubDate"]
-    date = (
-        pubdate.get("Year") or 
-        pubdate.get("MedlineDate") or 
-        ""
-    )
+
+    doc = xmltodict.parse(text)["PubmedArticleSet"]["PubmedArticle"]
+
+    # Normalize to list
+    if not isinstance(doc, list):
+        doc = [doc]
+
+    article_data = doc[0].get("MedlineCitation", {}).get("Article", {})
+
+    title = article_data.get("ArticleTitle", "No title available")
+    journal = article_data.get("Journal", {}).get("Title", "Unknown journal")
+    pubdate = article_data.get("Journal", {}).get("JournalIssue", {}).get("PubDate", {})
+    date = pubdate.get("Year") or pubdate.get("MedlineDate") or "Unknown date"
+
     authors = []
-    for a in article.get("AuthorList", {}).get("Author", []):
-        last = a.get("LastName")
-        fore = a.get("ForeName")
-        if last and fore:
-            authors.append(f"{fore} {last}")
+    for a in article_data.get("AuthorList", {}).get("Author", []):
+        if not isinstance(a, dict):
+            continue
+        fore = a.get("ForeName", "")
+        last = a.get("LastName", "")
+        if fore or last:
+            authors.append(f"{fore} {last}".strip())
+
+    # Handle abstract sections
     abstract = ""
-    if article.get("Abstract"):
-        secs = article["Abstract"].get("AbstractText", "")
+    if article_data.get("Abstract"):
+        secs = article_data["Abstract"].get("AbstractText", "")
         if isinstance(secs, list):
-            abstract = " ".join(secs)
+            # Extract text from each section, even if stored as dict
+            abstract_parts = []
+            for sec in secs:
+                if isinstance(sec, dict):
+                    abstract_parts.append(sec.get("#text", ""))
+                else:
+                    abstract_parts.append(str(sec))
+            abstract = " ".join(filter(None, abstract_parts))
+        elif isinstance(secs, dict):
+            abstract = secs.get("#text", "")
         else:
-            abstract = secs
-    link = f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/"
+            abstract = str(secs)
+
     return {
         "pmid": pmid,
         "title": title,
         "journal": journal,
         "date": date,
         "authors": authors,
-        "abstract_snippet": abstract[:300] + ("…" if len(abstract)>300 else ""),
-        "link": link
+        "abstract": abstract.strip(),
+        "link": f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/"
     }
 
 async def monitor_pubmed(term, interval=60):
@@ -120,6 +136,9 @@ async def watch_term(session, term, interval, seen_map):
     if seen is None:
         seen_map[term] = pmids[0]
         print(f"[{datetime.utcnow().isoformat()}Z] Tracking '{term}'; latest PMID={pmids[0]}")
+        # info = await efetch(session, pmids[0])
+        # pprint(info)
+        # print()
         return
 
     # Identify any new PMIDs
@@ -156,20 +175,21 @@ if __name__=="__main__":
     #     sys.exit(1)
     # term = sys.argv[1]
     # interval = int(sys.argv[2]) if len(sys.argv)==3 else 60
-    # print(f"Monitoring PubMed for '{term}' every {interval}s…\n")
+    # print(f"Monitoring PubMed for '{term}' every {interval}s...\n")
     # asyncio.run(monitor_pubmed(term, interval))
 
     if len(sys.argv) < 2:
         print("Usage: python pubmed_monitor.py <term1> [<term2> ...] [interval_seconds]")
         sys.exit(1)
 
-    # Last arg numeric? treat as interval
-    *terms, last = sys.argv[1:]
-    if last.isdigit():
-        interval = int(last)
-        terms = terms
+    args = sys.argv[1:]
+
+    if len(args) > 1 and args[-1].isdigit():
+        interval = int(args[-1])
+        terms = args[:-1]
     else:
         interval = 60
+        terms = args
 
     print(f"Starting PubMed monitor for terms: {terms} (interval={interval}s)\n")
     asyncio.run(monitor_terms(terms, interval))

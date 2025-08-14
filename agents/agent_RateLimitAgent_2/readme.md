@@ -1,4 +1,4 @@
-# `RateLimitAgent`
+# `RateLimitAgent_2`
 
 A variant of [`RateLimitAgent_1`](../agent_RateLimitAgent_1/) that sends triplets of messages (`multi=True`) and gracefully disconnects via `.quit()` after 10 backpressure warnings. It builds on the batch-send logic of `RateLimitAgent_1` by adding threshold-based shutdown behavior.
 
@@ -34,7 +34,7 @@ A variant of [`RateLimitAgent_1`](../agent_RateLimitAgent_1/) that sends triplet
 
 | Feature                                     | Description                                                          |
 |---------------------------------------------|----------------------------------------------------------------------|
-| `SummonerClient(name="RateLimitAgent")`     | Instantiates and manages the agent                                   |
+| `SummonerClient(name=...)`     | Instantiates and manages the agent                                   |
 | `@client.receive(route="defenses")`         | Handles backpressure warnings and triggers shutdown                  |
 | `@client.send(route="attack", multi=True)`  | Emits batches of 3 messages per invocation                           |
 | `client.quit()`                             | Gracefully quits the client protocol                                 |

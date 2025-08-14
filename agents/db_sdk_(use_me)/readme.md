@@ -66,9 +66,9 @@ async def main():
     # 5) Query records:
     rows = await Message.find(
         db,
-        where={"addr": "127.0.0.1:8888"}
+        where={"remote_addr": "127.0.0.1:8888"}
     )
-    print(rows)  # → [{"id": 1, "addr": "...", "content": "Hello"}]
+    print(rows)  # → [{"id": 1, "remote_addr": "...", "content": "Hello"}]
 
     # 6) Clean up
     await db.close()
@@ -96,7 +96,7 @@ db = Database(Path("data.db"))
 
 async def main():
     await Record.create_table(db)
-    # … do more operations …
+    # ... do more operations ...
     await db.close()
 
 if __name__ == "__main__":
@@ -296,8 +296,8 @@ You can filter records using powerful **operator suffixes** on your `where` keys
 | `__lt`     | `<`             | `3.14`            | Less than                     |
 | `__gte`    | `>=`            | `100`             | Greater than or equal         |
 | `__lte`    | `<=`            | `0`               | Less than or equal            |
-| `__in`     | `IN (…)`        | `["A", "B", "C"]` | Must be a list or tuple       |
-| `__not_in` | `NOT IN (…)`    | `("X", "Y")`      | Excludes listed values        |
+| `__in`     | `IN (...)`        | `["A", "B", "C"]` | Must be a list or tuple       |
+| `__not_in` | `NOT IN (...)`    | `("X", "Y")`      | Excludes listed values        |
 
 > [!NOTE]
 > The default condition is equality—so `{"foo": 42}` is equivalent to `{"foo__eq": 42}`.

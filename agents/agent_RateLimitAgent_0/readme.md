@@ -70,9 +70,9 @@ python agents/agent_RateLimitAgent_0/agent.py
 * On the **server** terminal, you will see rapid attack payloads logged until the limit is exceeded:
 
   ```
-  2025-07-23 18:15:38.032 - MyServer - INFO - {"addr":"127.0.0.1:56358","content":"{...\"count\":58,...}"}
+  2025-07-23 18:15:38.032 - MyServer - INFO - {"remote_addr":"127.0.0.1:56358","content":"{...\"count\":58,...}"}
   ...
-  2025-07-23 18:15:42.314 - MyServer - INFO - {"addr":"127.0.0.1:56358","content":"{...\"count\":100,...}"}
+  2025-07-23 18:15:42.314 - MyServer - INFO - {"remote_addr":"127.0.0.1:56358","content":"{...\"count\":100,...}"}
   ```
 * Once the rate limit is hit, the server sends backpressure warnings on `defenses`:
 

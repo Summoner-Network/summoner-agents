@@ -24,7 +24,7 @@ It stores three types of data using the async ORM provided by [`db_sdk.py`](db_s
 
 2. Each time a message arrives:  
    - The `@client.hook` runs first:  
-     - If the message is malformed (missing `"addr"` or `"content"`), it logs:  
+     - If the message is malformed (missing `"remote_addr"` or `"content"`), it logs:  
        ```
        [hook:recv] missing address/content
        ```  
@@ -74,11 +74,12 @@ While it is running, you can inspect the data with the provided [`db_check.py`](
 
 | Feature                                      | Description                                                              |
 |----------------------------------------------|--------------------------------------------------------------------------|
-| `SummonerClient(name)`                       | Instantiates and manages the agent                                       |
+| `SummonerClient(name=...)`                       | Instantiates and manages the agent                                       |
 | `@client.hook(direction=RECEIVE)`            | Validates or transforms messages before delivery to the receiver         |
 | `@client.receive(route=...)`                 | Registers an async handler for validated messages                        |
 | `client.logger`                              | Logs runtime events and debugging information                            |
 | `client.loop.run_until_complete(...)`        | Executes startup coroutines (e.g., table and index creation)             |
+| `Database(db_path)`                            | Single async connection to SQLite            |
 | `Model.create_table(db)`                     | Ensures each ORM table exists                                            |
 | `Model.create_index(db, name, columns, ...)` | Adds optional indexes for optimized queries                              |
 | `Model.insert(...)`                          | Inserts a new row (e.g., messages, validations, bans)                    |
