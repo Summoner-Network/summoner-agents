@@ -1,5 +1,5 @@
 # =============================================================================
-# HSAgent_1 — DID + Crypto Handshake Demo (SDK-readability pass)
+# HSAgent_1 — DID + Crypto Handshake Demo
 #
 # OVERVIEW
 #   This variant extends the basic handshake with DID-style identity material:
