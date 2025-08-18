@@ -1,7 +1,7 @@
 from summoner.client import SummonerClient
 from multi_ainput import multi_ainput
 from aioconsole import ainput
-from typing import Any
+from typing import Any, Optional
 import argparse
 
 # ---- CLI: prompt mode toggle -----------------------------------------------
@@ -51,7 +51,7 @@ async def receiver_handler(msg: Any) -> None:
     print("> ", end="", flush=True)
 
 @client.send(route="")
-async def send_handler() -> str:
+async def send_handler() -> Optional[str]:
     """
     Outbound path (prompt-driven):
       - If --multiline=1: use multi_ainput("> ", "~ ", "\\") for continuation.

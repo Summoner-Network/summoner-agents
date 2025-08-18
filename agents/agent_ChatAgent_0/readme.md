@@ -39,8 +39,6 @@ A minimal chat agent that supports two input modes: a standard **single-line pro
 | `@client.send(route=...)`    | Reads user input (one-line or multi-line) and returns payload |
 | `client.run(...)`            | Connects to the server and starts the asyncio event loop      |
 
-> [!NOTE]
-> [`multi_ainput`](./multi_ainput.py) is an agent-local helper built on `aioconsole.ainput`. It is not part of the Summoner SDK.
 
 ## How to Run
 

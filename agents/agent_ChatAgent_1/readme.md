@@ -61,9 +61,6 @@ This agent demonstrates an enhanced user interface for interacting with `Summone
 | `client.quit()`                               | Terminates the client cleanly                                 |
 | `client.run(host, port, config_path)`         | Connects to the server and starts the asyncio event loop      |
 
-> [!NOTE]
-> [`multi_ainput`](./multi_ainput.py) is an agent-local helper built on `aioconsole.ainput`. It is not part of the Summoner SDK.
-
 ## How to Run
 
 First, start the Summoner server:

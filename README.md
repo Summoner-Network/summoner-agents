@@ -253,7 +253,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
     <tbody>
     <tr>
         <td> <code><strong><a href="agents/agent_SendAgent_0/">SendAgent_0</a></strong></code></td>
-        <td style="font-size: 0.8em;">Demonstrate the use of <code>@send</code></td>
+        <td style="font-size: 0.8em;">Demonstrates the use of <code>@send</code></td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
         <td><code>core</code></td>
         <td><img src="https://img.shields.io/badge/Emit-%20?color=9e2fc5"alt=""></td>
@@ -261,7 +261,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
     </tr>
     <tr>
         <td> <code><strong><a href="agents/agent_SendAgent_1/">SendAgent_1</a></strong></code></td>
-        <td style="font-size: 0.8em;">Demonstrate the use of <code>@send</code> and <code>@hook</code> with <code>Direction.SEND</code></td>
+        <td style="font-size: 0.8em;">Demonstrates the use of <code>@send</code> and <code>@hook</code> with <code>Direction.SEND</code></td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
         <td><code>core</code> <code>DID</code></td>
         <td><img src="https://img.shields.io/badge/Emit-%20?color=9e2fc5"alt=""></td>
@@ -269,7 +269,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
     </tr>
     <tr>
         <td><code><strong><a href="agents/agent_RecvAgent_0/">RecvAgent_0</a></strong></code></td>
-        <td style="font-size: 0.8em;">Demonstrate the use of <code>@receive</code></td>
+        <td style="font-size: 0.8em;">Demonstrates the use of <code>@receive</code></td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
          <td><code>core</code></td>
         <td><img src="https://img.shields.io/badge/Collect-%20?color=712fc5"alt=""></td>
@@ -277,7 +277,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
     </tr>
     <tr>
         <td><code><strong><a href="agents/agent_RecvAgent_1/">RecvAgent_1</a></strong></code></td>
-        <td style="font-size: 0.8em;">Demonstrate the use of <code>@receive</code> and <code>@hook</code> with <code>Direction.RECEIVE</code></td>
+        <td style="font-size: 0.8em;">Demonstrates the use of <code>@receive</code> and <code>@hook</code> with <code>Direction.RECEIVE</code></td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
          <td><code>core</code></td>
         <td><img src="https://img.shields.io/badge/Collect-%20?color=712fc5"alt=""></td>
@@ -285,7 +285,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
     </tr>
     <tr>
         <td><code><strong><a href="agents/agent_RecvAgent_2/">RecvAgent_2</a></strong></code></td>
-        <td style="font-size: 0.8em;">Demonstrate the use of <code>@receive</code> and <code>@hook</code> to implement validation, banning, and message filtering</td>
+        <td style="font-size: 0.8em;">Demonstrates the use of <code>@receive</code> and <code>@hook</code> to implement validation, banning, and message filtering</td>
         <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
          <td><code>core</code> <code>validation</code> <code>reputation</code></td>
         <td><img src="https://img.shields.io/badge/Collect-%20?color=712fc5"alt=""></td>
@@ -293,7 +293,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
     </tr>
     <tr>
         <td><code><strong><a href="agents/agent_EchoAgent_0/">EchoAgent_0</a></strong></code></td>
-        <td style="font-size: 0.8em;">Combine both  <code>@send</code> and <code>@receive</code></td>
+        <td style="font-size: 0.8em;">Combines both  <code>@send</code> and <code>@receive</code></td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
          <td><code>core</code></td>
         <td><img src="https://img.shields.io/badge/Redirect-%20?color=482fc5"alt=""></td>
@@ -301,7 +301,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
     </tr>
     <tr>
         <td><code><strong><a href="agents/agent_EchoAgent_1/">EchoAgent_1</a></strong></code></td>
-        <td style="font-size: 0.8em;">Combine both <code>@send</code> and <code>@receive</code> with a receiving <code>hook</code></td>
+        <td style="font-size: 0.8em;">Combines both <code>@send</code> and <code>@receive</code> with a receiving <code>hook</code></td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
          <td><code>core</code> <code>validation</code></td>
         <td><img src="https://img.shields.io/badge/Redirect-%20?color=482fc5"alt=""></td>
@@ -309,7 +309,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
     </tr>
     <tr>
         <td><code><strong><a href="agents/agent_EchoAgent_2/">EchoAgent_2</a></strong></code></td>
-        <td style="font-size: 0.8em;">Combine <code>@send</code> and <code>@receive</code> handlers with sending and receiving <code>hooks</code> checking for validation and signing messages</td>
+        <td style="font-size: 0.8em;">Combines <code>@send</code> and <code>@receive</code> handlers with sending and receiving <code>hooks</code> checking for validation and signing messages</td>
         <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
          <td><code>core</code> <code>validation</code> <code>DID</code> <code>agent</code></td>
         <td><img src="https://img.shields.io/badge/Redirect-%20?color=482fc5"alt=""></td>
@@ -342,7 +342,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
     <tbody>
     <tr>
         <td><code><strong><a href="agents/agent_RateLimitAgent_0/">RateLimitAgent_0</a></strong></code></td>
-        <td style="font-size: 0.8em;">Test server backpressure using <code>@send</code> and <code>@receive</code></td>
+        <td style="font-size: 0.8em;">Tests server backpressure using <code>@send</code> and <code>@receive</code></td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
          <td><code>core</code> </td>
         <td><img src="https://img.shields.io/badge/Red_Team-%20?color=cd280a" alt=""></td>
@@ -366,7 +366,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
     </tr>
     <tr>
         <td><code><strong><a href="agents/agent_HSAgent_0/">HSAgent_0</a></strong></code></td>
-        <td style="font-size: 0.8em;">Explore a handshake design to initiate and finalize an exchange</td>
+        <td style="font-size: 0.8em;">Explores a handshake design to initiate and finalize an exchange</td>
         <td><img src="https://img.shields.io/badge/LVL_4-%20?color=DF7919" alt=""></td>
          <td><code>core</code> <code>validation</code> <code>DID</code></td>
         <td><img src="https://img.shields.io/badge/Handshake-%20?color=cd710a" alt=""></td>
@@ -374,7 +374,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
     </tr>
     <tr>
         <td><code><strong><a href="agents/agent_HSAgent_1/">HSAgent_1</a></strong></code></td>
-        <td style="font-size: 0.8em;">Explore a cryptographic handshake design with persistent, encrypted identity (DID) to initiate and finalize an exchange</td>
+        <td style="font-size: 0.8em;">Explores a cryptographic handshake design with persistent, encrypted identity (DID) to initiate and finalize an exchange</td>
         <td><img src="https://img.shields.io/badge/LVL_5-%20?color=DF4119" alt=""></td>
          <td><code>core</code> <code>validation</code> <code>DID</code></td>
         <td><img src="https://img.shields.io/badge/Handshake-%20?color=cd710a" alt=""></td>
@@ -406,20 +406,36 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
     </thead>
     <tbody>
     <tr>
-        <td><code><strong>ChatAgent</strong></code></td>
-        <td style="font-size: 0.8em;">Chat agent as a user interface</td>
-        <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
-         <td><code>core</code></td>
-        <td><img src="https://img.shields.io/badge/Interaction-%20?color=452461" alt=""></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
+        <td><code><strong><a href="agents/agent_ChatAgent_0/">ChatAgent_0</a></strong></code></td>
+        <td style="font-size: 0.8em;">Implements a minimal chat UI via <code>@send</code>/<code>@receive</code>; supports single- or multi-line input.</td>
+        <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt="Level 1"></td>
+        <td><code>core</code></td>
+        <td><img src="https://img.shields.io/badge/Interaction-%20?color=452461" alt="Interaction"></td>
+        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td>
     </tr>
     <tr>
-        <td><code><strong>CmdAgent</strong></code></td>
-        <td style="font-size: 0.8em;">Chat agent to send and receve commands (user interface)</td>
-        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
-         <td><code>core</code></td>
-        <td><img src="https://img.shields.io/badge/Control-%20?color=19578a" alt=""></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
+        <td><code><strong><a href="agents/agent_ChatAgent_1/">ChatAgent_1</a></strong></code></td>
+        <td style="font-size: 0.8em;">Extends <code>ChatAgent_0</code> with remote/self commands (travel, go_home, quit).</td>
+        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt="Level 2"></td>
+        <td><code>core</code> <code>traveling</code></td>
+        <td><img src="https://img.shields.io/badge/Control-%20?color=19578a" alt="Control"></td>
+        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
+    <td><code><strong><a href="agents/agent_ChatAgent_2/">ChatAgent_2</a></strong></code></td>
+    <td style="font-size: 0.8em;">Activates automaton routing via <code>@upload_states</code>; toggles <code>opened/locked</code> to gate remote commands.</td>
+    <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt="Level 3"></td>
+    <td><code>core</code> <code>flows</code> <code>traveling</code></td>
+    <td><img src="https://img.shields.io/badge/Orchestration-%20?color=3a6ea5" alt="Orchestration"></td>
+    <td>✗</td><td>✗</td><td>✅</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
+    <td><code><strong><a href="agents/agent_ChatAgent_3/">ChatAgent_3</a></strong></code></td>
+    <td style="font-size: 0.8em;">Shows explicit automaton transitions with <code>Move</code>/<code>Stay</code> (<code>opened → locked → opened</code>); remote/self travel, lock/open, quit.</td>
+    <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt="Level 3"></td>
+    <td><code>core</code> <code>flows</code> <code>traveling</code></td>
+    <td><img src="https://img.shields.io/badge/Orchestration-%20?color=3a6ea5" alt="Orchestration"></td>
+    <td>✗</td><td>✗</td><td>✅</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td>
     </tr>
     </tbody>
 </table>
