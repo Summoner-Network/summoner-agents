@@ -13,7 +13,7 @@ async def setup():
     message_buffer = asyncio.Queue()
 
 @client.receive(route="")
-async def custom_receive(msg: Any) -> None:
+async def receiver_handler(msg: Any) -> None:
     
     if isinstance(msg, str) and msg.startswith("Warning:"):
         client.logger.warning(msg.replace("Warning:", "[From Server]"))
@@ -25,7 +25,7 @@ async def custom_receive(msg: Any) -> None:
         client.logger.info(f"Buffered message from:(SocketAddress={address}).")
 
 @client.send(route="")
-async def custom_send() -> Union[dict, str]:
+async def send_handler() -> Union[dict, str]:
     content = await message_buffer.get()
     await asyncio.sleep(1)
     return json.loads(content)

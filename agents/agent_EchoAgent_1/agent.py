@@ -29,7 +29,7 @@ async def sign(msg: Any) -> Optional[dict]:
 
 
 @client.receive(route="")
-async def custom_receive(msg: Any) -> None:
+async def receiver_handler(msg: Any) -> None:
     address = msg["remote_addr"]
     content = json.dumps(msg["content"])
     await message_buffer.put(content)
@@ -37,7 +37,7 @@ async def custom_receive(msg: Any) -> None:
 
 
 @client.send(route="")
-async def custom_send() -> Union[dict, str]:
+async def send_handler() -> Union[dict, str]:
     content = await message_buffer.get()
     await asyncio.sleep(1)
     return json.loads(content)

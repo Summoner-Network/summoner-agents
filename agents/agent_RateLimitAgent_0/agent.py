@@ -8,14 +8,14 @@ tracker_lock = asyncio.Lock()
 tracker = {"count": 0, "initial": time.time(), "defended": 0}
 
 @client.receive(route="defenses")
-async def custom_receive(msg: str) -> None:
+async def receiver_handler(msg: str) -> None:
     print(msg)
     if isinstance(msg, str) and msg.startswith("Warning:"):
         async with tracker_lock:
             tracker["defended"] +=1
         
 @client.send(route="attack")
-async def custom_send() -> dict:
+async def send_handler() -> dict:
     await asyncio.sleep(0.1)
     msg1 = "Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos."
     async with tracker_lock:

@@ -9,7 +9,7 @@ This agent builds on [`SendAgent_0`](../agent_SendAgent_0/) by adding a pre-send
 <br>
 
 1. On startup, the agent generates a UUID (stored in `my_id`).  
-2. Every second, the `custom_send` coroutine returns the string `"Hello Server!"`.  
+2. Every second, the `send_handler` coroutine returns the string `"Hello Server!"`.  
 3. Before sending, the `sign` hook is invoked:
    - Logs a message like `[hook:send] sign 8b57d`  
    - Wraps the string into a dict `{ "message": "...", "from": "<my_id>" }`  
