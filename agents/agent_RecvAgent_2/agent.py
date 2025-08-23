@@ -35,7 +35,7 @@ async def should_ban(address: str) -> bool:
 
 
 @client.hook(direction=Direction.RECEIVE)
-async def sign(msg: Any) -> Optional[dict]:
+async def validate(msg: Any) -> Optional[dict]:
     if not (isinstance(msg, dict) and "remote_addr" in msg and "content" in msg):
         client.logger.info("[hook:recv] missing address/content")
         return

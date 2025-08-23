@@ -13,7 +13,7 @@ A Python script that watches for new commits and prints both a concise summary l
 * Prints a one-line summary for each commit:
 
   ```
-  [2025-07-18T15:26:13Z] Summoner-Network/summoner-agents ▶ Remy Tuyeras: a39b14b – Fix typo in README
+  [2025-07-18T15:26:13Z] Summoner-Network/summoner-agents ▶ Remy Tuyeras: a39b14b - Fix typo in README
   ```
 
 * Follows summary with a **pretty-printed JSON** block containing:
@@ -116,7 +116,7 @@ python github_commit_agent.py Summoner-Network --interval 30
    * For each unseen SHA, fetches `/commits/{sha}` to get full metadata.
    * Prints:
 
-     1. **Summary line**: `[timestamp] owner/repo ▶ author: short-SHA – subject`
+     1. **Summary line**: `[timestamp] owner/repo ▶ author: short-SHA - subject`
      2. **Metadata block** via `pprint()`: full message, URL, stats, files
 
 4. **Repeat**

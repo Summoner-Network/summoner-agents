@@ -26,7 +26,7 @@ A variant of [`RateLimitAgent_1`](../agent_RateLimitAgent_1/) that sends triplet
      ```
    - Increment `tracker["count"]` under lock.  
    - Return a list of 3 identical payloads (`[msg] * 3`).  
-4. Steps 2–3 repeat automatically until `.quit()` stops the client.
+4. Steps 2-3 repeat automatically until `.quit()` stops the client.
 
 </details>
 

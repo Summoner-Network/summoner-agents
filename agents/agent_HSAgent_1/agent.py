@@ -81,7 +81,7 @@ EXCHANGE_LIMIT = 3
 FINAL_LIMIT = 3
 
 def generate_nonce() -> str:
-    # 32 hex chars (128 bits) – cryptographically strong
+    # 32 hex chars (128 bits) - cryptographically strong
     return secrets.token_hex(16)
 
 def generate_reference() -> str:

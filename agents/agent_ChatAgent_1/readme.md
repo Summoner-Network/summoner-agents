@@ -2,8 +2,8 @@
 
 A chat agent built on [`ChatAgent_0`](../agent_ChatAgent_0). It retains the **two input modes** (single-line or multi-line via `multi_ainput` in [`multi_ainput.py`](./multi_ainput.py)) and extends the interface with:
 
-* **Remote commands** – received from another agent to **travel** between servers or **quit** (executed on receipt, not printed).
-* **Self-commands** – entered locally at the prompt to perform the same actions (executed immediately without sending a payload).
+* **Remote commands** - received from another agent to **travel** between servers or **quit** (executed on receipt, not printed).
+* **Self-commands** - entered locally at the prompt to perform the same actions (executed immediately without sending a payload).
 
 This agent demonstrates an enhanced user interface for interacting with `SummonerClient`, enabling both conversation and command control across agents and servers.
 

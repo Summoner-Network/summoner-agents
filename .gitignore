@@ -4,12 +4,13 @@ save/
 native_build
 summoner-sdk
 tests
-ideas.md
 logs/
-private_*
-*.db
-test.py
 id_agent_*.json
+*.db
+mov2gif
+private_*
+test.py
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

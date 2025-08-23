@@ -15,7 +15,7 @@ async def setup():
 
 
 @client.hook(direction=Direction.RECEIVE)
-async def sign(msg: Any) -> Optional[dict]:
+async def validate(msg: Any) -> Optional[dict]:
     if isinstance(msg, str) and msg.startswith("Warning:"):
         client.logger.warning(msg.replace("Warning:", "[From Server]"))
         return # None outputs are not passed to @receive handlers

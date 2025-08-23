@@ -26,14 +26,13 @@
 
   * [Legend](#legend)
   * [Core Messaging Agents](#core-messaging-agents)
-  * [Security and Flow-Control Agents](#security-and-flow-control-agents)
-  * [Interaction Agents](#interaction-agents)
-  * [Orchestration Agents](#orchestration-agents)
+  * [Chat Agents](#chat-agents)
+  * [Feedback Agents](#feedback-agents)
+  * [Security and Handshake Agents](#security-and-handshake-agents)
   * [Negotiation Agents](#negotiation-agents)
-  * [Connector Agents (Composability)](#connector-agents-composability)
-  * [API-based Agents](#api-based-agents)
-  * [Code Exchange Agents](#code-exchange-agents)
-
+  * [Connector Agents](#connector-agents)
+  * [API Agents 🚧](#api-agents)
+  * [Code Exchange Agents 🚧](#code-exchange-agents)
 
 
 ## SDK Setup
@@ -230,7 +229,12 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 | **Temp.**       | ✅ if the agent is designed to serve as a reusable template.               |
 | **Comp.**       | ✅ if the agent is composable within a larger multi-agent system.          |
 
+
 ### Core Messaging Agents
+
+<details>
+<summary><b>(Click to expand)</b> Agents of <b>level 1 and 2</b> introducing core messaging primitives like <code>@send</code>, <code>@receive</code>, and <code>@hook</code>.</summary>
+<br>
 
 <div style="display: flex; justify-content: center;">
 <table style="border-collapse: collapse; width: 95%; text-align: center;">
@@ -319,7 +323,155 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 </table>
 </div>
 
-### Security and Flow-Control Agents
+</details>
+
+### Chat Agents
+
+<details>
+<summary><b>(Click to expand)</b> Agents of <b>level 1-3</b> that implement chat-style user interfaces, remote commands, and automaton routing for interactive control.</summary>
+<br>
+
+<div style="display: flex; justify-content: center;">
+<table style="border-collapse: collapse; width: 95%; text-align: center;">
+    <thead>
+    <tr>
+        <th style="width: 10%; text-align: center;">Agent Name</th>
+        <th style="width: 33%; text-align: center;">Description</th>
+        <th style="width: 12%; text-align: center;">Level</th>
+        <th style="width: 12%; text-align: center;">Features</th>
+        <th style="width: 12%; text-align: center;">Applications</th>
+        <th style="width: 3%; text-align: center;">DB</th>
+        <th style="width: 3%; text-align: center;">Queue</th>
+        <th style="width: 3%; text-align: center;">Flows</th>
+        <th style="width: 3%; text-align: center;">Logs</th>
+        <th style="width: 3%; text-align: center;">Hooks</th>
+        <th style="width: 3%; text-align: center;">Temp.</th>
+        <th style="width: 3%; text-align: center;">Comp.</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td><code><strong><a href="agents/agent_ChatAgent_0/">ChatAgent_0</a></strong></code></td>
+        <td style="font-size: 0.8em;">Implements a minimal chat UI via <code>@send</code>/<code>@receive</code>; supports single- or multi-line input.</td>
+        <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
+        <td><code>core</code></td>
+        <td><img src="https://img.shields.io/badge/Interaction-%20?color=452461" alt="Interaction"></td>
+        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
+        <td><code><strong><a href="agents/agent_ChatAgent_1/">ChatAgent_1</a></strong></code></td>
+        <td style="font-size: 0.8em;">Extends <code>ChatAgent_0</code> with remote/self commands (travel, go_home, quit).</td>
+        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
+        <td><code>core</code> <code>traveling</code></td>
+        <td><img src="https://img.shields.io/badge/Control-%20?color=19578a" alt="Control"></td>
+        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
+    <td><code><strong><a href="agents/agent_ChatAgent_2/">ChatAgent_2</a></strong></code></td>
+    <td style="font-size: 0.8em;">Activates automaton routing via <code>@upload_states</code>; toggles <code>opened/locked</code> to gate remote commands.</td>
+    <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
+    <td><code>core</code> <code>upload_states</code> <code>traveling</code></td>
+    <td><img src="https://img.shields.io/badge/Orchestration-%20?color=3a6ea5" alt="Orchestration"></td>
+    <td>✗</td><td>✗</td><td>✅</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
+    <td><code><strong><a href="agents/agent_ChatAgent_3/">ChatAgent_3</a></strong></code></td>
+    <td style="font-size: 0.8em;">Shows explicit automaton transitions with <code>Move</code>/<code>Stay</code> (<code>opened → locked → opened</code>); remote/self travel, lock/open, quit.</td>
+    <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
+    <td><code>core</code> <code>upload_states</code> <code>download_states</code> <code>traveling</code></td>
+    <td><img src="https://img.shields.io/badge/Orchestration-%20?color=3a6ea5" alt="Orchestration"></td>
+    <td>✗</td><td>✗</td><td>✅</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td>
+    </tr>
+    </tbody>
+</table>
+</div>
+
+</details>
+
+### Feedback Agents
+
+<details>
+<summary><b>(Click to expand)</b> Agents of <b>level 1-3</b> for structured feedback: question/answer flows, delayed responses, and reporting mechanisms.</summary>
+<br>
+
+<div style="display: flex; justify-content: center;">
+<table style="border-collapse: collapse; width: 95%; text-align: center;">
+    <thead>
+    <tr>
+        <th style="width: 10%; text-align: center;">Agent Name</th>
+        <th style="width: 33%; text-align: center;">Description</th>
+        <th style="width: 12%; text-align: center;">Level</th>
+        <th style="width: 12%; text-align: center;">Features</th>
+        <th style="width: 12%; text-align: center;">Applications</th>
+        <th style="width: 3%; text-align: center;">DB</th>
+        <th style="width: 3%; text-align: center;">Queue</th>
+        <th style="width: 3%; text-align: center;">Flows</th>
+        <th style="width: 3%; text-align: center;">Logs</th>
+        <th style="width: 3%; text-align: center;">Hooks</th>
+        <th style="width: 3%; text-align: center;">Temp.</th>
+        <th style="width: 3%; text-align: center;">Comp.</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td><code><strong><a href="agents/agent_Reporter_0/">Reporter_0</a></strong></code></td>
+        <td style="font-size: 0.8em;">...</td>
+        <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
+         <td><code>core</code></td>
+        <td><img src="https://img.shields.io/badge/Redirect-%20?color=482fc5" alt=""></td>
+        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
+    </tr>
+    <tr>
+        <td><code><strong><a href="agents/agent_ExamAgent_0/">ExamAgent_0</a></strong></code></td>
+        <td style="font-size: 0.8em;">Demonstrates use of <code>@receive</code> and <code>@send</code> with queues and delays to run an automated Q&amp;A round.</td>
+        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
+        <td><code>core</code></td>
+        <td><img src="https://img.shields.io/badge/Interaction-%20?color=452461" alt=""></td>
+        <td>✗</td><td>✅</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
+        <td><code><strong><a href="agents/agent_ExamAgent_1/">ExamAgent_1</a></strong></code></td>
+        <td style="font-size: 0.8em;">Extends <code>ExamAgent_0</code> with flow-routed <code>@receive</code>; <code>@send</code> still runs timed scoring but delegates state handling to the flow engine.</td>
+        <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
+        <td><code>core</code></td>
+        <td><img src="https://img.shields.io/badge/Interaction-%20?color=452461" alt=""></td>
+        <td>✗</td><td>✅</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td>
+    </tr>
+    <!-- <tr>
+        <td><code><strong>Storage</strong></code></td>
+        <td style="font-size: 0.8em;">...</td>
+        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
+         <td><code>core</code></td>
+        <td><img src="https://img.shields.io/badge/Collect-%20?color=712fc5" alt=""></td>
+        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
+    </tr>
+    <tr>
+        <td><code><strong>Subscribe</strong></code></td>
+        <td style="font-size: 0.8em;">...</td>
+        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
+         <td><code>core</code></td>
+        <td><img src="https://img.shields.io/badge/Emit-%20?color=9e2fc5" alt=""></td>
+        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
+    </tr>
+    <tr>
+        <td><code><strong>EventEmit</strong></code></td>
+        <td style="font-size: 0.8em;">...</td>
+        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
+         <td><code>core</code></td>
+        <td><img src="https://img.shields.io/badge/Emit-%20?color=9e2fc5" alt=""></td>
+        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
+    </tr> -->
+    </tbody>
+</table>
+</div>
+
+</details>
+
+### Security and Handshake Agents
+
+<details>
+<summary><b>(Click to expand)</b> Agents of <b>level 1, 4, and 5</b> covering backpressure tests, validation hooks, and cryptographic DID handshakes.</summary>
+<br>
 
 <div style="display: flex; justify-content: center;">
 <table style="border-collapse: collapse; width: 95%; text-align: center;">
@@ -368,7 +520,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
         <td><code><strong><a href="agents/agent_HSAgent_0/">HSAgent_0</a></strong></code></td>
         <td style="font-size: 0.8em;">Explores a handshake design to initiate and finalize an exchange</td>
         <td><img src="https://img.shields.io/badge/LVL_4-%20?color=DF7919" alt=""></td>
-         <td><code>core</code> <code>validation</code> <code>DID</code></td>
+         <td><code>core</code> <code>upload_states</code> <code>download_states</code> <code>validation</code> <code>DID</code></td>
         <td><img src="https://img.shields.io/badge/Handshake-%20?color=cd710a" alt=""></td>
         <td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✗</td>
     </tr>
@@ -376,7 +528,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
         <td><code><strong><a href="agents/agent_HSAgent_1/">HSAgent_1</a></strong></code></td>
         <td style="font-size: 0.8em;">Explores a cryptographic handshake design with persistent, encrypted identity (DID) to initiate and finalize an exchange</td>
         <td><img src="https://img.shields.io/badge/LVL_5-%20?color=DF4119" alt=""></td>
-         <td><code>core</code> <code>validation</code> <code>DID</code></td>
+         <td><code>core</code> <code>upload_states</code> <code>download_states</code> <code>validation</code> <code>DID</code></td>
         <td><img src="https://img.shields.io/badge/Handshake-%20?color=cd710a" alt=""></td>
         <td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✗</td>
     </tr>
@@ -384,137 +536,14 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 </table>
 </div>
 
-### Interaction Agents
+</details>
 
-<div style="display: flex; justify-content: center;">
-<table style="border-collapse: collapse; width: 95%; text-align: center;">
-    <thead>
-    <tr>
-        <th style="width: 10%; text-align: center;">Agent Name</th>
-        <th style="width: 33%; text-align: center;">Description</th>
-        <th style="width: 12%; text-align: center;">Level</th>
-        <th style="width: 12%; text-align: center;">Features</th>
-        <th style="width: 12%; text-align: center;">Applications</th>
-        <th style="width: 3%; text-align: center;">DB</th>
-        <th style="width: 3%; text-align: center;">Queue</th>
-        <th style="width: 3%; text-align: center;">Flows</th>
-        <th style="width: 3%; text-align: center;">Logs</th>
-        <th style="width: 3%; text-align: center;">Hooks</th>
-        <th style="width: 3%; text-align: center;">Temp.</th>
-        <th style="width: 3%; text-align: center;">Comp.</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr>
-        <td><code><strong><a href="agents/agent_ChatAgent_0/">ChatAgent_0</a></strong></code></td>
-        <td style="font-size: 0.8em;">Implements a minimal chat UI via <code>@send</code>/<code>@receive</code>; supports single- or multi-line input.</td>
-        <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt="Level 1"></td>
-        <td><code>core</code></td>
-        <td><img src="https://img.shields.io/badge/Interaction-%20?color=452461" alt="Interaction"></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td>
-    </tr>
-    <tr>
-        <td><code><strong><a href="agents/agent_ChatAgent_1/">ChatAgent_1</a></strong></code></td>
-        <td style="font-size: 0.8em;">Extends <code>ChatAgent_0</code> with remote/self commands (travel, go_home, quit).</td>
-        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt="Level 2"></td>
-        <td><code>core</code> <code>traveling</code></td>
-        <td><img src="https://img.shields.io/badge/Control-%20?color=19578a" alt="Control"></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td>
-    </tr>
-    <tr>
-    <td><code><strong><a href="agents/agent_ChatAgent_2/">ChatAgent_2</a></strong></code></td>
-    <td style="font-size: 0.8em;">Activates automaton routing via <code>@upload_states</code>; toggles <code>opened/locked</code> to gate remote commands.</td>
-    <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt="Level 3"></td>
-    <td><code>core</code> <code>flows</code> <code>traveling</code></td>
-    <td><img src="https://img.shields.io/badge/Orchestration-%20?color=3a6ea5" alt="Orchestration"></td>
-    <td>✗</td><td>✗</td><td>✅</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td>
-    </tr>
-    <tr>
-    <td><code><strong><a href="agents/agent_ChatAgent_3/">ChatAgent_3</a></strong></code></td>
-    <td style="font-size: 0.8em;">Shows explicit automaton transitions with <code>Move</code>/<code>Stay</code> (<code>opened → locked → opened</code>); remote/self travel, lock/open, quit.</td>
-    <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt="Level 3"></td>
-    <td><code>core</code> <code>flows</code> <code>traveling</code></td>
-    <td><img src="https://img.shields.io/badge/Orchestration-%20?color=3a6ea5" alt="Orchestration"></td>
-    <td>✗</td><td>✗</td><td>✅</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td>
-    </tr>
-    </tbody>
-</table>
-</div>
-
-### Orchestration Agents
-
-<div style="display: flex; justify-content: center;">
-<table style="border-collapse: collapse; width: 95%; text-align: center;">
-    <thead>
-    <tr>
-        <th style="width: 10%; text-align: center;">Agent Name</th>
-        <th style="width: 33%; text-align: center;">Description</th>
-        <th style="width: 12%; text-align: center;">Level</th>
-        <th style="width: 12%; text-align: center;">Features</th>
-        <th style="width: 12%; text-align: center;">Applications</th>
-        <th style="width: 3%; text-align: center;">DB</th>
-        <th style="width: 3%; text-align: center;">Queue</th>
-        <th style="width: 3%; text-align: center;">Flows</th>
-        <th style="width: 3%; text-align: center;">Logs</th>
-        <th style="width: 3%; text-align: center;">Hooks</th>
-        <th style="width: 3%; text-align: center;">Temp.</th>
-        <th style="width: 3%; text-align: center;">Comp.</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr>
-        <td><code><strong>Reporter</strong></code></td>
-        <td style="font-size: 0.8em;">...</td>
-        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
-         <td><code>core</code></td>
-        <td><img src="https://img.shields.io/badge/Redirect-%20?color=482fc5" alt=""></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
-    </tr>
-    <tr>
-        <td><code><strong>Storage</strong></code></td>
-        <td style="font-size: 0.8em;">...</td>
-        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
-         <td><code>core</code></td>
-        <td><img src="https://img.shields.io/badge/Collect-%20?color=712fc5" alt=""></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
-    </tr>
-    <tr>
-        <td><code><strong>Subscribe</strong></code></td>
-        <td style="font-size: 0.8em;">...</td>
-        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
-         <td><code>core</code></td>
-        <td><img src="https://img.shields.io/badge/Emit-%20?color=9e2fc5" alt=""></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
-    </tr>
-    <tr>
-        <td><code><strong>EventEmit</strong></code></td>
-        <td style="font-size: 0.8em;">...</td>
-        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
-         <td><code>core</code></td>
-        <td><img src="https://img.shields.io/badge/Emit-%20?color=9e2fc5" alt=""></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
-    </tr>
-    <tr>
-        <td><code><strong>Question</strong></code></td>
-        <td style="font-size: 0.8em;">...</td>
-        <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
-         <td><code>core</code></td>
-        <td><img src="https://img.shields.io/badge/Interaction-%20?color=452461" alt=""></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
-    </tr>
-    <tr>
-        <td><code><strong>Answer</strong></code></td>
-        <td style="font-size: 0.8em;">...</td>
-        <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
-         <td><code>core</code></td>
-        <td><img src="https://img.shields.io/badge/Interaction-%20?color=452461" alt=""></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
-    </tr>
-    </tbody>
-</table>
-</div>
 
 ### Negotiation Agents
+
+<details>
+<summary><b>(Click to expand)</b> Agents of <b>level 4</b> modeling seller-buyer interactions and decision-making in negotiation flows.</summary>
+<br>
 
 <div style="display: flex; justify-content: center;">
 <table style="border-collapse: collapse; width: 95%; text-align: center;">
@@ -555,7 +584,13 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 </table>
 </div>
 
-### Connector Agents (Composability)
+</details>
+
+### Connector Agents
+
+<details>
+<summary><b>(Click to expand)</b> Agents of <b>level 3</b> enabling composability via connectors (e.g., MCP) to integrate external ecosystems.</summary>
+<br>
 
 <div style="display: flex; justify-content: center;">
 <table style="border-collapse: collapse; width: 95%; text-align: center;">
@@ -588,7 +623,15 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 </table>
 </div>
 
-### API-based Agents
+</details>
+
+<a id="api-agents"></a>
+
+### API Agents 🚧
+
+<details>
+<summary><b>(Click to expand)</b> Agents of <b>level 1-3</b> bridging external services (registries, apps, LLM tools) to extend SDK capabilities.</summary>
+<br>
 
 <div style="display: flex; justify-content: center;">
 <table style="border-collapse: collapse; width: 95%; text-align: center;">
@@ -682,7 +725,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
         <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
     </tr>
     <tr>
-        <td><code><strong>GPTCLuster</strong></code></td>
+        <td><code><strong>GPTCluster</strong></code></td>
         <td style="font-size: 0.8em;">...</td>
         <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
          <td><code>core</code></td>
@@ -701,7 +744,15 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 </table>
 </div>
 
-### Code Exchange Agents
+</details>
+
+<a id="code-exchange-agents"></a>
+
+### Code Exchange Agents 🚧
+
+<details>
+<summary><b>(Click to expand)</b> Agents of <b>level 3</b> showcasing smart-tool exchange and shareable logic for collaborative extension.</summary>
+<br>
 
 <div style="display: flex; justify-content: center;">
 <table style="border-collapse: collapse; width: 95%; text-align: center;">
@@ -734,8 +785,11 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 </table>
 </div>
 
+</details>
+
 
 <!-- 
+
 ---
 reporter queue (sequence for orchestration)
 storage db (GET POSt service)
@@ -765,3 +819,4 @@ api-metrics
 ---
 exchange pice of code over the wire:
 smart tools -->
+

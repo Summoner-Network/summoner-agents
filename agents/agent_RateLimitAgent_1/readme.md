@@ -19,7 +19,7 @@ A variant of [`RateLimitAgent_0`](../agent_RateLimitAgent_0/) that uses `multi=T
      - Elapsed time since start  
      - `tracker["defended"]`  
    - Returns a list of 50 identical payload dicts (`[msg] * 50`).  
-4. Steps 2–3 repeat until the client is stopped (Ctrl+C).
+4. Steps 2-3 repeat until the client is stopped (Ctrl+C).
 
 </details>
 

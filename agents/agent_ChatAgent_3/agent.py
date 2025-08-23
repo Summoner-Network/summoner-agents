@@ -1,5 +1,5 @@
 from summoner.client import SummonerClient
-from summoner.protocol import Move, Stay, Node, Direction, Event
+from summoner.protocol import Move, Stay, Node, Event
 from multi_ainput import multi_ainput
 from aioconsole import ainput
 from typing import Any, Literal, Optional

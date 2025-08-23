@@ -45,7 +45,7 @@ Swap `en.wikipedia.org` for `fr.`, `es.`, etc., to fetch non-English articles.
 5. **Possible enhancements**  
 - Disambiguation support: detect when the API returns a disambiguation page.  
 - Infobox parsing: scrape the REST HTML endpoint for key/value pairs.  
-- Local disk–backed cache or database for heavy-use agents.
+- Local disk-backed cache or database for heavy-use agents.
 
 These two REST docs are the single most direct, up-to-date references. You don't need the older MediaWiki "action=..." API unless you want write-access or very fine-grained queries.
 

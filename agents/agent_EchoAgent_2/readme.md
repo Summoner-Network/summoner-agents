@@ -34,7 +34,7 @@ This agent builds on the progression of [`EchoAgent_0`](../agent_EchoAgent_0/) a
      ```
    It wraps strings into `{"message":...}`, adds `{"from": my_id}`, and forwards the message to the send handler.  
 6. The send handler (`@client.send(route="")`) awaits `message_buffer.get()`, sleeps 1 second, and returns the signed content.  
-7. Steps 3–6 repeat until the client is stopped (Ctrl+C).
+7. Steps 3-6 repeat until the client is stopped (Ctrl+C).
 
 </details>
 

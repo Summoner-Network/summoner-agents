@@ -6,7 +6,7 @@
 1. A one-line summary per paper:
 
    ```
-   [2025-07-20] arXiv:2307.12345 – "Title of Paper"
+   [2025-07-20] arXiv:2307.12345 - "Title of Paper"
    ```
 2. A pretty-printed JSON block with metadata (authors, abstract snippet, PDF link).
 
