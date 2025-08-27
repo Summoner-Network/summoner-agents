@@ -158,119 +158,117 @@ python agents/agent_ExamAgent_0/agent.py --qa agents/agent_ExamAgent_0/qa_sysdes
 
 **Step 1 — send any message to start the round**
 
-* Chat agent sends a free-form message. This triggers the exam agent to publish `Q#0`.
+   * Chat agent sends a free-form message. This triggers the exam agent to publish `Q#0`.
 
-**Terminal 2 (ChatAgent_3)**
+   **Terminal 2 (ChatAgent_3)**
 
-```
-python agents/agent_ChatAgent_3/agent.py
-[DEBUG] Loaded config from: configs/client_config.json
-2025-08-22 13:00:08.921 - ChatAgent_3 - INFO - Connected to server @(host=127.0.0.1, port=8888)
-[opened]> this is to sart (any message works)
-```
+   ```
+   python agents/agent_ChatAgent_3/agent.py
+   [DEBUG] Loaded config from: configs/client_config.json
+   2025-08-22 13:00:08.921 - ChatAgent_3 - INFO - Connected to server @(host=127.0.0.1, port=8888)
+   [opened]> this is to sart (any message works)
+   ```
 
-**Terminal 3 (ExamAgent_0) so far**
+   **Terminal 3 (ExamAgent_0) so far**
 
-```
-python agents/agent_ExamAgent_0/agent.py --qa agents/agent_ExamAgent_0/qa_sysdesign_gradual.json
-[DEBUG] Loaded config from: configs/client_config.json
-2025-08-22 13:00:13.789 - ExamAgent_0 - INFO - Connected to server @(host=127.0.0.1, port=8888)
-[Received] 127.0.0.1:63371 answered: this is to sart (any message works)
-```
+   ```
+   python agents/agent_ExamAgent_0/agent.py --qa agents/agent_ExamAgent_0/qa_sysdesign_gradual.json
+   [DEBUG] Loaded config from: configs/client_config.json
+   2025-08-22 13:00:13.789 - ExamAgent_0 - INFO - Connected to server @(host=127.0.0.1, port=8888)
+   [Received] 127.0.0.1:63371 answered: this is to sart (any message works)
+   ```
 
-* After the trigger, the chat agent receives `Q#0`.
+   * After the trigger, the chat agent receives `Q#0`.
 
-**Terminal 2 (ChatAgent_3) continues**
+   **Terminal 2 (ChatAgent_3) continues**
 
-```
-[Received] Q#0: HTTP caching: which strategy best balances freshness and scalability for mostly-static assets with occasional updates?
-A) Versioned URLs (content hashes) with long max-age and immutable; re-deploy bumps the URL.
-B) Short max-age for everything to ensure quick refresh everywhere.
-C) Always use no-store so clients fetch every time.
-D) Disable caching globally and rely on CDN origin shielding only.
-(Answer with the label. 5s window after first answer.)
-```
+   ```
+   [Received] Q#0: HTTP caching: which strategy best balances freshness and scalability for mostly-static assets with occasional updates?
+   A) Versioned URLs (content hashes) with long max-age and immutable; re-deploy bumps the URL.
+   B) Short max-age for everything to ensure quick refresh everywhere.
+   C) Always use no-store so clients fetch every time.
+   D) Disable caching globally and rely on CDN origin shielding only.
+   (Answer with the label. 5s window after first answer.)
+   ```
 
 
 **Step 2 — answer `Q#0`**
 
-* Chat agent answers with a label (`A`, `B`, `C`, or `D`). The exam agent records it; the 5-second window begins on the **first** answer. The local countdown (if enabled) shows on the exam agent terminal and clears after the window ends.
+   * Chat agent answers with a label (`A`, `B`, `C`, or `D`). The exam agent records it; the 5-second window begins on the **first** answer. The local countdown (if enabled) shows on the exam agent terminal and clears after the window ends.
 
-**Terminal 2 (ChatAgent_3)**
+   **Terminal 2 (ChatAgent_3)**
 
-```
-[opened]> A
-```
+   ```
+   [opened]> A
+   ```
 
-**Terminal 3 (ExamAgent_0) so far**
+   **Terminal 3 (ExamAgent_0) so far**
 
-```
-[Received] 127.0.0.1:63371 answered: A
-```
+   ```
+   [Received] 127.0.0.1:63371 answered: A
+   ```
 
-* After the 5-second window closes, the exam agent publishes the result, scoreboard, and `Q#1`. The chat agent receives them.
+   * After the 5-second window closes, the exam agent publishes the result, scoreboard, and `Q#1`. The chat agent receives them.
 
-**Terminal 2 (ChatAgent_3) receives result + next question**
+   **Terminal 2 (ChatAgent_3) receives result + next question**
 
-```
-[Received] Winner: 127.0.0.1:63371 best answered Q#0, earning 5 points.
+   ```
+   [Received] Winner: 127.0.0.1:63371 best answered Q#0, earning 5 points.
 
-Scoreboard:
-1. 127.0.0.1:63371 — 5 pts
+   Scoreboard:
+   1. 127.0.0.1:63371 — 5 pts
 
-Q#1: Backoff strategy: which is generally the safest for client retries at scale?
-A) Linear backoff with a fixed small delay.
-B) No retries; let users manually retry.
-C) Immediate retry loop until success.
-D) Exponential backoff with jitter (full or decorrelated).
-(Answer with the label. 5s window after first answer.)
-```
+   Q#1: Backoff strategy: which is generally the safest for client retries at scale?
+   A) Linear backoff with a fixed small delay.
+   B) No retries; let users manually retry.
+   C) Immediate retry loop until success.
+   D) Exponential backoff with jitter (full or decorrelated).
+   (Answer with the label. 5s window after first answer.)
+   ```
 
 
 **Step 3 — answer `Q#1`**
 
-* Chat agent answers the second question. The exam agent records it; the 5-second window runs again.
+   * Chat agent answers the second question. The exam agent records it; the 5-second window runs again.
 
-**Terminal 2 (ChatAgent_3)**
+   **Terminal 2 (ChatAgent_3)**
 
-```
-[opened]> B
-```
+   ```
+   [opened]> B
+   ```
 
-**Terminal 3 (ExamAgent_0) so far**
+   **Terminal 3 (ExamAgent_0) so far**
 
-```
-[Received] 127.0.0.1:63371 answered: B
-```
+   ```
+   [Received] 127.0.0.1:63371 answered: B
+   ```
 
-* After the window closes, the exam agent publishes the final result and resets the scoreboard because the round used `limit=2`.
+   * After the window closes, the exam agent publishes the final result and resets the scoreboard because the round used `limit=2`.
 
-**Terminal 2 (ChatAgent_3) final output**
+   **Terminal 2 (ChatAgent_3) final output**
 
-```
-[Received] Winner: 127.0.0.1:63371 best answered Q#1, earning 1 points.
+   ```
+   [Received] Winner: 127.0.0.1:63371 best answered Q#1, earning 1 points.
 
-Scoreboard:
-1. 127.0.0.1:63371 — 6 pts
+   Scoreboard:
+   1. 127.0.0.1:63371 — 6 pts
 
-Scoreboard reset — new round begins!
+   Scoreboard reset — new round begins!
 
-[opened]> 
-```
+   [opened]> 
+   ```
 
-**Terminal 3 (ExamAgent_0) final log for this run**
+   **Terminal 3 (ExamAgent_0) final log for this run**
 
-```
-[Received] 127.0.0.1:63371 answered: this is to sart (any message works)
-[Received] 127.0.0.1:63371 answered: A
-[Received] 127.0.0.1:63371 answered: B  
-```
+   ```
+   [Received] 127.0.0.1:63371 answered: this is to sart (any message works)
+   [Received] 127.0.0.1:63371 answered: A
+   [Received] 127.0.0.1:63371 answered: B  
+   ```
 
-> [!TIP]
-> the JSON file used here is `qa_sysdesign_gradual.json`. Any custom file with the documented format (list of questions, labeled answers with `val` and `pts`) will work with `--qa`.
+   > [!TIP]
+   > the JSON file used here is `qa_sysdesign_gradual.json`. Any custom file with the documented format (list of questions, labeled answers with `val` and `pts`) will work with `--qa`.
 
-
-Here’s a decomposed, step-by-step version of Scenario 2 with the back-and-forth across all terminals.
 
 
 ### Scenario 2: two chat agents competing
@@ -293,188 +291,188 @@ python agents/agent_ExamAgent_0/agent.py --qa agents/agent_ExamAgent_0/qa_sysdes
 
 **Step 1: send any message to start the round**
 
-* Terminal 2 sends a free-form message. This triggers the exam agent to publish `Q#0`.
+   * Terminal 2 sends a free-form message. This triggers the exam agent to publish `Q#0`.
 
-**Terminal 2**
+   **Terminal 2**
 
-```
-python agents/agent_ChatAgent_3/agent.py
-[DEBUG] Loaded config from: configs/client_config.json
-2025-08-22 13:08:43.999 - ChatAgent_3 - INFO - Connected to server @(host=127.0.0.1, port=8888)
-[opened]> hey
-```
+   ```
+   python agents/agent_ChatAgent_3/agent.py
+   [DEBUG] Loaded config from: configs/client_config.json
+   2025-08-22 13:08:43.999 - ChatAgent_3 - INFO - Connected to server @(host=127.0.0.1, port=8888)
+   [opened]> hey
+   ```
 
-**Terminal 4 (ExamAgent_0) so far**
+   **Terminal 4 (ExamAgent_0) so far**
 
-```
-python agents/agent_ExamAgent_0/agent.py --qa agents/agent_ExamAgent_0/qa_sysdesign_gradual.json
-[DEBUG] Loaded config from: configs/client_config.json
-2025-08-22 13:08:41.986 - ExamAgent_0 - INFO - Connected to server @(host=127.0.0.1, port=8888)
-[Received] 127.0.0.1:63482 answered: hey
-```
+   ```
+   python agents/agent_ExamAgent_0/agent.py --qa agents/agent_ExamAgent_0/qa_sysdesign_gradual.json
+   [DEBUG] Loaded config from: configs/client_config.json
+   2025-08-22 13:08:41.986 - ExamAgent_0 - INFO - Connected to server @(host=127.0.0.1, port=8888)
+   [Received] 127.0.0.1:63482 answered: hey
+   ```
 
-* Both chat agents now receive `Q#0`.
+   * Both chat agents now receive `Q#0`.
 
-**Terminal 2 (receives `Q#0`)**
+   **Terminal 2 (receives `Q#0`)**
 
-```
-[Received] Q#0: HTTP caching: which strategy best balances freshness and scalability for mostly-static assets with occasional updates?
-A) Versioned URLs (content hashes) with long max-age and immutable; re-deploy bumps the URL.
-B) Short max-age for everything to ensure quick refresh everywhere.
-C) Always use no-store so clients fetch every time.
-D) Disable caching globally and rely on CDN origin shielding only.
-(Answer with the label. 5s window after first answer.)
-```
+   ```
+   [Received] Q#0: HTTP caching: which strategy best balances freshness and scalability for mostly-static assets with occasional updates?
+   A) Versioned URLs (content hashes) with long max-age and immutable; re-deploy bumps the URL.
+   B) Short max-age for everything to ensure quick refresh everywhere.
+   C) Always use no-store so clients fetch every time.
+   D) Disable caching globally and rely on CDN origin shielding only.
+   (Answer with the label. 5s window after first answer.)
+   ```
 
-**Terminal 3 (receives `Q#0`)**
+   **Terminal 3 (receives `Q#0`)**
 
-```
-python agents/agent_ChatAgent_3/agent.py
-[DEBUG] Loaded config from: configs/client_config.json
-2025-08-22 13:08:43.107 - ChatAgent_3 - INFO - Connected to server @(host=127.0.0.1, port=8888)
-[Received] hey
-[Received] Q#0: HTTP caching: which strategy best balances freshness and scalability for mostly-static assets with occasional updates?
-A) Versioned URLs (content hashes) with long max-age and immutable; re-deploy bumps the URL.
-B) Short max-age for everything to ensure quick refresh everywhere.
-C) Always use no-store so clients fetch every time.
-D) Disable caching globally and rely on CDN origin shielding only.
-(Answer with the label. 5s window after first answer.)
-```
+   ```
+   python agents/agent_ChatAgent_3/agent.py
+   [DEBUG] Loaded config from: configs/client_config.json
+   2025-08-22 13:08:43.107 - ChatAgent_3 - INFO - Connected to server @(host=127.0.0.1, port=8888)
+   [Received] hey
+   [Received] Q#0: HTTP caching: which strategy best balances freshness and scalability for mostly-static assets with occasional updates?
+   A) Versioned URLs (content hashes) with long max-age and immutable; re-deploy bumps the URL.
+   B) Short max-age for everything to ensure quick refresh everywhere.
+   C) Always use no-store so clients fetch every time.
+   D) Disable caching globally and rely on CDN origin shielding only.
+   (Answer with the label. 5s window after first answer.)
+   ```
 
 
 **Step 2: answer `Q#0` (window starts on first answer)**
 
-* Terminal 2 answers with `A`.
-* Terminal 3 answers with `B`.
-* The 5-second window begins when the first answer arrives. If countdown is enabled, it appears on Terminal 4 and clears after the window ends.
+   * Terminal 2 answers with `A`.
+   * Terminal 3 answers with `B`.
+   * The 5-second window begins when the first answer arrives. If countdown is enabled, it appears on Terminal 4 and clears after the window ends.
 
-**Terminal 2**
+   **Terminal 2**
 
-```
-[opened]> A
-```
+   ```
+   [opened]> A
+   ```
 
-**Terminal 3**
+   **Terminal 3**
 
-```
-[opened]> B
-```
+   ```
+   [opened]> B
+   ```
 
-**Terminal 4 (ExamAgent_0) so far**
+   **Terminal 4 (ExamAgent_0) so far**
 
-```
-[Received] 127.0.0.1:63482 answered: A
-[Received] 127.0.0.1:63480 answered: B
-```
+   ```
+   [Received] 127.0.0.1:63482 answered: A
+   [Received] 127.0.0.1:63480 answered: B
+   ```
 
 **Step 3: window closes for `Q#0`, result and scoreboard are published, then `Q#1` is sent**
 
-* The exam agent applies tie-break rules and declares the winner for `Q#0`, then sends `Q#1` to everyone.
+   * The exam agent applies tie-break rules and declares the winner for `Q#0`, then sends `Q#1` to everyone.
 
-**Terminal 2 (receives result + `Q#1`)**
+   **Terminal 2 (receives result + `Q#1`)**
 
-```
-[Received] Winner: 127.0.0.1:63482 best answered Q#0, earning 5 points.
+   ```
+   [Received] Winner: 127.0.0.1:63482 best answered Q#0, earning 5 points.
 
-Scoreboard:
-1. 127.0.0.1:63482 — 5 pts
+   Scoreboard:
+   1. 127.0.0.1:63482 — 5 pts
 
-Q#1: Backoff strategy: which is generally the safest for client retries at scale?
-A) Linear backoff with a fixed small delay.
-B) No retries; let users manually retry.
-C) Immediate retry loop until success.
-D) Exponential backoff with jitter (full or decorrelated).
-(Answer with the label. 5s window after first answer.)
-```
+   Q#1: Backoff strategy: which is generally the safest for client retries at scale?
+   A) Linear backoff with a fixed small delay.
+   B) No retries; let users manually retry.
+   C) Immediate retry loop until success.
+   D) Exponential backoff with jitter (full or decorrelated).
+   (Answer with the label. 5s window after first answer.)
+   ```
 
-**Terminal 3 (receives result + `Q#1`)**
+   **Terminal 3 (receives result + `Q#1`)**
 
-```
-[Received] Winner: 127.0.0.1:63482 best answered Q#0, earning 5 points.
+   ```
+   [Received] Winner: 127.0.0.1:63482 best answered Q#0, earning 5 points.
 
-Scoreboard:
-1. 127.0.0.1:63482 — 5 pts
+   Scoreboard:
+   1. 127.0.0.1:63482 — 5 pts
 
-Q#1: Backoff strategy: which is generally the safest for client retries at scale?
-A) Linear backoff with a fixed small delay.
-B) No retries; let users manually retry.
-C) Immediate retry loop until success.
-D) Exponential backoff with jitter (full or decorrelated).
-(Answer with the label. 5s window after first answer.)
-```
+   Q#1: Backoff strategy: which is generally the safest for client retries at scale?
+   A) Linear backoff with a fixed small delay.
+   B) No retries; let users manually retry.
+   C) Immediate retry loop until success.
+   D) Exponential backoff with jitter (full or decorrelated).
+   (Answer with the label. 5s window after first answer.)
+   ```
 
 
 **Step 4: answer `Q#1` (second window starts)**
 
-* Terminal 2 answers with `C`.
-* Terminal 3 answers with `B`.
-* The window again runs for 5 seconds from the first answer.
+   * Terminal 2 answers with `C`.
+   * Terminal 3 answers with `B`.
+   * The window again runs for 5 seconds from the first answer.
 
-**Terminal 2**
+   **Terminal 2**
 
-```
-[opened]> C
-```
+   ```
+   [opened]> C
+   ```
 
-**Terminal 3**
+   **Terminal 3**
 
-```
-[opened]> B
-```
+   ```
+   [opened]> B
+   ```
 
-**Terminal 4 (ExamAgent_0) so far**
+   **Terminal 4 (ExamAgent_0) so far**
 
-```
-[Received] 127.0.0.1:63482 answered: C
-[Received] 127.0.0.1:63480 answered: B
-```
+   ```
+   [Received] 127.0.0.1:63482 answered: C
+   [Received] 127.0.0.1:63480 answered: B
+   ```
 
 **Step 5: window closes for `Q#1`, final result and round reset**
 
-* The exam agent publishes the result for `Q#1` and shows the cumulative scoreboard. Because `limit=2`, the scoreboard then resets and the round ends. Any new message will start a new round.
+   * The exam agent publishes the result for `Q#1` and shows the cumulative scoreboard. Because `limit=2`, the scoreboard then resets and the round ends. Any new message will start a new round.
 
-**Terminal 2 (final for this round)**
+   **Terminal 2 (final for this round)**
 
-```
-[Received] Winner: 127.0.0.1:63480 best answered Q#1, earning 1 points.
+   ```
+   [Received] Winner: 127.0.0.1:63480 best answered Q#1, earning 1 points.
 
-Scoreboard:
-1. 127.0.0.1:63482 — 5 pts
-2. 127.0.0.1:63480 — 1 pts
+   Scoreboard:
+   1. 127.0.0.1:63482 — 5 pts
+   2. 127.0.0.1:63480 — 1 pts
 
-Scoreboard reset — new round begins!
+   Scoreboard reset — new round begins!
 
-[opened]> 
-```
+   [opened]> 
+   ```
 
-**Terminal 3 (final for this round)**
+   **Terminal 3 (final for this round)**
 
-```
-[Received] Winner: 127.0.0.1:63480 best answered Q#1, earning 1 points.
+   ```
+   [Received] Winner: 127.0.0.1:63480 best answered Q#1, earning 1 points.
 
-Scoreboard:
-1. 127.0.0.1:63482 — 5 pts
-2. 127.0.0.1:63480 — 1 pts
+   Scoreboard:
+   1. 127.0.0.1:63482 — 5 pts
+   2. 127.0.0.1:63480 — 1 pts
 
-Scoreboard reset — new round begins!
+   Scoreboard reset — new round begins!
 
-[opened]> 
-```
+   [opened]> 
+   ```
 
-**Terminal 4 (ExamAgent_0) final log for this run**
+   **Terminal 4 (ExamAgent_0) final log for this run**
 
-```
-python agents/agent_ExamAgent_0/agent.py --qa agents/agent_ExamAgent_0/qa_sysdesign_gradual.json
-[DEBUG] Loaded config from: configs/client_config.json
-2025-08-22 13:08:41.986 - ExamAgent_0 - INFO - Connected to server @(host=127.0.0.1, port=8888)
-[Received] 127.0.0.1:63482 answered: hey
-[Received] 127.0.0.1:63482 answered: A
-[Received] 127.0.0.1:63480 answered: B
-[Received] 127.0.0.1:63482 answered: C
-[Received] 127.0.0.1:63480 answered: B
-```
+   ```
+   python agents/agent_ExamAgent_0/agent.py --qa agents/agent_ExamAgent_0/qa_sysdesign_gradual.json
+   [DEBUG] Loaded config from: configs/client_config.json
+   2025-08-22 13:08:41.986 - ExamAgent_0 - INFO - Connected to server @(host=127.0.0.1, port=8888)
+   [Received] 127.0.0.1:63482 answered: hey
+   [Received] 127.0.0.1:63482 answered: A
+   [Received] 127.0.0.1:63480 answered: B
+   [Received] 127.0.0.1:63482 answered: C
+   [Received] 127.0.0.1:63480 answered: B
+   ```
 
-> [!NOTE]
-> * Only the first submission per `remote_addr` counts within each window.
-> * The countdown appears on the exam agent terminal if `--countdown 1` and clears after each window.
-> * The JSON file used here is `qa_sysdesign_gradual.json`. Any custom file with the documented format works with `--qa`.
+   > [!NOTE]
+   > * Only the first submission per `remote_addr` counts within each window.
+   > * The countdown appears on the exam agent terminal if `--countdown 1` and clears after each window.
+   > * The JSON file used here is `qa_sysdesign_gradual.json`. Any custom file with the documented format works with `--qa`.
