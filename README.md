@@ -597,7 +597,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 ### Connector Agents
 
 <details>
-<summary><b>(Click to expand)</b> Agents of <b>level 2</b> enabling composability via connectors (e.g., MCP) to integrate external ecosystems.</summary>
+<summary><b>(Click to expand)</b> Agents of <b>level 1</b> enabling composability via connectors (e.g., MCP) to integrate external ecosystems.</summary>
 <br>
 
 <div style="display: flex; justify-content: center;">
@@ -622,16 +622,16 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
     <tr>
         <td><code><strong><a href="agents/agent_ConnectAgent_0/">ConnectAgent_0</a></strong></code></td>
         <td style="font-size: 0.8em;">Combines <code>@receive</code> and <code>@send(multi=True)</code> to relay Summoner messages via SQLite, using <code>db_sdk</code> (ORM) with batching and persistent connections</td>
-        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
-        <td><code>core</code> <code>mcp</code></td>
+        <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
+        <td><code>core</code> <code>multi</code></td>
         <td><img src="https://img.shields.io/badge/MCP-%20?color=1122ce" alt=""></td>
         <td>✅</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✗</td>
     </tr>
     <tr>
         <td><code><strong><a href="agents/agent_ConnectAgent_1/">ConnectAgent_1</a></strong></code></td>
         <td style="font-size: 0.8em;">Combines <code>@receive</code> and <code>@send(multi=True)</code> to relay Summoner messages via SQLite, using raw <code>aiosqlite</code> with short-lived connections</td>
-        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
-        <td><code>core</code> <code>mcp</code></td>
+        <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
+        <td><code>core</code> <code>multi</code></td>
         <td><img src="https://img.shields.io/badge/MCP-%20?color=1122ce" alt=""></td>
         <td>✅</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✗</td>
     </tr>
