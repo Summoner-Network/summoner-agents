@@ -220,7 +220,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 | **Description** | Brief summary of the agent's functionality.                               |
 | **Level**       | Difficulty level (e.g. Level 1 = Beginner).                               |
 | **Application** | Primary use case (e.g. messaging, orchestration, negotiation).            |
-| **Features**    | Key Summoner SDK capability demonstrated (e.g. `core`, `kobold`).         |
+| **Features**    | Key Summoner SDK capability demonstrated (e.g. `core`, `aurora`).         |
 | **DB**          | ✅ if the agent uses a persistent or in-memory database (`asqlite`, etc.). |
 | **Queue**       | ✅ if the agent relies on asynchronous queues (`asyncio.Queue`, etc.).     |
 | **Flows**       | ✅ if the agent follows a modular, trigger-driven flow structure.          |
@@ -620,12 +620,12 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
     </thead>
     <tbody>
     <tr>
-        <td><code><strong>Connector</strong></code></td>
+        <td><code><strong><a href="agents/agent_ConnectAgent_0/">ConnectAgent_0</a></strong></code></td>
         <td style="font-size: 0.8em;">...</td>
         <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
          <td><code>core</code></td>
         <td><img src="https://img.shields.io/badge/MCP-%20?color=1122ce" alt=""></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
+        <td>✅</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✗</td>
     </tr>
     </tbody>
 </table>

@@ -254,7 +254,7 @@ To include all available features from a repository — meaning every folder und
 ```txt
 # Include all tooling features from these repos
 https://github.com/Summoner-Network/summoner-smart-tools.git
-https://github.com/Summoner-Network/summoner-creatures.git
+https://github.com/Summoner-Network/summoner-agentclass.git
 ```
 
 For basic smoke testing, your `test_build.txt` can be minimal:
@@ -285,7 +285,7 @@ Only the listed subfolders will be copied — any nonexistent folders will be sk
 https://github.com/Summoner-Network/summoner-smart-tools.git
 
 # Filtered usage (only feature_x and feature_y if present)
-https://github.com/Summoner-Network/summoner-creatures.git:
+https://github.com/Summoner-Network/summoner-agentclass.git:
 feature_x
 feature_y
 ```

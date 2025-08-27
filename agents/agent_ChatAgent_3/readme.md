@@ -174,7 +174,7 @@ From testnet, the controller announces the intent, then sends `/lock`. While **l
 ```
 
 **Step 3. Try to unlock with a wrong command (no password), then unlock correctly.**
-First you try `/open` (no password) and send a normal message (“Whoops”). The target remains locked and only prints them. Then you send `/open HelloSummoner`—the target prints `[opened]>` and transitions back to **opened**.
+First you try `/open` (no password) and send a normal message ("Whoops"). The target remains locked and only prints them. Then you send `/open HelloSummoner`—the target prints `[opened]>` and transitions back to **opened**.
 
 **Terminal 2 (controller)**
 
