@@ -597,7 +597,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 ### Connector Agents
 
 <details>
-<summary><b>(Click to expand)</b> Agents of <b>level 3</b> enabling composability via connectors (e.g., MCP) to integrate external ecosystems.</summary>
+<summary><b>(Click to expand)</b> Agents of <b>level 2</b> enabling composability via connectors (e.g., MCP) to integrate external ecosystems.</summary>
 <br>
 
 <div style="display: flex; justify-content: center;">
