@@ -270,7 +270,7 @@ EOF
 
   # 8) Reinstall extras
   echo "  🔁 Running reinstall_python_sdk.sh"
-  bash "$SRC/reinstall_python_sdk.sh" rust_server_sdk
+  bash "$SRC/reinstall_python_sdk.sh" rust_server_v1_0_0
 
   echo "✅ Setup complete! You are now in the venv."
 }
@@ -293,7 +293,7 @@ deps() {
   echo "🔧 Reinstalling dependencies…"
   [ -d "$VENVDIR" ] || die "Run setup first"
   source "$VENVDIR/bin/activate"
-  bash "$SRC/reinstall_python_sdk.sh" rust_server_sdk
+  bash "$SRC/reinstall_python_sdk.sh" rust_server_v1_0_0
   echo "✅ Dependencies reinstalled!"
 }
 

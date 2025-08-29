@@ -2,7 +2,7 @@
     "host": "127.0.0.1",
     "port": 8888,
 
-    "version": "rss_3",
+    "version": "rust",
 
     "logger": {
         "log_level": "INFO",

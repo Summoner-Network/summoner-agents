@@ -8,31 +8,31 @@
 
 * [SDK setup](#sdk-setup)
 
-  * [Initial Installation](#initial-installation)
-  * [Reinstalling the Summoner SDK](#reinstalling-the-summoner-sdk)
+    * [Initial Installation](#initial-installation)
+    * [Reinstalling the Summoner SDK](#reinstalling-the-summoner-sdk)
 
 * [Agent Format and Desktop App Compatibility](#agent-format-and-desktop-app-compatibility)
 
-  * [Repository Structure](#repository-structure)
-  * [Required Structure for Agent Folders](#required-structure-for-agent-folders)
+    * [Repository Structure](#repository-structure)
+    * [Required Structure for Agent Folders](#required-structure-for-agent-folders)
 
 * [Running an Agent](#running-an-agent)  
 
-  * [Activate the Virtual Environment](#activate-the-virtual-environment)  
-  * [Launch the Summoner Server](#launch-the-summoner-server)  
-  * [Run the Agent](#run-the-agent)  
+    * [Activate the Virtual Environment](#activate-the-virtual-environment)  
+    * [Launch the Summoner Server](#launch-the-summoner-server)  
+    * [Run the Agent](#run-the-agent)  
 
 * [Agent Collection](#agent-collection)
 
-  * [Legend](#legend)
-  * [Core Messaging Agents](#core-messaging-agents)
-  * [Chat Agents](#chat-agents)
-  * [Feedback Agents](#feedback-agents)
-  * [Security and Handshake Agents](#security-and-handshake-agents)
-  * [Negotiation Agents](#negotiation-agents)
-  * [Connector Agents](#connector-agents)
-  * [API Agents 🚧](#api-agents)
-  * [Code Exchange Agents 🚧](#code-exchange-agents)
+    * [Legend](#legend)
+    * [Core Messaging Agents](#core-messaging-agents)
+    * [Chat Agents](#chat-agents)
+    * [Feedback Agents](#feedback-agents)
+    * [Connector Agents (to MCP, LangChain, CrewAI, etc.)](#connector-agents)
+    * [Security and Handshake Agents](#security-and-handshake-agents)
+    * [Negotiation Agents](#negotiation-agents)
+    * [API Agents 🚧 (panned)](#api-agents)
+    * [Code Exchange Agents 🚧 (planned)](#code-exchange-agents)
 
 
 ## SDK Setup
@@ -475,6 +475,55 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 
 </details>
 
+
+### Connector Agents
+
+<details>
+<summary><b>(Click to expand)</b> Agents of <b>level 1</b> enabling composability via connectors to integrate external ecosystems (e.g., MCP, LangChain, CrewAI).</summary>
+<br>
+
+<div style="display: flex; justify-content: center;">
+<table style="border-collapse: collapse; width: 95%; text-align: center;">
+    <thead>
+    <tr>
+        <th style="width: 10%; text-align: center;">Agent Name</th>
+        <th style="width: 33%; text-align: center;">Description</th>
+        <th style="width: 12%; text-align: center;">Level</th>
+        <th style="width: 12%; text-align: center;">Features</th>
+        <th style="width: 12%; text-align: center;">Applications</th>
+        <th style="width: 3%; text-align: center;">DB</th>
+        <th style="width: 3%; text-align: center;">Queue</th>
+        <th style="width: 3%; text-align: center;">Flows</th>
+        <th style="width: 3%; text-align: center;">Logs</th>
+        <th style="width: 3%; text-align: center;">Hooks</th>
+        <th style="width: 3%; text-align: center;">Temp.</th>
+        <th style="width: 3%; text-align: center;">Comp.</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td><code><strong><a href="agents/agent_ConnectAgent_0/">ConnectAgent_0</a></strong></code></td>
+        <td style="font-size: 0.8em;">Combines <code>@receive</code> and <code>@send(multi=True)</code> to relay Summoner messages via SQLite, using <code>db_sdk</code> (ORM) with batching and persistent connections</td>
+        <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
+        <td><code>core</code> <code>multi</code></td>
+        <td><img src="https://img.shields.io/badge/MCP-%20?color=1122ce" alt=""></td>
+        <td>✅</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✗</td>
+    </tr>
+    <tr>
+        <td><code><strong><a href="agents/agent_ConnectAgent_1/">ConnectAgent_1</a></strong></code></td>
+        <td style="font-size: 0.8em;">Combines <code>@receive</code> and <code>@send(multi=True)</code> to relay Summoner messages via SQLite, using raw <code>aiosqlite</code> with short-lived connections</td>
+        <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
+        <td><code>core</code> <code>multi</code></td>
+        <td><img src="https://img.shields.io/badge/MCP-%20?color=1122ce" alt=""></td>
+        <td>✅</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✗</td>
+    </tr>
+    </tbody>
+</table>
+</div>
+
+</details>
+
+
 ### Security and Handshake Agents
 
 <details>
@@ -594,52 +643,6 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 
 </details>
 
-### Connector Agents
-
-<details>
-<summary><b>(Click to expand)</b> Agents of <b>level 1</b> enabling composability via connectors (e.g., MCP) to integrate external ecosystems.</summary>
-<br>
-
-<div style="display: flex; justify-content: center;">
-<table style="border-collapse: collapse; width: 95%; text-align: center;">
-    <thead>
-    <tr>
-        <th style="width: 10%; text-align: center;">Agent Name</th>
-        <th style="width: 33%; text-align: center;">Description</th>
-        <th style="width: 12%; text-align: center;">Level</th>
-        <th style="width: 12%; text-align: center;">Features</th>
-        <th style="width: 12%; text-align: center;">Applications</th>
-        <th style="width: 3%; text-align: center;">DB</th>
-        <th style="width: 3%; text-align: center;">Queue</th>
-        <th style="width: 3%; text-align: center;">Flows</th>
-        <th style="width: 3%; text-align: center;">Logs</th>
-        <th style="width: 3%; text-align: center;">Hooks</th>
-        <th style="width: 3%; text-align: center;">Temp.</th>
-        <th style="width: 3%; text-align: center;">Comp.</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr>
-        <td><code><strong><a href="agents/agent_ConnectAgent_0/">ConnectAgent_0</a></strong></code></td>
-        <td style="font-size: 0.8em;">Combines <code>@receive</code> and <code>@send(multi=True)</code> to relay Summoner messages via SQLite, using <code>db_sdk</code> (ORM) with batching and persistent connections</td>
-        <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
-        <td><code>core</code> <code>multi</code></td>
-        <td><img src="https://img.shields.io/badge/MCP-%20?color=1122ce" alt=""></td>
-        <td>✅</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✗</td>
-    </tr>
-    <tr>
-        <td><code><strong><a href="agents/agent_ConnectAgent_1/">ConnectAgent_1</a></strong></code></td>
-        <td style="font-size: 0.8em;">Combines <code>@receive</code> and <code>@send(multi=True)</code> to relay Summoner messages via SQLite, using raw <code>aiosqlite</code> with short-lived connections</td>
-        <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
-        <td><code>core</code> <code>multi</code></td>
-        <td><img src="https://img.shields.io/badge/MCP-%20?color=1122ce" alt=""></td>
-        <td>✅</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✗</td>
-    </tr>
-    </tbody>
-</table>
-</div>
-
-</details>
 
 <a id="api-agents"></a>
 

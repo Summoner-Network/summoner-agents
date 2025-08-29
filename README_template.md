@@ -110,7 +110,7 @@ source venv/bin/activate
 4. Creates a Python virtualenv in `venv/` (if missing).
 5. Activates `venv/`, installs build tools (`setuptools`, `wheel`, `maturin`).
 6. Writes a `.env` file under `summoner-sdk/`.
-7. Runs `summoner-sdk/reinstall_python_sdk.sh rust_server_sdk` to pull in any Rust/Python extras (this also installs the merged SDK).
+7. Runs `summoner-sdk/reinstall_python_sdk.sh rust_server_v1_0_0` to pull in any Rust/Python extras (this also installs the merged SDK).
 
 **Usage**
 
@@ -165,7 +165,7 @@ bash build_sdk.sh reset
 In the existing `venv/`, reruns the Rust/Python dependency installer:
 
 ```bash
-bash summoner-sdk/reinstall_python_sdk.sh rust_server_sdk
+bash summoner-sdk/reinstall_python_sdk.sh rust_server_v1_0_0
 ```
 
 Useful if you've updated core or your Rust SDK.
