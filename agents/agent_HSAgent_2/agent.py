@@ -345,7 +345,6 @@ async def signature(payload: Any) -> Optional[dict]:
 
 """ ===================== RECEIVE HANDLERS — RESPONDER ====================== """
 
-# ---[ REFACTORED FOR SUBSTRATE ]---
 @client.receive(route="resp_ready --> resp_confirm")
 async def handle_register(payload: dict) -> Optional[Event]:
     """
@@ -707,7 +706,6 @@ async def handle_finish(payload: dict) -> Optional[Event]:
     return Move(Trigger.ok)
 
 
-# ---[ REFACTORED FOR SUBSTRATE ]---
 @client.receive(route="init_finalize_close --> init_ready")
 async def finish_to_idle(payload: dict) -> Optional[Event]:
     """
@@ -725,14 +723,14 @@ async def finish_to_idle(payload: dict) -> Optional[Event]:
     state_attrs = await ensure_role_state(my_id, "initiator", peer_id, "init_ready")
     
     if int(state_attrs.get("finalize_retry_count", 0)) > FINAL_LIMIT:
-        # ✅ [THE FIX] Perform a full state reset.
+        # ✅ [THE FIX] Perform a full state reset for the Stateless Discovery model.
         # By setting local_reference and peer_reference to None, we ensure
         # the send driver will not immediately trigger a reconnect.
         await STATE_STORE.update_role_state("initiator", peer_id, {
             "local_nonce": None,
             "peer_nonce": None,
-            "local_reference": None,      # <-- CLEAR THIS
-            "peer_reference": None,       # <-- AND CLEAR THIS
+            "local_reference": None,
+            "peer_reference": None,
             "exchange_count": 0,
             "finalize_retry_count": 0
         })
@@ -773,6 +771,10 @@ async def trying() -> list[dict]:
     # Now, iterate through each peer and perform a dedicated, atomic
     # read-modify-write cycle for them.
     for peer_id in all_peer_ids:
+        # ✅ [THE FIX] Add a definitive guard against self-interaction.
+        if peer_id == my_id:
+            continue
+
         # --- Initiator Role Logic ---
         try:
             initiator_state_obj = await STATE_STORE._find_handshake_state_object("initiator", peer_id)
@@ -811,10 +813,6 @@ async def trying() -> list[dict]:
                     payload = { "to": peer_id, "intent": "conclude", "your_nonce": row.get("peer_nonce"), "my_ref": local_ref }
 
                 elif role_state == "init_finalize_close":
-                    # [THE FIX] The 'continue' statement has been removed.
-                    # If the condition is met, a payload is generated.
-                    # If not, execution simply continues past this block,
-                    # allowing the responder logic to run.
                     if row.get("peer_reference") is not None and row.get("local_reference") is not None:
                         new_retry = int(row.get("finalize_retry_count", 0)) + 1
                         await STATE_STORE.update_role_state("initiator", peer_id, {"finalize_retry_count": new_retry})
@@ -875,8 +873,6 @@ async def trying() -> list[dict]:
         except Exception as e:
             client.logger.error(f"[Send Driver] Unexpected error for responder/peer {peer_id}: {e}", exc_info=True)
 
-
-    # Broadcast a registration each tick so new peers can discover us.
     payloads.append({"to": None, "intent": "register"})
     return payloads
 

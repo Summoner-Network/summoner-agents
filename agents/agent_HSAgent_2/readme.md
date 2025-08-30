@@ -1,240 +1,167 @@
-# `HSAgent_1`
+# HSAgent_2: A Cloud-Native Cryptographic Handshake Agent
 
-A multi-peer **handshake** agent that keeps the [`HSAgent_0`](../agent_HSAgent_0/) flow and state model but adds end-to-end cryptography and key protection. It **signs the handshake** (`hs`, Ed25519), performs an **ephemeral X25519** exchange + HKDF to derive a **symmetric session key**, can wrap payloads in **secure envelopes** (`sec`, AES-GCM with an Ed25519 envelope signature), and persists per-agent keys in an **encrypted identity file** (`id_agent_<name>.json`). All **client-side** Summoner SDK routes and the ORM-backed DB state remain the same as `HSAgent_0` (with optional crypto metadata columns on [`RoleState`](./db_models.py)).
+**Docker build**
 
-> [!NOTE]
-> This is an orchestration/state demo with a strong crypto veneer; key management is simplified. The identity file is **encrypted at rest**: private keys are sealed with **AES-GCM** using a key derived from a passphrase via **scrypt** ($N=2^{14}$, $r=8$, $p=1$). The JSON on disk contains only version/KDF metadata, salt, nonce, and ciphertext — **never** raw private key bytes. For real deployments, supply a strong passphrase (env var, OS keychain, or KMS), not the demo default.
+`docker build -t hsagent-2 .`
 
-<!-- > [!CAUTION]
-> Use a unique `--name` per process so each instance gets its **own** encrypted identity and database; reusing a name makes processes share keys/DB. -->
+**Docker run**
 
-This agent relies on two supporting files:
+(in `summoner-agents`) `python server.py`
 
-* [`crypto_utils.py`](./crypto_utils.py) — handshake signing/verification, session key derivation, secure envelope seal/open, encrypted identity save/load
-* [`db_models.py`](./db_models.py) — same tables as `HSAgent_0`, plus **optional** crypto metadata fields on `RoleState`
+`docker run --rm --network="host" hsagent-2 --name agent-alpha`
+`docker run --rm --network="host" hsagent-2 --name agent-beta`
 
-## Behavior
+## Overview
 
-<details>
-<summary><b>(Click to expand)</b> The agent goes through these steps:</summary>
-<br>
+HSAgent_2 is a multi-peer, cloud-native agent designed to establish secure, authenticated communication channels between independent services in a distributed system. By performing a sophisticated cryptographic handshake, it ensures that when one service communicates with another, the channel is private, authenticated, and resistant to tampering.
 
-The route/state machine is unchanged from `HSAgent_0`:
+This agent is a significant evolution of its predecessors (HSAgent_0, HSAgent_1). It migrates all state management from local SQLite databases to a persistent, cloud-based "substrate" built on scalable object storage (BOSS) and append-only ledger (Fathom) services. This migration exposes and corrects several critical race conditions and design flaws, resulting in a protocol that is robust, scalable, and suitable for high-concurrency cloud environments.
 
-* **Initiator:** `init_ready → init_exchange → init_finalize_propose → init_finalize_close → init_ready`
-* **Responder:** `resp_ready → resp_confirm → resp_exchange → resp_finalize → resp_ready`
+## Architectural Model: Stateless Discovery
 
-> 📝 **Note:**
-> **Peer scoping:** Upload now returns **per-peer** keys in the form `"initiator:<peer_id>"` and `"responder:<peer_id>"`. The download handler splits that key to target the exact `(self_id, role, peer_id)` row instead of updating all rows for a role.
->
-> **Guard:** The receive hook drops payloads that lack a valid `from` (i.e., `content["from"] is None`) to avoid creating or mutating a thread with `peer_id=None`.
+A core design decision in HSAgent_2 is its adherence to the **Stateless Discovery Model**. This model prioritizes simplicity and robustness by treating every communication session as an atomic, independent event.
 
-### What's added
+### The Evolution from Stateful Reconnection
 
-1. **Signed handshake (`hs`)**
+This is a deliberate change from the "Stateful Reconnection" model attempted in HSAgent_1. While the original intent was to allow for efficient reconnection after transient failures, its implementation contained a critical flaw: it could not distinguish between a clean shutdown and an unexpected crash. This led to an infinite loop of successful handshakes followed by immediate reconnection attempts.
 
-   * On the **first** `request` (initiator) and on `confirm` (responder), agents attach `hs` with:
+### The Stateless Solution
 
-     ```
-     {
-       "type": "init" | "response",
-       "nonce": <echo target>,
-       "kx_pub": <base64>,
-       "sign_pub": <base64>,
-       "timestamp": <ISO8601>,
-       "sig": <Ed25519 over "nonce|kx_pub|timestamp">
-     }
-     ```
-   * The receiver validates `hs`, checks replay/TTL using the **DB-backed nonce store**, and derives a **32-byte session key** via X25519+HKDF.
+The Stateless Discovery model solves this definitively:
 
-2. **Secure envelope (`sec`)** *(optional)*
+**Full State Purge:** When a session ends—for any reason—both agents completely purge all state associated with that session (nonces, references, etc.).
 
-   * After a session key is derived, plain `"message"` fields may be replaced with:
+**Discovery via Broadcast:** Agents discover each other through periodic broadcast register messages.
 
-     ```
-     "sec": {
-       "envelope": {
-         "nonce": <b64 12B>,
-         "ciphertext": <b64>,
-         "hash": <b64 sha256(plaintext)>,
-         "ts": <ISO8601>
-       },
-       "sig": <Ed25519 over JSON(envelope)>
-     }
-     ```
-   * The receiver verifies the envelope signature, decrypts (AES-GCM), checks the hash, and then surfaces the plaintext as `content["message"]`.
+**Fresh Handshake:** Every new interaction between two agents begins with a full, fresh cryptographic handshake, as if they were total strangers.
 
-3. **Identity persistence**
+### Advantages for Distributed Systems
 
-   * Each agent loads/saves `id_agent_<name>.json` (AES-GCM sealed with a password-derived key via scrypt).
-   * File contains `my_id` + private/public keys (X25519/Ed25519).
+**High Robustness:** Eliminates the risk of stale state from a previous run corrupting a new session. This is critical in a cloud environment where agents may be restarted or scaled independently.
 
-> 📝 **Note:** Nonces/references for the flow are still stored in `RoleState`/`NonceEvent` exactly as in `HSAgent_0`. The **handshake nonces** inside `hs` are checked via the same `NonceEvent` table through a small adapter.
+**Simplicity:** The logic is significantly easier to debug and reason about, reducing the surface area for complex bugs.
 
-### Receive routes (selected deltas)
+**Security:** Forcing a new key exchange for each session enhances security by ensuring perfect forward secrecy.
 
-* **Responder**
+While this model incurs the computational cost of a key exchange for every session, its guarantees of stability and correctness are paramount for any security-sensitive task in a distributed environment.
 
-  * `resp_confirm → resp_exchange`
-    Validates `"request"` as before. If `content["hs"]` is present and valid, derives `SYM_KEYS[("responder", peer_id)]` and records `PEER_SIGN_PUB`.
-  * `resp_exchange → resp_finalize`
-    Same ping-pong/conclude behavior. If `sec` is present and keys are known, decrypts and logs the clear `message`.
+## Protocol Flow and State Machine
 
-* **Initiator**
+The agent's logic is governed by a state machine that ensures two agents can discover each other, securely exchange keys, conduct a brief message exchange, and cleanly terminate the session.
 
-  * `init_ready → init_exchange`
-    On `"confirm"`, if `hs` present/valid, derives `SYM_KEYS[("initiator", peer_id)]`.
-  * `init_exchange → init_finalize_propose`
-    Same checks; if `sec` is present, decrypts `message`.
+### Roles and States
 
-### Send driver (per role & peer)
+**Roles:** Initiator and Responder
 
-* **Initiator**
+**States:**
+- **Initiator:** `init_ready` → `init_exchange` → `init_finalize_propose` → `init_finalize_close` → `init_ready`
+- **Responder:** `resp_ready` → `resp_confirm` → `resp_exchange` → `resp_finalize` → `resp_ready`
 
-  * `init_exchange`: emits `"request"`. On the **first** request in a cycle, also attaches `hs` with `"type": "init"`. If a session key exists, wraps `"message"` in `sec`.
+### Key Protocol Stages
 
-* **Responder**
+#### Stage 1: Discovery and Role Assignment
 
-  * `resp_confirm`: emits `"confirm"` and always attaches `hs` with `"type": "response"`.
-  * `resp_exchange`: if a session key exists, wraps `"message"` in `sec`.
+**Broadcast:** All idle agents broadcast a `register` message every few seconds to announce their presence.
 
-Other states (`conclude/finish/close`) are unchanged.
+**Symmetry-Breaking:** When two agents receive each other's `register` message, they apply a deterministic rule: the agent with the lexicographically greater agent ID becomes the Responder. The other becomes the Initiator and ignores the register message. This critical step prevents deadlocks.
 
-</details>
+#### Stage 2: Cryptographic Handshake
 
-## SDK Features Used
+1. The Responder moves to the `resp_confirm` state and sends a `confirm` message containing a signed handshake blob (`hs`).
 
-| Feature                                                                             | Description                                                                                                                                                                |
-| ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SummonerClient(name=...)`                                                          | Instantiates the agent and sets up its logging context.                                                                                                                    |
-| `client.flow()`                                                                     | Retrieves the flow engine that drives route-based orchestration.                                                                                                           |
-| `client.flow().activate()`                                                          | Activates the flow engine so that route strings can be parsed and used to trigger handlers.                                                                                |
-| `client_flow.add_arrow_style(stem="-", brackets=("[","]"), separator=",", tip=">")` | Declares how arrows are drawn and parsed (e.g. parsing `stateA --> stateB`).                                                                                               |
-| `client_flow.ready()`                                                               | Compiles regex patterns for the declared arrow style, enabling runtime parsing of route definitions.                                                                       |
-| `Trigger = client_flow.triggers()`                                                  | Loads trigger names from the `TRIGGERS` file (containing `ok`, `error`, `ignore`), which are used in `Move(Trigger.ok)`, `Stay(Trigger.ignore)` and `Stay(Trigger.error)`. |
-| `@client.upload_states()`                                                           | Registers the handler that reports the agent's current states to the client, driving the **receive** flow transitions.                                                     |
-| `@client.download_states()`                                                         | Registers the handler that ingests the client's allowed states, updating in-memory rows before the next **receive** cycle.                                                 |
-| `@client.hook(Direction.RECEIVE/SEND)`                                              | Same as `HSAgent_0`; adds no crypto here (crypto happens inside routes/payloads).                                                                                          |
-| `@client.receive(route="A --> B")`                                                  | Same route map as `HSAgent_0`; crypto validation/decryption are added inside specific handlers.                                                                            |
-| `@client.send(route="sending", multi=True)`                                         | Same send driver; now attaches `hs` and/or `sec` when appropriate.                                                                                                         |
-| `client.logger`                                                                     | Centralized logging.                                                                                                                                                       |
-| `client.run(...)`                                                                   | Starts the agent loop.                                                                                                                                                     |
-
-## `db_sdk` Features Used
-
-| Feature                                        | Description                                                                  |
-| ---------------------------------------------- | ---------------------------------------------------------------------------- |
-| `Database(db_path)`                            | Single async SQLite connection.                                              |
-| `RoleState.create_table / create_index`        | Same as `HSAgent_0`; adds optional crypto metadata columns (safe if unused). |
-| `NonceEvent.create_table / create_index`       | Used for nonce logging **and** handshake replay/TTL via `DBNonceStore`.      |
-| `Model.get_or_create / insert / find / update` | Manage per-peer state and append nonce events.                               |
+2. The Initiator receives the `confirm`, validates it, performs an X25519 key exchange, and derives a shared symmetric session key.
 
-## How to Run
+3. The Initiator sends its first `request`, which also contains its signed `hs` blob.
 
-Start the Summoner server:
+4. The Responder validates the Initiator's handshake and derives the same shared key. The secure channel is now established.
 
-```bash
-python server.py
-```
-
-> [!NOTE]
-> You can use `--config configs/server_config_nojsonlogs.json` for cleaner terminal output.
+#### Stage 3: Message Exchange
 
-Then run the agent, using a user-friendly name tag to keep identities and databases separated:
+- The agents exchange a series of `request` and `respond` messages.
+- Each message contains a nonce that must be echoed by the counterpart, ensuring messages are in sequence.
+- Optionally, the message payload can be encrypted using the derived session key and placed in a secure envelope (`sec`).
 
-```bash
-python agents/agent_HSAgent_1/agent.py --name alice
-```
+#### Stage 4: Clean Session Finalization
 
-> [!CAUTION]
-> Use a **unique** `--name` per process so each instance gets its **own** encrypted identity and database. Reusing a name makes agents share keys/DB, which can cause confusing state jumps, handshake hiccups, and hard-to-trace logs.
-> **Fix:** run each process with a distinct `--name`. If a name was reused, stop both agents and either delete the matching `id_agent_<name>.json` and `HSAgent-<UUID>.db`, or just restart with a new `--name`.
+1. After `EXCHANGE_LIMIT` messages, the Initiator sends a `conclude` message with a session reference.
 
-Optional client config:
+2. The Responder replies with a `finish` message containing its own reference.
 
-```bash
-python agents/agent_HSAgent_1/agent.py --name alice --config configs/client_config.json
-```
+3. The Initiator replies with a final `close` message containing both references.
 
-This is what you should see and expect:
+4. Upon successful validation of the `close` message, the Responder deletes all state for the session.
 
-* First, running with `--name alice` creates an **encrypted identity** at `id_agent_alice.json`.
-* Then, a per-agent DB file `HSAgent-<UUID_for_alice>.db` is created next to the script.
-* Finally, on shutdown (`Ctrl+C`), the database is closed cleanly.
+5. After sending `close` for a few ticks (`FINAL_LIMIT`), the Initiator times out and also deletes all state for the session.
 
-## Simulation Scenarios
+This clean, two-sided teardown prevents infinite loops.
 
-### Scenario 1: Two agents (same as `HSAgent_0`, now with crypto)
+## Key Components and Modules
 
-```bash
-# Terminal 1: server
-python server.py
+### Core Agent Logic
 
-# Terminal 2: agent (name 1)
-python agents/agent_HSAgent_1/agent.py --name 1
+#### `agent.py`
+The main entrypoint. Contains the agent's state machine logic, message handlers (`@client.receive`), the send driver (`@client.send`), and all core protocol orchestration.
 
-# Terminal 3: agent (name 2)
-python agents/agent_HSAgent_1/agent.py --name 2
-```
+### Backend Integration
 
-You will see the HELLO, nonce exchanges (`request`/`respond`), a request to conclude, and `finish`/`close` with reference checks. Early in the flow you should also see `sym_key=...` logs when `hs` is validated, and later **secure envelopes** being opened when `sec` is present.
+#### `adapt.py`
+A high-level, asynchronous client library for interacting with the project's backend services. It handles authentication, automatic token renewal, and provides a clean interface to the underlying API.
 
-**Detailed terminal behavior (abridged):**
+#### `api.py`
+Defines the data models and high-level adapters for the backend.
 
-* **HELLO / Register (+ signed handshake)**
+### State Management
 
-  ```
-  ... - INFO - [send tick]
-  ... - INFO - [resp_ready -> resp_confirm] REGISTER | peer_id=<peer>
-  ... - INFO - [send][responder:resp_confirm] confirm | my_nonce=<n1>
-  ... - INFO - [init_ready -> init_exchange] sym_key=<...>...   # after validating 'hs'
-  ```
-* **First inbound request → exchange begins**
+#### `SubstrateStateStore`
+A cloud-native state manager that persists `HandshakeState` objects, handling creation, atomic updates, and queries.
 
-  ```
-  ... - INFO - [resp_confirm -> resp_exchange] check local_nonce='<n1>' ?= your_nonce='<n1>'
-  ... - INFO - [resp_confirm -> resp_exchange] FIRST REQUEST
-  ... - INFO - [init_ready -> init_exchange] peer_nonce set: <n2>
-  ```
-* **Ping-pong (a few rounds) with optional secure envelopes**
+#### `HybridNonceStore`
+A high-performance nonce tracker that uses fast lookups for validation and an append-only ledger for an immutable audit log, providing robust replay protection.
 
-  ```
-  ... - INFO - [send][initiator:init_exchange] request #1 | my_nonce=<n3>
-  ... - INFO - [secure:responder] opened message: 'How are you?'
-  ... - INFO - [init_exchange -> init_finalize_propose] RESPOND
-  ... - INFO - [resp_exchange -> resp_finalize] REQUEST RECEIVED #2
-  ```
-* **Conclude / Finish / Close**
+### Cryptographic Operations
 
-  ```
-  ... - INFO - [send][initiator:init_finalize_propose] conclude #1 | my_ref=<r1>
-  ... - INFO - [send][responder:resp_finalize] finish #1 | my_ref=<r2>
-  ... - INFO - [resp_finalize -> resp_ready] CLOSE SUCCESS
-  ... - INFO - [init_finalize_propose -> init_finalize_close] CLOSE
-  ```
-* **Reconnect attempts (same run)**
+#### `crypto_utils.py`
+A self-contained library for all cryptographic operations: key generation, serialization, signing (Ed25519), key exchange (X25519), key derivation (HKDF), and AEAD encryption (AES-GCM).
 
-  ```
-  ... - INFO - [send][initiator:init_ready] reconnect with <peer> under <peer_reference>
-  ... - INFO - [resp_ready -> resp_confirm] RECONNECT | peer_id=<...> under my_ref=<...>
-  ```
+### System Validation
 
-> [!NOTE]
-> As in `HSAgent_0`, `my_id` is generated on first identity creation. Across **fresh identities**, peers will not auto-reconnect (a new HELLO occurs).
+#### `selftest.py`
+A critical pre-flight check that runs on agent startup. It provisions a temporary user and runs a suite of live-fire tests against the backend services to validate that all components are functioning correctly before the main agent logic starts.
 
-### Scenario 2: Multi-peer
+## Technical Architecture
 
-```bash
-# Terminal 1: server
-python server.py
+### Cloud-Native Design
 
-# Single instance
-python agents/agent_HSAgent_1/agent.py --name 1
+HSAgent_2 represents a fundamental shift from local state management to cloud-native persistence. By leveraging the BOSS and Fathom services, the agent achieves:
 
-# Additional instances (multi-peer handshake demo)
-python agents/agent_HSAgent_1/agent.py --name 2
-python agents/agent_HSAgent_1/agent.py --name 3
-python agents/agent_HSAgent_1/agent.py --name 4
-```
+- **Scalability:** Multiple agent instances can operate independently without state conflicts
+- **Persistence:** Session state survives agent restarts and deployments
+- **Auditability:** All cryptographic operations are logged to an immutable ledger
+- **Reliability:** Atomic state updates prevent corruption during concurrent operations
 
-With three or more agents, one instance will interleave **per-peer** actions keyed by `(self_id, role, peer_id)`, just like `HSAgent_0`. You will also observe multiple `sym_key=...` derivations — one per peer pairing.
+### Security Model
+
+The agent implements a defense-in-depth security architecture:
+
+- **Perfect Forward Secrecy:** Each session uses ephemeral keys that cannot compromise past or future sessions
+- **Mutual Authentication:** Both parties must prove their identity through digital signatures
+- **Replay Protection:** Nonces and timestamps prevent message replay attacks
+- **Tamper Resistance:** All messages are cryptographically signed and optionally encrypted
+
+### Operational Excellence
+
+#### Pre-Flight Testing Philosophy
+
+The `selftest.py` module embodies the platform's "blood on the game-ball" philosophy. Before accepting any real traffic, the agent:
+
+1. Provisions temporary test credentials
+2. Exercises all backend APIs with real transactions
+3. Validates cryptographic operations end-to-end
+4. Confirms all state storage mechanisms are functional
+5. Only proceeds if all tests pass with flying colors
+
+This approach ensures that failures are discovered during startup rather than during critical operations, providing the confidence that comes from battle-tested systems.
+
+## Conclusion
+
+HSAgent_2 represents the maturation of the handshake protocol from a proof-of-concept to a production-ready foundation for secure service-to-service communication in distributed systems. Through its stateless design, comprehensive security model, and rigorous testing philosophy, it provides the reliable trust layer that modern cloud-native applications demand.
