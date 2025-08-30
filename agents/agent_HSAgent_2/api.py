@@ -92,6 +92,25 @@ class HybridNonceStore:
                 "time": str(int(ts.timestamp() * 1000)), "position": str(int(ts.timestamp() * 1000)), "attrs": {}
             })
         )
+    
+    async def delete_journal(self) -> None:
+        """
+        The CLEANUP side. Deletes the entire Fathom chain used for journaling
+        and any associated BOSS objects for this conversation thread.
+        """
+        # In a real system, you would also query for and delete all the
+        # `nonce_seen-*` associations and their target `NonceMarker` objects.
+        # For now, we focus on the journal itself.
+        try:
+            await self.api.chains.delete(self.journal_chain_key)
+        except APIError as e:
+            if e.status_code == 404:
+                # Chain may have never been created or was already deleted.
+                # This is a safe, idempotent outcome.
+                pass 
+            else:
+                # Re-raise more serious errors.
+                raise
 
 # =============================================================================
 #  The SubstrateStateStore: The Agent's New Brain

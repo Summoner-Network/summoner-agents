@@ -194,6 +194,14 @@ class SummonerChainsAPIClient:
         path = f"/api/chains/metadata/{self._client.username}/{chain_key['chainName']}/{chain_key['shardId']}"
         return await self._client._request("GET", path, 200)
 
+    async def delete(self, chain_key: Dict) -> Dict:
+        """
+        Permanently deletes an entire Fathom chain and all of its blocks.
+        """
+        self._client._check_auth("delete")
+        path = f"/api/chains/{self._client.username}/{chain_key['chainName']}/{chain_key['shardId']}"
+        return await self._client._request("DELETE", path, 200)
+
 class SummonerAPIClient(_BaseClient):
     """
     The main high-level client, composing specialized sub-clients.

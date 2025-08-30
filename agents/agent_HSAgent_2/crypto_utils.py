@@ -454,3 +454,30 @@ def load_identity_json_encrypted(path: str, password: bytes):
     kx_pub_b64   = obj.get("kx_pub_b64")
     sign_pub_b64 = obj.get("sign_pub_b64")
     return my_id, kx_priv, sign_priv, kx_pub_b64, sign_pub_b64
+
+def decrypt_identity_from_vault_attrs(vault_attrs: dict, password: bytes):
+    """
+    [NEW] Decrypts an agent's identity from a BOSS AgentSecretVault object's attributes.
+    This is the substrate-native replacement for load_identity_json_encrypted.
+    """
+    if vault_attrs.get("v") != "id.v1" or vault_attrs.get("kdf") != "scrypt":
+        raise ValueError("Unsupported identity vault format")
+
+    # The logic is identical to the file-based version, but reads from the dict.
+    salt  = b64_decode(vault_attrs["salt"])
+    nonce = b64_decode(vault_attrs["nonce"])
+    aad   = b64_decode(vault_attrs["aad"])
+    ct    = b64_decode(vault_attrs["ciphertext"])
+
+    key = _kdf_scrypt(password, salt)
+    aes = AESGCM(key)
+    plaintext = aes.decrypt(nonce, ct, associated_data=aad)
+
+    obj = json.loads(plaintext.decode("utf-8"))
+
+    my_id = obj["my_id"]
+    kx_priv   = x25519.X25519PrivateKey.from_private_bytes(b64_decode(obj["kx_priv_b64"]))
+    sign_priv = ed25519.Ed25519PrivateKey.from_private_bytes(b64_decode(obj["sign_priv_b64"]))
+    
+    # We don't need the public keys, as they can be recomputed.
+    return my_id, kx_priv, sign_priv
