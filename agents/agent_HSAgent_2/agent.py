@@ -342,7 +342,7 @@ async def handle_register(payload: dict) -> Optional[Event]:
     # This guard is crucial. It ensures the handler does nothing until the
     # agent's state has been fully initialized after connection.
     if not STATE_STORE or not my_id:
-        return Stay(Event.ignore())
+        return Stay(Trigger.ignore)
 
     content = payload["content"]
     if not(content["intent"] in ["register", "reconnect"]):
@@ -378,17 +378,17 @@ async def handle_request(payload: dict) -> Optional[Event]:
     and journaling is now handled by the substrate adapters.
     """
     if not STATE_STORE or not NONCE_STORE_FACTORY or not my_id:
-        return Stay(Event.ignore())
+        return Stay(Trigger.ignore)
 
     content = payload["content"]
     peer_id = content["from"]
 
-    if not(content["intent"] == "request" and content["to"] is not None): return Stay(Event.ignore())
-    if not("your_nonce" in content and "my_nonce" in content): return Stay(Event.ignore)
+    if not(content["intent"] == "request" and content["to"] is not None): return Stay(Trigger.ignore)
+    if not("your_nonce" in content and "my_nonce" in content): return Stay(Trigger.ignore)
 
     state_attrs = await ensure_role_state(my_id, "responder", peer_id, "resp_ready")
     if state_attrs.get("local_nonce") != content["your_nonce"]:
-        return Stay(Event.ignore())
+        return Stay(Trigger.ignore)
 
     # The cryptographic handshake now uses our powerful HybridNonceStore.
     if "hs" in content:
@@ -446,20 +446,20 @@ async def handle_request_or_conclude(payload: dict) -> Optional[Event]:
     The logic is identical, but state is managed by the substrate.
     """
     if not STATE_STORE or not my_id:
-        return Stay(Event.ignore())
+        return Stay(Trigger.ignore)
 
     content = payload["content"]
     peer_id = content["from"]
 
     if not(content["intent"] in ["request", "conclude"] and content["to"] is not None):
-        return Stay(Event.ignore())
+        return Stay(Trigger.ignore)
     if not("your_nonce" in content and (("my_nonce" in content and content["intent"] == "request") or
                                         ("my_ref" in content and content["intent"] == "conclude"))):
-        return Stay(Event.ignore())
+        return Stay(Trigger.ignore)
 
     state_attrs = await ensure_role_state(my_id, "responder", peer_id, "resp_ready")
     if state_attrs.get("local_nonce") != content["your_nonce"]:
-        return Stay(Event.ignore())
+        return Stay(Trigger.ignore)
     
     await maybe_open_secure("responder", peer_id, content)
 
@@ -499,20 +499,20 @@ async def handle_close(payload: dict) -> Optional[Event]:
     journaling are now managed by the substrate adapters.
     """
     if not STATE_STORE or not NONCE_STORE_FACTORY or not my_id:
-        return Stay(Event.ignore())
+        return Stay(Trigger.ignore)
 
     content = payload["content"]
     peer_id = content["from"]
 
-    if not(content["to"] is not None): return Stay(Event.ignore())
+    if not(content["to"] is not None): return Stay(Trigger.ignore)
 
     state_attrs = await ensure_role_state(my_id, "responder", peer_id, "resp_ready")
 
     if content["intent"] == "close":
-        if not("your_ref" in content and "my_ref" in content): return Stay(Event.ignore)
+        if not("your_ref" in content and "my_ref" in content): return Stay(Trigger.ignore)
         
         if state_attrs.get("local_reference") != content["your_ref"]:
-            return Stay(Event.ignore())
+            return Stay(Trigger.ignore)
 
         # This is now a single, atomic, version-aware update to a BOSS object.
         await STATE_STORE.update_role_state("responder", peer_id, {
@@ -542,7 +542,7 @@ async def handle_close(payload: dict) -> Optional[Event]:
 
     new_retry = int(state_attrs.get("finalize_retry_count", 0)) + 1
     await STATE_STORE.update_role_state("responder", peer_id, {"finalize_retry_count": new_retry})
-    return Stay(Event.error)
+    return Stay(Trigger.error)
 
 
 """ ===================== RECEIVE HANDLERS — INITIATOR ====================== """
@@ -555,7 +555,7 @@ async def handle_confirm(payload: dict) -> Optional[Event]:
     and journaling is now handled by the substrate adapters.
     """
     if not STATE_STORE or not NONCE_STORE_FACTORY or not my_id:
-        return Stay(Event.ignore())
+        return Stay(Trigger.ignore)
 
     content = payload["content"]
     peer_id = content["from"]
@@ -614,17 +614,17 @@ async def handle_respond(payload: dict) -> Optional[Event]:
     but all state management is now delegated to the substrate adapter.
     """
     if not STATE_STORE or not my_id:
-        return Stay(Event.ignore())
+        return Stay(Trigger.ignore)
 
     content = payload["content"]
     peer_id = content["from"]
 
-    if not(content["intent"] == "respond" and content["to"] is not None): return Stay(Event.ignore)
-    if not("your_nonce" in content and "my_nonce" in content): return Stay(Event.ignore)
+    if not(content["intent"] == "respond" and content["to"] is not None): return Stay(Trigger.ignore)
+    if not("your_nonce" in content and "my_nonce" in content): return Stay(Trigger.ignore)
 
     state_attrs = await ensure_role_state(my_id, "initiator", peer_id, "init_ready")
     if state_attrs.get("local_nonce") != content["your_nonce"]:
-        return Stay(Event.ignore())
+        return Stay(Trigger.ignore)
 
     await maybe_open_secure("initiator", peer_id, content)
     
@@ -656,17 +656,17 @@ async def handle_finish(payload: dict) -> Optional[Event]:
     journaling are now handled by the substrate adapters.
     """
     if not STATE_STORE or not NONCE_STORE_FACTORY or not my_id:
-        return Stay(Event.ignore())
+        return Stay(Trigger.ignore)
 
     content = payload["content"]
     peer_id = content["from"]
 
-    if not(content["intent"] == "finish" and content["to"] is not None): return Stay(Event.ignore)
-    if not("your_ref" in content and "my_ref" in content): return Stay(Event.ignore)
+    if not(content["intent"] == "finish" and content["to"] is not None): return Stay(Trigger.ignore)
+    if not("your_ref" in content and "my_ref" in content): return Stay(Trigger.ignore)
 
     state_attrs = await ensure_role_state(my_id, "initiator", peer_id, "init_ready")
     if state_attrs.get("local_reference") != content["your_ref"]:
-        return Stay(Event.ignore())
+        return Stay(Trigger.ignore)
     
     # This is the "CUT" path (retry limit exceeded).
     if int(state_attrs.get("finalize_retry_count", 0)) > FINAL_LIMIT:
@@ -697,12 +697,12 @@ async def finish_to_idle(payload: dict) -> Optional[Event]:
     but state is managed by the substrate adapter.
     """
     if not STATE_STORE or not my_id:
-        return Stay(Event.ignore())
+        return Stay(Trigger.ignore)
 
     content = payload["content"]
     peer_id = content["from"]
 
-    if peer_id is None: return Stay(Event.ignore())
+    if peer_id is None: return Stay(Trigger.ignore)
 
     state_attrs = await ensure_role_state(my_id, "initiator", peer_id, "init_ready")
     
@@ -759,6 +759,7 @@ async def trying() -> list[dict]:
             if row.get("peer_nonce") is None: continue
             new_cnt = int(row.get("exchange_count", 0)) + 1
             local_nonce = row.get("local_nonce") or generate_nonce()
+            # HERE
             await STATE_STORE.update_role_state("initiator", peer_id, {"local_nonce": local_nonce, "exchange_count": new_cnt})
             
             payload = {
