@@ -1,20 +1,22 @@
+# agents/agent_HSAgent_2/api.py
+
 import asyncio
 from typing import Dict, Any, Optional, Tuple
 
 # We depend entirely on the high-level, battle-tested API client.
-# This assumes the summoner library is installed or in the python path.
 from adapt import SummonerAPIClient, APIError
 
-# ---[ Placeholder ElmTypes - these should live in a shared contract ]---
-# These constants define the "types" of our new objects in the BOSS substrate.
+# ---[ ElmTypes - FINAL VERSION ]---
+# These constants define the "types" of our objects in the BOSS substrate.
 class ElmType:
     AgentIdentity = 7001
     AgentSecretVault = 7002
-    HandshakeState = 7003
     NonceMarker = 7004
+    HandshakeSendState = 7005      # [NEW] For the proactive "send" FSM
+    HandshakeReceiveState = 7006   # [NEW] For the reactive "receive" FSM
 
 # =============================================================================
-#  The HybridNonceStore: The Notary's Office
+#  The HybridNonceStore: The Notary's Office (Stable)
 # =============================================================================
 class HybridNonceStore:
     """
@@ -29,32 +31,28 @@ class HybridNonceStore:
         self.ttl_seconds = ttl_seconds
         self.journal_chain_key = {
             "tenant": self.api.username,
-            "chainName": f"nonce-journal-{self.self_id}-{self.peer_id}", # Using URL-safe separator
+            "chainName": f"nonce-journal-{self.self_id}-{self.peer_id}",
             "shardId": 0
         }
         self.index_source_id: Optional[str] = None
-
 
     async def _get_index_source_id(self) -> str:
         """Helper to lazily fetch the agent's own identity ID for the index."""
         if self.index_source_id:
             return self.index_source_id
         
-        identity_assoc = await self.api.boss.get_associations(
-            "owns_agent_identity", self.api.user_id, {"agentId": self.self_id}
+        # Use the efficient index to look up our own identity object ID.
+        assoc_response = await self.api.boss.get_associations(
+            self.self_id, self.api.user_id, {"limit": 1}
         )
-        if not identity_assoc or not identity_assoc.get("associations"):
+        if not assoc_response or not assoc_response.get("associations"):
              raise RuntimeError(f"Could not find AgentIdentity for agent {self.self_id}")
-        self.index_source_id = identity_assoc["associations"][0]["targetId"]
+        self.index_source_id = assoc_response["associations"][0]["targetId"]
         return self.index_source_id
 
     async def exists(self, nonce: str) -> bool:
-        """
-        The QUERY side. Performs a single, high-speed structural query against
-        the BOSS "Index Card" system.
-        """
+        """The QUERY side. Performs a single, high-speed query against BOSS."""
         source_id = await self._get_index_source_id()
-        # ✅ FIX: Use a URL-safe separator for the association type.
         assoc_type = f"nonce_seen-{nonce}"
         
         try:
@@ -70,12 +68,8 @@ class HybridNonceStore:
         return (datetime.now(timezone.utc) - ts.replace(tzinfo=timezone.utc)).total_seconds() > self.ttl_seconds
 
     async def add(self, nonce: str, ts) -> None:
-        """
-        The COMMAND side. Performs the "Notarization" act.
-        It writes to both the Fathom journal and the BOSS index.
-        """
+        """The COMMAND side. Writes to both the Fathom journal and the BOSS index."""
         source_id = await self._get_index_source_id()
-        # ✅ FIX: Use a URL-safe separator for the association type.
         assoc_type = f"nonce_seen-{nonce}"
 
         marker_obj = await self.api.boss.put_object({
@@ -94,32 +88,28 @@ class HybridNonceStore:
         )
     
     async def delete_journal(self) -> None:
-        """
-        The CLEANUP side. Deletes the entire Fathom chain used for journaling
-        and any associated BOSS objects for this conversation thread.
-        """
-        # In a real system, you would also query for and delete all the
-        # `nonce_seen-*` associations and their target `NonceMarker` objects.
-        # For now, we focus on the journal itself.
+        """The CLEANUP side. Deletes the entire Fathom chain for the journal."""
         try:
             await self.api.chains.delete(self.journal_chain_key)
         except APIError as e:
-            if e.status_code == 404:
-                # Chain may have never been created or was already deleted.
-                # This is a safe, idempotent outcome.
-                pass 
-            else:
-                # Re-raise more serious errors.
+            if e.status_code != 404:
                 raise
 
 # =============================================================================
-#  The SubstrateStateStore: The Agent's New Brain
+#  The SubstrateStateStore: The Agent's New Brain (FINALIZED)
 # =============================================================================
+
+# Define which fields belong to which of our segregated state objects. This is
+# the key to preventing write conflicts between the agent's concurrent loops.
+SEND_STATE_FIELDS = {"state", "local_nonce", "local_reference", "exchange_count", "finalize_retry_count"}
+RECV_STATE_FIELDS = {"peer_nonce", "peer_reference", "peer_address"}
+
 class SubstrateStateStore:
     """
-    This is the new, substrate-native replacement for the entire db_sdk.py.
-    It provides a high-level interface for managing the agent's state,
-    translating every call into the appropriate BOSS primitives.
+    [FINAL VERSION] This is the transparent facade for the agent's state. It
+    exposes a single, unified view of a "HandshakeState", but internally it
+    manages two separate, conflict-free BOSS objects to eliminate race
+    conditions between the agent's send and receive logic.
     """
     def __init__(self, api: SummonerAPIClient, self_agent_id: str):
         self.api = api
@@ -127,99 +117,138 @@ class SubstrateStateStore:
         self._identity_id_cache: Optional[str] = None
 
     async def _get_self_identity_id(self) -> str:
-        """Helper to find and cache our own AgentIdentity object ID."""
+        """Helper to find and cache our own AgentIdentity object ID using the fast index."""
         if self._identity_id_cache:
             return self._identity_id_cache
 
-        assoc = await self.api.boss.get_associations(
-            "owns_agent_identity", self.api.user_id, {"agentId": self.self_agent_id}
-        )
-        if not assoc or not assoc.get("associations"):
-            raise RuntimeError(f"Could not find AgentIdentity for agent {self.self_agent_id}")
-        self._identity_id_cache = assoc["associations"][0]["targetId"]
+        assoc_response = await self.api.boss.get_associations(self.self_agent_id, self.api.user_id)
+        if not assoc_response or not assoc_response.get("associations"):
+            raise RuntimeError(f"Could not find AgentIdentity object for self via index lookup for agent {self.self_agent_id}")
+        self._identity_id_cache = assoc_response["associations"][0]["targetId"]
         return self._identity_id_cache
 
-    async def _find_handshake_state_object(self, role: str, peer_id: str) -> Optional[Dict[str, Any]]:
-        """Finds the HandshakeState object for a given conversation thread."""
+    async def _find_peer_identity_id(self, peer_agent_uuid: str) -> Optional[str]:
+        """Finds a peer's AgentIdentity object ID by performing a direct, indexed query."""
+        try:
+            assoc_response = await self.api.boss.get_associations(peer_agent_uuid, self.api.user_id, {"limit": 1})
+            if assoc_response and assoc_response.get("associations"):
+                return assoc_response["associations"][0]["targetId"]
+        except APIError as e:
+            if e.status_code == 404: return None
+            raise
+        return None
+
+    async def _find_state_objects(self, role: str, peer_id: str) -> Tuple[Optional[Dict], Optional[Dict]]:
+        """A helper to find BOTH the send and receive state objects concurrently."""
         self_identity_id = await self._get_self_identity_id()
-        # ✅ FIX: Use a URL-safe separator for the association type.
-        assoc_type = f"handshake_state-{role}-{peer_id}"
-        
-        associations = await self.api.boss.get_associations(assoc_type, self_identity_id)
-        if not associations.get("associations"):
+        send_assoc_type = f"hs_send_state-{role}-{peer_id}"
+        recv_assoc_type = f"hs_recv_state-{role}-{peer_id}"
+
+        async def get_obj_by_assoc(assoc_type: str, obj_type: int):
+            try:
+                assoc_res = await self.api.boss.get_associations(assoc_type, self_identity_id)
+                if assoc_res and assoc_res.get("associations"):
+                    target_id = assoc_res["associations"][0]["targetId"]
+                    return await self.api.boss.get_object(obj_type, target_id)
+            except APIError as e:
+                if e.status_code == 404: return None
+                raise
             return None
-        
-        state_object_id = associations["associations"][0]["targetId"]
-        return await self.api.boss.get_object(ElmType.HandshakeState, state_object_id)
 
-    async def find_role_states(self, role: str) -> list[Dict[str, Any]]:
-        """Finds all HandshakeState objects for a given role."""
-        self_identity_id = await self._get_self_identity_id()
-        
-        associations = await self.api.boss.get_associations("has_handshake_state", self_identity_id, {"limit": 1000})
-
-        if not associations.get("associations"):
-            return []
-
-        state_ids = [assoc["targetId"] for assoc in associations.get("associations", [])]
-        tasks = [self.api.boss.get_object(ElmType.HandshakeState, state_id) for state_id in state_ids]
-        all_states = await asyncio.gather(*tasks)
-
-        return [state for state in all_states if state and state.get("attrs", {}).get("role") == role]
+        send_obj, recv_obj = await asyncio.gather(
+            get_obj_by_assoc(send_assoc_type, ElmType.HandshakeSendState),
+            get_obj_by_assoc(recv_assoc_type, ElmType.HandshakeReceiveState)
+        )
+        return send_obj, recv_obj
 
     async def ensure_role_state(self, role: str, peer_id: str, default_state: str) -> Tuple[Dict[str, Any], bool]:
-        """
-        Finds or creates the HandshakeState object for a conversation.
-        Returns (state_object_dict, created_boolean).
-        """
-        state_obj = await self._find_handshake_state_object(role, peer_id)
-        if state_obj:
-            return state_obj, False
-
+        """Finds or creates BOTH state objects and returns a single, merged dictionary."""
+        send_obj, recv_obj = await self._find_state_objects(role, peer_id)
+        created = False
         self_identity_id = await self._get_self_identity_id()
-        
-        new_state_attrs = {
-            "selfId": self.self_agent_id, "peerId": peer_id, "role": role, "state": default_state,
-            "exchange_count": 0, "finalize_retry_count": 0, "local_nonce": None,
-            "peer_nonce": None, "local_reference": None, "peer_reference": None, "peer_address": None
-        }
-        create_res = await self.api.boss.put_object({
-            "type": ElmType.HandshakeState, "version": 0, "attrs": new_state_attrs
-        })
-        new_state_id = create_res["id"]
-
         now_ms = str(int(asyncio.get_running_loop().time() * 1000))
 
-        # ✅ FIX: Use a URL-safe separator for the association type.
-        await self.api.boss.put_association({
-            "type": f"handshake_state-{role}-{peer_id}",
-            "sourceId": self_identity_id, "targetId": new_state_id,
-            "time": now_ms, "position": now_ms, "attrs": {}
-        })
-        
-        await self.api.boss.put_association({
-            "type": "has_handshake_state",
-            "sourceId": self_identity_id, "targetId": new_state_id,
-            "time": now_ms, "position": now_ms, "attrs": {}
-        })
+        if not send_obj:
+            created = True
+            attrs = {"role": role, "peerId": peer_id, "state": default_state, **{k: None for k in (SEND_STATE_FIELDS - {'state'})}}
+            attrs["exchange_count"] = 0
+            attrs["finalize_retry_count"] = 0
+            res = await self.api.boss.put_object({"type": ElmType.HandshakeSendState, "version": 0, "attrs": attrs})
+            send_id = res["id"]
+            await asyncio.gather(
+                self.api.boss.put_association({
+                    "type": f"hs_send_state-{role}-{peer_id}", "sourceId": self_identity_id, "targetId": send_id,
+                    "time": now_ms, "position": now_ms, "attrs": {}
+                }),
+                self.api.boss.put_association({
+                    "type": "has_handshake_with", "sourceId": self_identity_id, "targetId": peer_id,
+                    "time": now_ms, "position": now_ms, "attrs": {"role": role}
+                })
+            )
+            send_obj = await self.api.boss.get_object(ElmType.HandshakeSendState, send_id)
 
-        new_state_obj = await self.api.boss.get_object(ElmType.HandshakeState, new_state_id)
-        return new_state_obj, True
+        if not recv_obj:
+            created = True
+            attrs = {k: None for k in RECV_STATE_FIELDS}
+            res = await self.api.boss.put_object({"type": ElmType.HandshakeReceiveState, "version": 0, "attrs": attrs})
+            recv_id = res["id"]
+            await self.api.boss.put_association({
+                "type": f"hs_recv_state-{role}-{peer_id}", "sourceId": self_identity_id, "targetId": recv_id,
+                "time": now_ms, "position": now_ms, "attrs": {}
+            })
+            recv_obj = await self.api.boss.get_object(ElmType.HandshakeReceiveState, recv_id)
+
+        merged_attrs = {**recv_obj["attrs"], **send_obj["attrs"]}
+        return {"attrs": merged_attrs, "id": send_obj["id"], "version": send_obj["version"]}, created
 
     async def update_role_state(self, role: str, peer_id: str, fields: Dict[str, Any]):
-        """
-        Updates an existing HandshakeState object using optimistic locking.
-        """
-        state_obj = await self._find_handshake_state_object(role, peer_id)
-        if not state_obj:
-            raise RuntimeError(f"Attempted to update a non-existent state for peer {peer_id}")
-        
-        state_obj["attrs"].update(fields)
-        
-        await self.api.boss.put_object({
-            "id": state_obj["id"],
-            "type": ElmType.HandshakeState,
-            "version": state_obj["version"],
-            "attrs": state_obj["attrs"]
-        })
+        """The 'smart router'. It inspects fields and only writes to the appropriate underlying state object."""
+        send_fields = {k: v for k, v in fields.items() if k in SEND_STATE_FIELDS}
+        recv_fields = {k: v for k, v in fields.items() if k in RECV_STATE_FIELDS}
 
+        tasks = []
+        if send_fields:
+            async def update_send():
+                send_obj, _ = await self._find_state_objects(role, peer_id)
+                if not send_obj: raise RuntimeError(f"Send state not found for {role}/{peer_id}")
+                send_obj["attrs"].update(send_fields)
+                await self.api.boss.put_object({
+                    "id": send_obj["id"], "type": ElmType.HandshakeSendState,
+                    "version": send_obj["version"], "attrs": send_obj["attrs"]
+                })
+            tasks.append(update_send())
+
+        if recv_fields:
+            async def update_recv():
+                _, recv_obj = await self._find_state_objects(role, peer_id)
+                if not recv_obj: raise RuntimeError(f"Receive state not found for {role}/{peer_id}")
+                recv_obj["attrs"].update(recv_fields)
+                await self.api.boss.put_object({
+                    "id": recv_obj["id"], "type": ElmType.HandshakeReceiveState,
+                    "version": recv_obj["version"], "attrs": recv_obj["attrs"]
+                })
+            tasks.append(update_recv())
+        
+        if tasks:
+            await asyncio.gather(*tasks)
+
+    async def find_role_states(self, role: str) -> list[Dict[str, Any]]:
+        """Finds all conversations for a given role by discovering peers and merging their state objects."""
+        self_identity_id = await self._get_self_identity_id()
+        associations = await self.api.boss.get_associations("has_handshake_with", self_identity_id, {"limit": 1000})
+        if not associations.get("associations"):
+            return []
+        
+        peer_ids = [a["targetId"] for a in associations["associations"] if a.get("attrs", {}).get("role") == role]
+        if not peer_ids:
+            return []
+
+        state_pairs = await asyncio.gather(*[self._find_state_objects(role, pid) for pid in peer_ids])
+        
+        merged_states = []
+        for send_obj, recv_obj in state_pairs:
+            if send_obj and recv_obj:
+                merged_attrs = {**recv_obj["attrs"], **send_obj["attrs"]}
+                merged_states.append({"attrs": merged_attrs, "id": send_obj["id"], "version": send_obj["version"]})
+        
+        return merged_states

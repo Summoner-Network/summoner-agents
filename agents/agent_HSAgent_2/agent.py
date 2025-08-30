@@ -70,9 +70,10 @@ from adapt import APIError, SummonerAPIClient
 from selftest import runSelfTests
 from crypto_utils import (
     decrypt_identity_from_vault_attrs, seal_envelope, open_envelope,
-    build_handshake_message,
+    build_handshake_message, serialize_public_key,
     validate_handshake_message,
-    load_identity_json_encrypted, save_identity_json_encrypted
+    load_identity_json_encrypted, save_identity_json_encrypted,
+    encrypt_identity_for_vault
 )
 
 
@@ -132,23 +133,41 @@ PERSIST_CRYPTO = True
 
 """ ============================= CRYPTO HELPERS ============================ """
 
-# ---[ CRYPTO ADDITIONS - REFACTORED FOR SUBSTRATE ]---
+# ---[ CRYPTO ADDITIONS - REFACTORED & HARDENED FOR SUBSTRATE ]---
 async def persist_crypto_meta(role: str, peer_id: str, **fields) -> None:
     """
-    Best-effort persistence of cryptographic metadata into the HandshakeState
-    object in the BOSS substrate.
+    [REVISED] Best-effort persistence of cryptographic metadata. This version
+    includes hardened error handling to distinguish between recoverable race
+    conditions (version clashes) and unexpected API failures.
     """
     if not PERSIST_CRYPTO or not STATE_STORE:
         return
     try:
-        # This single, high-level call replaces the entire previous implementation.
-        # It delegates the complex work of the read-modify-write cycle to our
-        # battle-tested state store adapter.
+        # The underlying call to the state store adapter remains the same,
+        # as its public interface is stable.
         await STATE_STORE.update_role_state(role, peer_id, fields)
+
+    except APIError as e:
+        # A 500 error from our backend on a PUT operation signifies a version
+        # clash due to a race condition. This is expected and safe to ignore,
+        # as the state will sync on a subsequent interaction.
+        if e.status_code == 500:
+            client.logger.warning(
+                f"[crypto:persist] Version clash for peer {peer_id}. "
+                "This is a normal race condition and is safe to ignore."
+            )
+        else:
+            # Other API errors are unexpected and should be logged as errors.
+            client.logger.error(f"[crypto:persist] Unexpected API error for peer {peer_id}: {e}")
+            
+    except RuntimeError as e:
+        # This can happen if another concurrent process deleted the state object
+        # between the read and write steps. It's a race condition.
+        client.logger.warning(f"[crypto:persist] Could not update state for peer {peer_id}, likely deleted: {e}")
     except Exception as e:
-        # The logic is now simpler. We only need to handle potential API errors,
-        # not database schema inconsistencies.
-        client.logger.warning(f"[crypto:persist] Failed to update state for peer {peer_id}: {e}")
+        # A final catch-all for anything truly unexpected.
+        client.logger.error(f"[crypto:persist] A critical unexpected error occurred for peer {peer_id}: {e}", exc_info=True)
+
     
 async def maybe_open_secure(role: str, peer_id: str, content: dict) -> None:
     """
@@ -202,64 +221,95 @@ Trigger = client_flow.triggers()
 
 """ ======================= ROLESTATE HELPERS (UTILS) ======================= """
 
-# ---[ REFACTORED FOR SUBSTRATE ]---
+# ---[ REFACTORED & HARDENED FOR SUBSTRATE ]---
 async def ensure_role_state(self_id: str, role: str, peer_id: str, default_state: str) -> dict:
     """
-    Finds or creates the HandshakeState object for a conversation in the BOSS
-    substrate. Returns the object's `attrs` dictionary to maintain compatibility
-    with the original agent's logic.
+    [REVISED] Finds or creates the HandshakeState object for a conversation.
+    This version adds hardened error handling to log and propagate failures
+    gracefully, preventing silent crashes in the agent's receiver loop.
     """
     if not STATE_STORE:
+        # This is a fatal configuration error; the agent cannot run without the state store.
         raise RuntimeError("STATE_STORE has not been initialized. Cannot ensure role state.")
 
-    # This single, high-level call replaces the entire previous implementation.
-    # It delegates the complex "get or create" logic to our battle-tested adapter.
-    state_obj, _ = await STATE_STORE.ensure_role_state(role, peer_id, default_state)
+    try:
+        # The core logic remains the same, relying on our robust state store adapter.
+        state_obj, _ = await STATE_STORE.ensure_role_state(role, peer_id, default_state)
 
-    # Return just the `attrs` portion to maintain the original function's contract.
-    return state_obj["attrs"]
+        # We return only the 'attrs' portion to maintain the function's contract
+        # with the rest of the agent's logic.
+        return state_obj["attrs"]
+
+    except APIError as e:
+        # Log the specific API error with context, then re-raise it so the
+        # calling function can handle the failure.
+        client.logger.error(f"[ensure_role_state] API error while ensuring state for role={role}, peer={peer_id}: {e}")
+        raise
+
+    except Exception as e:
+        # Catch any other unexpected errors, log them as critical, and re-raise.
+        client.logger.critical(
+            f"[ensure_role_state] CRITICAL unexpected error for role={role}, peer={peer_id}: {e}",
+            exc_info=True
+        )
+        raise
 
 """ ============== STATE ADVERTISING (UPLOAD/DOWNLOAD NEGOTIATION) ========= """
 
-# ---[ REFACTORED FOR SUBSTRATE ]---
+# ---[ REFACTORED & HARDENED FOR SUBSTRATE ]---
 @client.upload_states()
 async def upload(payload: dict) -> dict[str, str]:
     """
-    [MIGRATED] Reports the agent's current state for a given peer to the server
-    by querying the BOSS substrate via the state store adapter.
+    [REVISED] Reports agent state to the server. This version is hardened to
+    work with the split-state model, translates peer UUIDs to object IDs, and
+    handles API errors gracefully.
     """
     if not STATE_STORE:
-        # This guard prevents errors if the agent's state hasn't been initialized yet.
         return {}
-    
-    peer_id = None
+
+    peer_agent_uuid = None
     if isinstance(payload, dict):
-        peer_id = payload.get("from") or (payload.get("content", {}) or {}).get("from")
+        peer_agent_uuid = payload.get("from") or (payload.get("content", {}) or {}).get("from")
 
-    if peer_id is None:
+    if not peer_agent_uuid:
         return {}
 
-    # These two high-level calls replace the direct database queries.
-    # The complex logic of finding the correct object is now hidden in the adapter.
-    i_state_obj = await STATE_STORE._find_handshake_state_object("initiator", peer_id)
-    r_state_obj = await STATE_STORE._find_handshake_state_object("responder", peer_id)
+    try:
+        # Step 1: Translate the public peer UUID to its internal database object ID.
+        # This is essential as all state is keyed by the object ID.
+        peer_identity_obj_id = await STATE_STORE._find_peer_identity_id(peer_agent_uuid)
+        if not peer_identity_obj_id:
+            # If we can't find the peer in the substrate, we can't report its state.
+            return {}
 
-    # The external contract is identical. We extract the 'state' attribute from
-    # the returned BOSS object, or use the default if no state object was found.
-    i_state = i_state_obj["attrs"]["state"] if i_state_obj and i_state_obj.get("attrs", {}).get("state") else "init_ready"
-    r_state = r_state_obj["attrs"]["state"] if r_state_obj and r_state_obj.get("attrs", {}).get("state") else "resp_ready"
+        # Step 2: Fetch the split-state objects using the correct internal object ID.
+        i_send_obj, _ = await STATE_STORE._find_state_objects("initiator", peer_identity_obj_id)
+        r_send_obj, _ = await STATE_STORE._find_state_objects("responder", peer_identity_obj_id)
 
-    client.logger.info(f"\033[92m[upload] peer={peer_id[:5]} | initiator={i_state} | responder={r_state}\033[0m")
-    return {f"initiator:{peer_id}": i_state, f"responder:{peer_id}": r_state}
+        # Step 3: Extract the 'state' attribute, which lives exclusively in the "send" object.
+        # Use a default state if the corresponding object hasn't been created yet.
+        i_state = i_send_obj["attrs"]["state"] if i_send_obj else "init_ready"
+        r_state = r_send_obj["attrs"]["state"] if r_send_obj else "resp_ready"
 
+        client.logger.info(f"\033[92m[upload] peer={peer_agent_uuid[:5]} | initiator={i_state} | responder={r_state}\033[0m")
+        
+        # The key for the returned dictionary MUST be the internal object ID for the
+        # server's state negotiation logic to work correctly.
+        return {f"initiator:{peer_identity_obj_id}": i_state, f"responder:{peer_identity_obj_id}": r_state}
 
-# ---[ REFACTORED FOR SUBSTRATE - FINAL, HARDENED VERSION ]---
+    except Exception as e:
+        # On any failure (API error, etc.), log it and return an empty dict
+        # to prevent the agent's core loop from crashing.
+        client.logger.error(f"[upload] Failed to get state for peer {peer_agent_uuid[:5]}: {e}")
+        return {}
+
+# ---[ REFACTORED & HARDENED FOR SUBSTRATE ]---
 @client.download_states()
 async def download(possible_states: dict[Optional[str], list[Node]]) -> None:
     """
-    [MIGRATED & HARDENED] Receives permissible states from the server and updates
-    the agent's state in BOSS. It now gracefully handles version clashes that
-    can occur in a highly concurrent environment.
+    [REVISED] Receives permissible states from the server and updates the
+    agent's state in the BOSS substrate. This version includes hardened,
+    contextual error logging.
     """
     if not STATE_STORE:
         return
@@ -273,32 +323,39 @@ async def download(possible_states: dict[Optional[str], list[Node]]) -> None:
         if key is None or ":" not in str(key):
             continue
 
+        # The peer_id here is the internal database object ID, not the public UUID.
         role, peer_id = key.split(":", 1)
         if role not in ordered_states or not peer_id:
             continue
 
+        # Determine the best state to transition to based on the server's suggestions.
         target_state = next((s for s in ordered_states[role] if Node(s) in role_states), None)
         if not target_state:
             continue
 
         try:
-            # This is now a resilient, atomic update.
+            # This is a resilient, atomic update to the 'state' field.
             await STATE_STORE.update_role_state(role, peer_id, {"state": target_state})
-            client.logger.info(f"[download] '{role}' set state -> '{target_state}' for {peer_id[:5]}")
+            client.logger.info(f"[download] '{role}' set state -> '{target_state}' for peer {peer_id[:5]}")
         
         except APIError as e:
-            # [THE FIX] Gracefully handle the inevitable version clash.
+            # Gracefully handle the inevitable version clash as a non-fatal warning.
             if e.status_code == 500:
                 client.logger.warning(
-                    f"[download] Version clash detected for peer {peer_id} while setting state to {target_state}. "
+                    f"[download] Version clash for peer {peer_id} while setting state to {target_state}. "
                     "This is a normal race condition. State will sync on next tick."
                 )
             else:
-                # Re-raise other, more serious API errors.
-                client.logger.error(f"[download] API error for peer {peer_id}: {e}", exc_info=True)
+                # Log other, more serious API errors.
+                client.logger.error(f"[download] API error for peer {peer_id}: {e}")
         
         except RuntimeError as e:
+            # This can happen if the state was deleted by a concurrent process.
             client.logger.warning(f"[download] Could not update state for peer {peer_id}: {e}")
+            
+        except Exception as e:
+            # A final catch-all for anything truly unexpected.
+            client.logger.critical(f"[download] CRITICAL unexpected error for peer {peer_id}: {e}", exc_info=True)
 
 """ =============================== HOOKS =================================== """
 
@@ -345,534 +402,641 @@ async def signature(payload: Any) -> Optional[dict]:
 
 """ ===================== RECEIVE HANDLERS — RESPONDER ====================== """
 
+
 @client.receive(route="resp_ready --> resp_confirm")
 async def handle_register(payload: dict) -> Optional[Event]:
     """
-    [MIGRATED & HARDENED] HELLO stage (responder). The logic now includes a
-    deterministic symmetry-breaking rule to prevent role-assignment race conditions.
+    [REVISED & HARDENED] HELLO stage (responder). This version adds a
+    proactive state update to break the state negotiation deadlock.
     """
     if not STATE_STORE or not my_id:
         return Stay(Trigger.ignore)
 
     content = payload["content"]
     if not(content["intent"] in ["register", "reconnect"]):
-        return
-
-    peer_id = content["from"]
-    addr = payload["remote_addr"]
-
-    # ✅ [THE FIX] Symmetry-breaking rule:
-    # Only become a responder if my ID is greater than the peer's ID.
-    # Otherwise, I will be the initiator and should ignore this register message,
-    # waiting instead for a 'confirm' message from the peer.
-    if content["intent"] == "register" and my_id <= peer_id:
-        client.logger.info(f"[handle_register] Ignoring register from peer {peer_id[:5]} due to symmetry rule (my_id <= peer_id). I will initiate.")
         return Stay(Trigger.ignore)
 
-    # This single, high-level call replaces the complex get_or_create and update logic.
-    state_obj, created = await STATE_STORE.ensure_role_state("responder", peer_id, "resp_ready")
-    if not created:
-        # If the state object already existed, we still update the peer_address.
-        await STATE_STORE.update_role_state("responder", peer_id, {"peer_address": addr})
-    
-    state_attrs = state_obj["attrs"] # Use the attrs dictionary for checks
+    peer_agent_uuid = content["from"]
+    addr = payload["remote_addr"]
 
-    if content["intent"] == "register" and content["to"] is None and state_attrs.get("local_reference") is None:
-        client.logger.info(f"[resp_ready -> resp_confirm] REGISTER | peer_id={peer_id}")
-        return Move(Trigger.ok)
+    if content["intent"] == "register" and my_id <= peer_agent_uuid:
+        client.logger.info(f"[handle_register] Ignoring register from peer {peer_agent_uuid[:5]} due to symmetry rule. I will initiate.")
+        return Stay(Trigger.ignore)
 
-    if content["intent"] == "reconnect" and content.get("your_ref") == state_attrs.get("local_reference"):
-        await STATE_STORE.update_role_state("responder", peer_id, {"local_reference": None})
-        client.logger.info(f"[resp_ready -> resp_confirm] RECONNECT | peer_id={peer_id} under my_ref={state_attrs.get('local_reference')}")
-        return Move(Trigger.ok)
+    try:
+        peer_identity_obj_id = await STATE_STORE._find_peer_identity_id(peer_agent_uuid)
+        if not peer_identity_obj_id:
+            client.logger.warning(f"[handle_register] Received register from unknown peer UUID {peer_agent_uuid[:5]}. Ignoring.")
+            return Stay(Trigger.ignore)
+
+        state_obj, created = await STATE_STORE.ensure_role_state("responder", peer_identity_obj_id, "resp_ready")
+        if not created:
+            await STATE_STORE.update_role_state("responder", peer_identity_obj_id, {"peer_address": addr})
+        
+        state_attrs = state_obj["attrs"]
+
+        # ✅ THE FIX: Proactively write the next state to the database to win the race condition.
+        if content["intent"] == "register" and content["to"] is None and state_attrs.get("local_reference") is None:
+            await STATE_STORE.update_role_state("responder", peer_identity_obj_id, {"state": "resp_confirm"})
+            client.logger.info(f"[resp_ready -> resp_confirm] REGISTER | peer_obj_id={peer_identity_obj_id}")
+            return Move(Trigger.ok)
+
+        if content["intent"] == "reconnect" and content.get("your_ref") == state_attrs.get("local_reference"):
+            await STATE_STORE.update_role_state("responder", peer_identity_obj_id, {"state": "resp_confirm"})
+            client.logger.info(f"[resp_ready -> resp_confirm] RECONNECT | peer_obj_id={peer_identity_obj_id}")
+            return Move(Trigger.ok)
+
+    except APIError as e:
+        client.logger.error(f"[handle_register] API error for peer {peer_agent_uuid[:5]}: {e}")
+        return Stay(Trigger.error)
+    except Exception as e:
+        client.logger.critical(f"[handle_register] CRITICAL error for peer {peer_agent_uuid[:5]}: {e}", exc_info=True)
+        return Stay(Trigger.error)
+        
+    return Stay(Trigger.ignore)
 
 
-# ---[ REFACTORED FOR SUBSTRATE ]---
+
 @client.receive(route="resp_confirm --> resp_exchange")
 async def handle_request(payload: dict) -> Optional[Event]:
     """
-    [MIGRATED] First request after confirm. Logic is identical, but all state
-    and journaling is now handled by the substrate adapters.
+    [REVISED & HARDENED] Handles the first request from the initiator,
+    validates the handshake, derives session keys, and updates state. This
+    version correctly uses internal object IDs for all state management and
+    includes robust, multi-level error handling.
     """
     if not STATE_STORE or not NONCE_STORE_FACTORY or not my_id:
         return Stay(Trigger.ignore)
 
     content = payload["content"]
-    peer_id = content["from"]
-
-    if not(content["intent"] == "request" and content["to"] is not None): return Stay(Trigger.ignore)
-    if not("your_nonce" in content and "my_nonce" in content): return Stay(Trigger.ignore)
-
-    state_attrs = await ensure_role_state(my_id, "responder", peer_id, "resp_ready")
-    if state_attrs.get("local_nonce") != content["your_nonce"]:
+    if not(content["intent"] == "request" and content["to"] is not None):
+        return Stay(Trigger.ignore)
+    if not("your_nonce" in content and "my_nonce" in content):
         return Stay(Trigger.ignore)
 
-    # The cryptographic handshake now uses our powerful HybridNonceStore.
-    if "hs" in content:
-        # The factory provides a new, peer-specific nonce store on demand.
-        nonce_store = NONCE_STORE_FACTORY(peer_id)
-        try:
-            sym = await validate_handshake_message(
-                content["hs"], expected_type="init",
-                expected_nonce=content["my_nonce"],
-                nonce_store=nonce_store, priv_kx=kx_priv
-            )
-            SYM_KEYS[("responder", peer_id)] = sym
-            PEER_SIGN_PUB[("responder", peer_id)] = content["hs"].get("sign_pub", "")
-            client.logger.info(f"[resp_confirm -> resp_exchange] sym_key={sym[:8].hex()}...")
-            
-            # Persist crypto metadata via the new, clean helper.
-            await persist_crypto_meta(
-                "responder", peer_id,
-                peer_sign_pub=content["hs"].get("sign_pub"),
-                peer_kx_pub=content["hs"].get("kx_pub"),
-                hs_derived_at=_dt.datetime.now(_dt.timezone.utc).isoformat()
-            )
-        except Exception as e:
-            client.logger.warning(f"[resp_confirm -> resp_exchange] handshake verify failed: {e}")
+    peer_agent_uuid = content["from"]
 
-    # This is now a single, atomic, version-aware update to a BOSS object.
-    await STATE_STORE.update_role_state(
-        "responder",
-        peer_id,
-        {
-            "peer_nonce": content["my_nonce"],
-            "local_nonce": None,
-            "exchange_count": 1,
-            "peer_address": payload["remote_addr"]
-        }
-    )
+    try:
+        # Step 1: Translate the public peer UUID to its internal database object ID.
+        peer_identity_obj_id = await STATE_STORE._find_peer_identity_id(peer_agent_uuid)
+        if not peer_identity_obj_id:
+            client.logger.warning(f"[handle_request] Received request from unknown peer UUID {peer_agent_uuid[:5]}. Ignoring.")
+            return Stay(Trigger.ignore)
 
-    # The regular nonce logging is now a clean append to a Fathom chain.
-    # Note: We no longer need the `inserted_by_validator` flag because the handshake
-    # nonce store (HybridNonceStore) and this protocol log are now two separate,
-    # independent systems, as they should be.
-    # await log_protocol_event("nonce_received", {"nonce": content["my_nonce"], ...})
+        # Step 2: Ensure we have a state object for this peer and validate the nonce.
+        state_attrs = await ensure_role_state(my_id, "responder", peer_identity_obj_id, "resp_ready")
+        if state_attrs.get("local_nonce") != content["your_nonce"]:
+            client.logger.warning(f"[handle_request] Nonce mismatch for peer {peer_agent_uuid[:5]}. Ignoring.")
+            return Stay(Trigger.ignore)
 
-    await maybe_open_secure("responder", peer_id, content)
+        # Step 3: Handle the cryptographic handshake if present.
+        if "hs" in content:
+            nonce_store = NONCE_STORE_FACTORY(peer_identity_obj_id)
+            try:
+                sym = await validate_handshake_message(
+                    content["hs"], expected_type="init",
+                    expected_nonce=content["my_nonce"],
+                    nonce_store=nonce_store, priv_kx=kx_priv
+                )
+                # Use the internal object ID as the key for all in-memory and persistent state.
+                SYM_KEYS[("responder", peer_identity_obj_id)] = sym
+                PEER_SIGN_PUB[("responder", peer_identity_obj_id)] = content["hs"].get("sign_pub", "")
+                
+                await persist_crypto_meta(
+                    "responder", peer_identity_obj_id,
+                    peer_sign_pub=content["hs"].get("sign_pub"),
+                    peer_kx_pub=content["hs"].get("kx_pub"),
+                    hs_derived_at=_dt.datetime.now(_dt.timezone.utc).isoformat()
+                )
+            except ValueError as e:
+                # A ValueError from validation is a security warning (e.g., bad signature, replay).
+                client.logger.warning(f"[handle_request] Handshake validation failed for peer {peer_agent_uuid[:5]}: {e}")
+                return Stay(Trigger.ignore) # Abort the transition.
 
-    client.logger.info("[resp_confirm -> resp_exchange] FIRST REQUEST")
-    return Move(Trigger.ok)
+        # Step 4: Update the protocol state in the substrate.
+        await STATE_STORE.update_role_state(
+            "responder",
+            peer_identity_obj_id,
+            {
+                "peer_nonce": content["my_nonce"],
+                "local_nonce": None,
+                "exchange_count": 1,
+                "peer_address": payload["remote_addr"]
+            }
+        )
+
+        await maybe_open_secure("responder", peer_identity_obj_id, content)
+
+        client.logger.info(f"[resp_confirm -> resp_exchange] FIRST REQUEST | peer_obj_id={peer_identity_obj_id}")
+        return Move(Trigger.ok)
+
+    except APIError as e:
+        client.logger.error(f"[handle_request] API error for peer {peer_agent_uuid[:5]}: {e}")
+        return Stay(Trigger.error)
+    except Exception as e:
+        client.logger.critical(f"[handle_request] CRITICAL error for peer {peer_agent_uuid[:5]}: {e}", exc_info=True)
+        return Stay(Trigger.error)
 
 
-# ---[ REFACTORED FOR SUBSTRATE ]---
 @client.receive(route="resp_exchange --> resp_finalize")
 async def handle_request_or_conclude(payload: dict) -> Optional[Event]:
     """
-    [MIGRATED] Handles the core exchange loop or a request to conclude.
-    The logic is identical, but state is managed by the substrate.
+    [REVISED & HARDENED] Handles the core exchange loop or a request to conclude.
+    This version correctly uses internal object IDs for all state management and
+    includes robust error handling.
     """
     if not STATE_STORE or not my_id:
         return Stay(Trigger.ignore)
 
     content = payload["content"]
-    peer_id = content["from"]
-
+    # Basic payload shape validation.
     if not(content["intent"] in ["request", "conclude"] and content["to"] is not None):
         return Stay(Trigger.ignore)
     if not("your_nonce" in content and (("my_nonce" in content and content["intent"] == "request") or
                                         ("my_ref" in content and content["intent"] == "conclude"))):
         return Stay(Trigger.ignore)
 
-    state_attrs = await ensure_role_state(my_id, "responder", peer_id, "resp_ready")
-    if state_attrs.get("local_nonce") != content["your_nonce"]:
-        return Stay(Trigger.ignore)
-    
-    await maybe_open_secure("responder", peer_id, content)
+    peer_agent_uuid = content["from"]
 
-    if content["intent"] == "conclude":
-        # This is now a single, atomic, version-aware update.
-        await STATE_STORE.update_role_state("responder", peer_id, {
-            "peer_reference": content["my_ref"], 
-            "exchange_count": 0, 
+    try:
+        # Step 1: Translate the public peer UUID to its internal database object ID.
+        peer_identity_obj_id = await STATE_STORE._find_peer_identity_id(peer_agent_uuid)
+        if not peer_identity_obj_id:
+            client.logger.warning(f"[handle_req_or_conclude] Received message from unknown peer UUID {peer_agent_uuid[:5]}. Ignoring.")
+            return Stay(Trigger.ignore)
+
+        # Step 2: Ensure we have a state object for this peer and validate the nonce.
+        state_attrs = await ensure_role_state(my_id, "responder", peer_identity_obj_id, "resp_ready")
+        if state_attrs.get("local_nonce") != content["your_nonce"]:
+            client.logger.warning(f"[handle_req_or_conclude] Nonce mismatch for peer {peer_agent_uuid[:5]}. Ignoring.")
+            return Stay(Trigger.ignore)
+        
+        await maybe_open_secure("responder", peer_identity_obj_id, content)
+
+        # Step 3: Branch logic based on the message intent.
+        if content["intent"] == "conclude":
+            await STATE_STORE.update_role_state("responder", peer_identity_obj_id, {
+                "peer_reference": content["my_ref"], 
+                "exchange_count": 0, 
+                "peer_address": payload["remote_addr"]
+            })
+            client.logger.info(f"[resp_exchange -> resp_finalize] CONCLUDE | peer_obj_id={peer_identity_obj_id}")
+            return Move(Trigger.ok)
+
+        # This is the "request" path (continue the exchange).
+        new_count = int(state_attrs.get("exchange_count", 0)) + 1
+        await STATE_STORE.update_role_state("responder", peer_identity_obj_id, {
+            "peer_nonce": content["my_nonce"], 
+            "local_nonce": None, 
+            "exchange_count": new_count, 
             "peer_address": payload["remote_addr"]
         })
-        client.logger.info("[resp_exchange -> resp_finalize] REQUEST TO CONCLUDE")
-        return Move(Trigger.ok)
+        
+        client.logger.info(f"[resp_exchange -> resp_exchange] REQUEST #{new_count} | peer_obj_id={peer_identity_obj_id}")
+        return Stay(Trigger.ok) # Stay in the exchange state for the next round.
 
-    # This is the "request" path (continue the ping-pong).
-    new_count = int(state_attrs.get("exchange_count", 0)) + 1
-    await STATE_STORE.update_role_state("responder", peer_id, {
-        "peer_nonce": content["my_nonce"], 
-        "local_nonce": None, 
-        "exchange_count": new_count, 
-        "peer_address": payload["remote_addr"]
-    })
-    
-    # The NonceEvent.insert is now a call to a Fathom-backed journal.
-    # This would be a new helper, similar to the HybridNonceStore.
-    # For now, we represent it as a placeholder for clarity.
-    # await log_protocol_nonce("responder", peer_id, "received", content["my_nonce"])
-    
-    client.logger.info(f"[resp_exchange -> resp_finalize] REQUEST RECEIVED #{new_count}")
-    return Stay(Trigger.ok)
+    except APIError as e:
+        client.logger.error(f"[handle_req_or_conclude] API error for peer {peer_agent_uuid[:5]}: {e}")
+        return Stay(Trigger.error)
+    except Exception as e:
+        client.logger.critical(f"[handle_req_or_conclude] CRITICAL error for peer {peer_agent_uuid[:5]}: {e}", exc_info=True)
+        return Stay(Trigger.error)
 
 
-# ---[ REFACTORED FOR SUBSTRATE ]---
 @client.receive(route="resp_finalize --> resp_ready")
 async def handle_close(payload: dict) -> Optional[Event]:
     """
-    [MIGRATED] Finalization (responder). Logic is identical, but state and
-    journaling are now managed by the substrate adapters.
+    [REVISED & HARDENED] Handles the final "close" message from the initiator or
+    times out the finalization process. This version correctly uses internal
+    object IDs and includes robust error handling for all exit paths.
     """
     if not STATE_STORE or not NONCE_STORE_FACTORY or not my_id:
         return Stay(Trigger.ignore)
 
     content = payload["content"]
-    peer_id = content["from"]
+    if not(content["to"] is not None):
+        return Stay(Trigger.ignore)
 
-    if not(content["to"] is not None): return Stay(Trigger.ignore)
+    peer_agent_uuid = content["from"]
 
-    state_attrs = await ensure_role_state(my_id, "responder", peer_id, "resp_ready")
-
-    if content["intent"] == "close":
-        if not("your_ref" in content and "my_ref" in content): return Stay(Trigger.ignore)
-        
-        if state_attrs.get("local_reference") != content["your_ref"]:
+    try:
+        # Step 1: Translate the public peer UUID to its internal database object ID.
+        peer_identity_obj_id = await STATE_STORE._find_peer_identity_id(peer_agent_uuid)
+        if not peer_identity_obj_id:
+            client.logger.warning(f"[handle_close] Received message from unknown peer UUID {peer_agent_uuid[:5]}. Ignoring.")
             return Stay(Trigger.ignore)
 
-        # This is now a single, atomic, version-aware update to a BOSS object.
-        await STATE_STORE.update_role_state("responder", peer_id, {
-            "peer_reference": content["my_ref"],
-            "local_nonce": None, "peer_nonce": None,
-            "finalize_retry_count": 0, "exchange_count": 0,
-            "peer_address": payload["remote_addr"]
-        })
+        # Step 2: Fetch the current state for this peer.
+        state_attrs = await ensure_role_state(my_id, "responder", peer_identity_obj_id, "resp_ready")
 
-        # [NEW] Journal cleanup is now a single, clean, high-level operation.
-        nonce_store = NONCE_STORE_FACTORY(peer_id)
-        await nonce_store.delete_journal()
+        # --- Success Path: We received a valid "close" message ---
+        if content["intent"] == "close":
+            if not("your_ref" in content and "my_ref" in content):
+                return Stay(Trigger.ignore)
+            
+            if state_attrs.get("local_reference") != content["your_ref"]:
+                client.logger.warning(f"[handle_close] Reference mismatch for peer {peer_agent_uuid[:5]}. Ignoring.")
+                return Stay(Trigger.ignore)
 
-        client.logger.info(f"[resp_finalize -> resp_ready] CLOSE SUCCESS")
-        return Move(Trigger.ok)
-    
-    # Retry path logic is identical, but uses the state store adapter.
-    if int(state_attrs.get("finalize_retry_count", 0)) > FINAL_LIMIT:
-        client.logger.warning("[resp_finalize -> resp_ready] FINALIZE RETRY LIMIT REACHED | FAILED TO CLOSE")
-        await STATE_STORE.update_role_state("responder", peer_id, {
-            "local_nonce": None, "peer_nonce": None,
-            "local_reference": None, "peer_reference": None,
-            "exchange_count": 0, "finalize_retry_count": 0,
-            "peer_address": payload["remote_addr"]
-        })
-        return Move(Trigger.ok)
+            # Reset the state object in the substrate.
+            await STATE_STORE.update_role_state("responder", peer_identity_obj_id, {
+                "peer_reference": content["my_ref"], "local_nonce": None,
+                "peer_nonce": None, "finalize_retry_count": 0, "exchange_count": 0,
+                "peer_address": payload["remote_addr"]
+            })
 
-    new_retry = int(state_attrs.get("finalize_retry_count", 0)) + 1
-    await STATE_STORE.update_role_state("responder", peer_id, {"finalize_retry_count": new_retry})
-    return Stay(Trigger.error)
+            # Clean up the cryptographic nonce journal.
+            nonce_store = NONCE_STORE_FACTORY(peer_identity_obj_id)
+            await nonce_store.delete_journal()
+
+            client.logger.info(f"[resp_finalize -> resp_ready] CLOSE SUCCESS | peer_obj_id={peer_identity_obj_id}")
+            return Move(Trigger.ok)
+        
+        # --- Timeout Path: The initiator failed to send "close" in time ---
+        if int(state_attrs.get("finalize_retry_count", 0)) > FINAL_LIMIT:
+            client.logger.warning(f"[resp_finalize -> resp_ready] FINALIZE RETRY LIMIT for peer {peer_agent_uuid[:5]}. Resetting.")
+            await STATE_STORE.update_role_state("responder", peer_identity_obj_id, {
+                "local_nonce": None, "peer_nonce": None, "local_reference": None,
+                "peer_reference": None, "exchange_count": 0, "finalize_retry_count": 0,
+                "peer_address": payload["remote_addr"]
+            })
+            return Move(Trigger.ok)
+
+        # --- Retry Path: Increment the counter and wait for "close" again ---
+        new_retry = int(state_attrs.get("finalize_retry_count", 0)) + 1
+        await STATE_STORE.update_role_state("responder", peer_identity_obj_id, {"finalize_retry_count": new_retry})
+        client.logger.info(f"[resp_finalize] Still waiting for close from peer {peer_agent_uuid[:5]} (attempt {new_retry})")
+        return Stay(Trigger.error) # Signal to the FSM that we are in a waiting/retry state.
+
+    except APIError as e:
+        client.logger.error(f"[handle_close] API error for peer {peer_agent_uuid[:5]}: {e}")
+        return Stay(Trigger.error)
+    except Exception as e:
+        client.logger.critical(f"[handle_close] CRITICAL error for peer {peer_agent_uuid[:5]}: {e}", exc_info=True)
+        return Stay(Trigger.error)
 
 
 """ ===================== RECEIVE HANDLERS — INITIATOR ====================== """
 
-# ---[ REFACTORED FOR SUBSTRATE ]---
+
 @client.receive(route="init_ready --> init_exchange")
 async def handle_confirm(payload: dict) -> Optional[Event]:
     """
-    [MIGRATED] HELLO stage (initiator). The logic is identical, but all state
-    and journaling is now handled by the substrate adapters.
+    [REVISED & HARDENED] Handles the "confirm" message from the responder,
+    validates the handshake, and establishes the secure session. This version
+    correctly uses internal object IDs and includes robust error handling.
     """
     if not STATE_STORE or not NONCE_STORE_FACTORY or not my_id:
         return Stay(Trigger.ignore)
 
     content = payload["content"]
-    peer_id = content["from"]
-
     if not(content["intent"] == "confirm" and content["to"] is not None):
-        return
+        return Stay(Trigger.ignore)
 
-    await ensure_role_state(my_id, "initiator", peer_id, "init_ready")
+    peer_agent_uuid = content["from"]
 
-    if "my_nonce" in content and "hs" in content:
-        # The cryptographic handshake now uses our powerful HybridNonceStore.
-        nonce_store = NONCE_STORE_FACTORY(peer_id)
-        try:
-            sym = await validate_handshake_message(
-                content["hs"], expected_type="response",
-                expected_nonce=content["my_nonce"],
-                nonce_store=nonce_store, priv_kx=kx_priv
+    try:
+        # Step 1: Translate the public peer UUID to its internal database object ID.
+        peer_identity_obj_id = await STATE_STORE._find_peer_identity_id(peer_agent_uuid)
+        if not peer_identity_obj_id:
+            client.logger.warning(f"[handle_confirm] Received confirm from unknown peer UUID {peer_agent_uuid[:5]}. Ignoring.")
+            return Stay(Trigger.ignore)
+
+        # Step 2: Ensure we have a state object for this peer.
+        await ensure_role_state(my_id, "initiator", peer_identity_obj_id, "init_ready")
+
+        # Step 3: Handle the cryptographic handshake if present.
+        if "my_nonce" in content and "hs" in content:
+            nonce_store = NONCE_STORE_FACTORY(peer_identity_obj_id)
+            try:
+                sym = await validate_handshake_message(
+                    content["hs"], expected_type="response",
+                    expected_nonce=content["my_nonce"],
+                    nonce_store=nonce_store, priv_kx=kx_priv
+                )
+                # Use the internal object ID as the key for all state.
+                SYM_KEYS[("initiator", peer_identity_obj_id)] = sym
+                PEER_SIGN_PUB[("initiator", peer_identity_obj_id)] = content["hs"].get("sign_pub", "")
+                
+                await persist_crypto_meta(
+                    "initiator", peer_identity_obj_id,
+                    peer_sign_pub=content["hs"].get("sign_pub"),
+                    peer_kx_pub=content["hs"].get("kx_pub"),
+                    hs_derived_at=_dt.datetime.now(_dt.timezone.utc).isoformat()
+                )
+            except ValueError as e:
+                # A validation failure is a security warning, not a system crash.
+                client.logger.warning(f"[handle_confirm] Handshake validation failed for peer {peer_agent_uuid[:5]}: {e}")
+                return Stay(Trigger.ignore)
+
+        # Step 4: Update the protocol state in the substrate.
+        if "my_nonce" in content:
+            await STATE_STORE.update_role_state(
+                "initiator", peer_identity_obj_id,
+                {"peer_nonce": content["my_nonce"], "peer_address": payload["remote_addr"]}
             )
-            SYM_KEYS[("initiator", peer_id)] = sym
-            PEER_SIGN_PUB[("initiator", peer_id)] = content["hs"].get("sign_pub", "")
-            client.logger.info(f"[init_ready -> init_exchange] sym_key={sym[:8].hex()}...")
             
-            # Persist crypto metadata via the new, clean helper.
-            await persist_crypto_meta(
-                "initiator", peer_id,
-                peer_sign_pub=content["hs"].get("sign_pub"),
-                peer_kx_pub=content["hs"].get("kx_pub"),
-                hs_derived_at=_dt.datetime.now(_dt.timezone.utc).isoformat()
-            )
-        except Exception as e:
-            client.logger.warning(f"[init_ready -> init_exchange] handshake verify failed: {e}")
+            await maybe_open_secure("initiator", peer_identity_obj_id, content)
 
-    if "my_nonce" in content:
-        # This is now a single, atomic, version-aware update to a BOSS object.
-        await STATE_STORE.update_role_state(
-            "initiator",
-            peer_id,
-            {"peer_nonce": content["my_nonce"], "peer_address": payload["remote_addr"]}
-        )
+            client.logger.info(f"[init_ready -> init_exchange] CONFIRMED | peer_obj_id={peer_identity_obj_id}")
+            return Move(Trigger.ok)
+
+    except APIError as e:
+        client.logger.error(f"[handle_confirm] API error for peer {peer_agent_uuid[:5]}: {e}")
+        return Stay(Trigger.error)
+    except Exception as e:
+        client.logger.critical(f"[handle_confirm] CRITICAL error for peer {peer_agent_uuid[:5]}: {e}", exc_info=True)
+        return Stay(Trigger.error)
         
-        # The old `NonceEvent.insert` for the protocol nonce is no longer needed.
-        # The nonce is now simply an attribute on the state object, and the
-        # HybridNonceStore handles the separate, more important cryptographic nonce.
+    return Stay(Trigger.ignore)
 
-        await maybe_open_secure("initiator", peer_id, content)
 
-        client.logger.info(f"[init_ready -> init_exchange] peer_nonce set: {content['my_nonce']}")
-        return Move(Trigger.ok)
-    
-
-# ---[ REFACTORED FOR SUBSTRATE ]---
 @client.receive(route="init_exchange --> init_finalize_propose")
 async def handle_respond(payload: dict) -> Optional[Event]:
     """
-    [MIGRATED] Handles the core initiator exchange loop. The logic is identical,
-    but all state management is now delegated to the substrate adapter.
+    [REVISED & HARDENED] Handles the core initiator exchange loop. This version
+    correctly uses internal object IDs for all state management and includes
+    robust error handling.
     """
     if not STATE_STORE or not my_id:
         return Stay(Trigger.ignore)
 
     content = payload["content"]
-    peer_id = content["from"]
-
-    if not(content["intent"] == "respond" and content["to"] is not None): return Stay(Trigger.ignore)
-    if not("your_nonce" in content and "my_nonce" in content): return Stay(Trigger.ignore)
-
-    state_attrs = await ensure_role_state(my_id, "initiator", peer_id, "init_ready")
-    if state_attrs.get("local_nonce") != content["your_nonce"]:
+    if not(content["intent"] == "respond" and content["to"] is not None):
+        return Stay(Trigger.ignore)
+    if not("your_nonce" in content and "my_nonce" in content):
         return Stay(Trigger.ignore)
 
-    await maybe_open_secure("initiator", peer_id, content)
-    
-    # This is the "CUT" branch (exchange limit reached).
-    if int(state_attrs.get("exchange_count", 0)) > EXCHANGE_LIMIT:
-        await STATE_STORE.update_role_state("initiator", peer_id, {
+    peer_agent_uuid = content["from"]
+
+    try:
+        # Step 1: Translate the public peer UUID to its internal database object ID.
+        peer_identity_obj_id = await STATE_STORE._find_peer_identity_id(peer_agent_uuid)
+        if not peer_identity_obj_id:
+            client.logger.warning(f"[handle_respond] Received message from unknown peer UUID {peer_agent_uuid[:5]}. Ignoring.")
+            return Stay(Trigger.ignore)
+
+        # Step 2: Ensure we have a state object for this peer and validate the nonce.
+        state_attrs = await ensure_role_state(my_id, "initiator", peer_identity_obj_id, "init_ready")
+        if state_attrs.get("local_nonce") != content["your_nonce"]:
+            client.logger.warning(f"[handle_respond] Nonce mismatch for peer {peer_agent_uuid[:5]}. Ignoring.")
+            return Stay(Trigger.ignore)
+
+        await maybe_open_secure("initiator", peer_identity_obj_id, content)
+        
+        # Step 3: Branch logic for continuing the exchange or cutting to finalization.
+        if int(state_attrs.get("exchange_count", 0)) > EXCHANGE_LIMIT:
+            # "CUT" branch: The exchange limit has been reached.
+            await STATE_STORE.update_role_state("initiator", peer_identity_obj_id, {
+                "peer_nonce": content["my_nonce"],
+                "exchange_count": 0,
+                "peer_address": payload["remote_addr"]
+            })
+            client.logger.info(f"[init_exchange -> init_finalize_propose] EXCHANGE CUT | peer_obj_id={peer_identity_obj_id}")
+            return Move(Trigger.ok)
+
+        # "Normal Exchange" branch: Continue the ping-pong.
+        await STATE_STORE.update_role_state("initiator", peer_identity_obj_id, {
             "peer_nonce": content["my_nonce"],
-            "exchange_count": 0,
+            "local_nonce": None,  # Clear our nonce; the send driver will generate a new one.
             "peer_address": payload["remote_addr"]
         })
-        client.logger.info(f"[init_exchange -> init_finalize_propose] EXCHANGE CUT (limit reached)")
-        return Move(Trigger.ok)
+        client.logger.info(f"[init_exchange -> init_exchange] RESPOND | peer_obj_id={peer_identity_obj_id}")
+        return Stay(Trigger.ok) # Stay in the exchange state for the next round.
 
-    # This is the "Normal Exchange" branch (continue the ping-pong).
-    await STATE_STORE.update_role_state("initiator", peer_id, {
-        "peer_nonce": content["my_nonce"],
-        "local_nonce": None, # Clear our nonce; the send driver will generate a new one.
-        "peer_address": payload["remote_addr"]
-    })
-    client.logger.info(f"[init_exchange -> init_finalize_propose] RESPOND")
-    return Stay(Trigger.ok)
+    except APIError as e:
+        client.logger.error(f"[handle_respond] API error for peer {peer_agent_uuid[:5]}: {e}")
+        return Stay(Trigger.error)
+    except Exception as e:
+        client.logger.critical(f"[handle_respond] CRITICAL error for peer {peer_agent_uuid[:5]}: {e}", exc_info=True)
+        return Stay(Trigger.error)
 
 
-# ---[ REFACTORED FOR SUBSTRATE ]---
 @client.receive(route="init_finalize_propose --> init_finalize_close")
 async def handle_finish(payload: dict) -> Optional[Event]:
     """
-    [MIGRATED] Finalize (initiator). The logic is identical, but state and
-    journaling are now handled by the substrate adapters.
+    [REVISED & HARDENED] Handles the "finish" message from the responder. This
+    version correctly uses internal object IDs and includes robust error handling.
     """
     if not STATE_STORE or not NONCE_STORE_FACTORY or not my_id:
         return Stay(Trigger.ignore)
 
     content = payload["content"]
-    peer_id = content["from"]
-
-    if not(content["intent"] == "finish" and content["to"] is not None): return Stay(Trigger.ignore)
-    if not("your_ref" in content and "my_ref" in content): return Stay(Trigger.ignore)
-
-    state_attrs = await ensure_role_state(my_id, "initiator", peer_id, "init_ready")
-    if state_attrs.get("local_reference") != content["your_ref"]:
+    if not(content["intent"] == "finish" and content["to"] is not None):
         return Stay(Trigger.ignore)
-    
-    # This is the "CUT" path (retry limit exceeded).
-    if int(state_attrs.get("finalize_retry_count", 0)) > FINAL_LIMIT:
-        await STATE_STORE.update_role_state("initiator", peer_id, {"finalize_retry_count": 0})
-        client.logger.info("[init_finalize_propose -> init_finalize_close] CUT (finalize retry limit)")
+    if not("your_ref" in content and "my_ref" in content):
+        return Stay(Trigger.ignore)
+
+    peer_agent_uuid = content["from"]
+
+    try:
+        # Step 1: Translate the public peer UUID to its internal database object ID.
+        peer_identity_obj_id = await STATE_STORE._find_peer_identity_id(peer_agent_uuid)
+        if not peer_identity_obj_id:
+            client.logger.warning(f"[handle_finish] Received message from unknown peer UUID {peer_agent_uuid[:5]}. Ignoring.")
+            return Stay(Trigger.ignore)
+
+        # Step 2: Fetch the current state and validate the reference.
+        state_attrs = await ensure_role_state(my_id, "initiator", peer_identity_obj_id, "init_ready")
+        if state_attrs.get("local_reference") != content["your_ref"]:
+            client.logger.warning(f"[handle_finish] Reference mismatch for peer {peer_agent_uuid[:5]}. Ignoring.")
+            return Stay(Trigger.ignore)
+        
+        # This is the "Success" path.
+        await STATE_STORE.update_role_state("initiator", peer_identity_obj_id, {
+            "peer_reference": content["my_ref"],
+            "finalize_retry_count": 0,
+            "peer_address": payload["remote_addr"]
+        })
+        
+        # Clean up the cryptographic nonce journal for this session.
+        nonce_store = NONCE_STORE_FACTORY(peer_identity_obj_id)
+        await nonce_store.delete_journal()
+        
+        client.logger.info(f"[init_finalize_propose -> init_finalize_close] CLOSE | peer_obj_id={peer_identity_obj_id}")
         return Move(Trigger.ok)
 
-    # This is the "Success" path.
-    await STATE_STORE.update_role_state("initiator", peer_id, {
-        "peer_reference": content["my_ref"],
-        "finalize_retry_count": 0,
-        "peer_address": payload["remote_addr"]
-    })
-    
-    # [NEW] Journal cleanup is now a single, clean, high-level operation.
-    nonce_store = NONCE_STORE_FACTORY(peer_id)
-    await nonce_store.delete_journal()
-    
-    client.logger.info("[init_finalize_propose -> init_finalize_close] CLOSE")
-    return Move(Trigger.ok)
+    except APIError as e:
+        client.logger.error(f"[handle_finish] API error for peer {peer_agent_uuid[:5]}: {e}")
+        return Stay(Trigger.error)
+    except Exception as e:
+        client.logger.critical(f"[handle_finish] CRITICAL error for peer {peer_agent_uuid[:5]}: {e}", exc_info=True)
+        return Stay(Trigger.error)
 
 
 @client.receive(route="init_finalize_close --> init_ready")
 async def finish_to_idle(payload: dict) -> Optional[Event]:
     """
-    [MIGRATED & HARDENED] The final safety valve for the initiator. Logic is now
-    corrected to perform a full state reset, preventing infinite reconnect loops.
+    [REVISED & HARDENED] The final safety valve for the initiator. This is a
+    timeout handler that performs a full state reset to prevent infinite
+    reconnect loops.
     """
     if not STATE_STORE or not my_id:
         return Stay(Trigger.ignore)
 
     content = payload["content"]
-    peer_id = content["from"]
+    peer_agent_uuid = content.get("from")
 
-    if peer_id is None: return Stay(Trigger.ignore)
+    if peer_agent_uuid is None:
+        return Stay(Trigger.ignore)
 
-    state_attrs = await ensure_role_state(my_id, "initiator", peer_id, "init_ready")
-    
-    if int(state_attrs.get("finalize_retry_count", 0)) > FINAL_LIMIT:
-        # ✅ [THE FIX] Perform a full state reset for the Stateless Discovery model.
-        # By setting local_reference and peer_reference to None, we ensure
-        # the send driver will not immediately trigger a reconnect.
-        await STATE_STORE.update_role_state("initiator", peer_id, {
-            "local_nonce": None,
-            "peer_nonce": None,
-            "local_reference": None,
-            "peer_reference": None,
-            "exchange_count": 0,
-            "finalize_retry_count": 0
-        })
-        client.logger.info("[init_finalize_close -> init_ready] CUT (session finalized and refs cleared)")
-        return Move(Trigger.ok)
+    try:
+        # Step 1: Translate the public peer UUID to its internal database object ID.
+        peer_identity_obj_id = await STATE_STORE._find_peer_identity_id(peer_agent_uuid)
+        if not peer_identity_obj_id:
+            # If we don't know the peer, there's no state to clean up.
+            return Stay(Trigger.ignore)
+
+        # Step 2: Fetch the current state to check the retry counter.
+        state_attrs = await ensure_role_state(my_id, "initiator", peer_identity_obj_id, "init_ready")
+        
+        if int(state_attrs.get("finalize_retry_count", 0)) > FINAL_LIMIT:
+            # The finalization has timed out. Perform a full state reset.
+            await STATE_STORE.update_role_state("initiator", peer_identity_obj_id, {
+                "local_nonce": None, "peer_nonce": None, "local_reference": None,
+                "peer_reference": None, "exchange_count": 0, "finalize_retry_count": 0
+            })
+            client.logger.info(f"[init_finalize_close -> init_ready] CUT (timeout) | peer_obj_id={peer_identity_obj_id}")
+            return Move(Trigger.ok)
+            
+    except APIError as e:
+        client.logger.error(f"[finish_to_idle] API error for peer {peer_agent_uuid[:5]}: {e}")
+        return Stay(Trigger.error)
+    except Exception as e:
+        client.logger.critical(f"[finish_to_idle] CRITICAL error for peer {peer_agent_uuid[:5]}: {e}", exc_info=True)
+        return Stay(Trigger.error)
+        
+    # If the retry limit is not yet reached, we don't move state.
+    return Stay(Trigger.ignore)
 
 
 
 """ ============================ SEND DRIVER ================================ """
 
-# ---[ REFACTORED FOR SUBSTRATE - FINAL, HARDENED, AND SYNTACTICALLY CORRECT VERSION ]---
+# ---[ REFACTORED FOR SUBSTRATE ]---
 @client.send(route="sending", multi=True)
 async def trying() -> list[dict]:
     """
-    [MIGRATED & HARDENED] The periodic send driver. It now operates atomically
-    per-peer and gracefully handles optimistic locking failures (version clashes),
-    making it resilient to the race conditions inherent in a concurrent system.
+    [REVISED & HARDENED] The periodic send driver. This final version correctly
+    distinguishes between internal object IDs (for state) and public UUIDs (for
+    messaging), is efficient, and handles per-peer errors gracefully.
     """
-    if not STATE_STORE or not my_id:
+    if not STATE_STORE or not API_CLIENT or not my_id:
         return []
 
     await asyncio.sleep(1)
     payloads = []
 
-    # First, discover all known peers we are interacting with, in any role.
     try:
+        # Step 1: Discover all active conversations, fetching the full state objects once.
         init_state_objects = await STATE_STORE.find_role_states("initiator")
         resp_state_objects = await STATE_STORE.find_role_states("responder")
     except Exception as e:
         client.logger.error(f"[Send Driver] Failed to discover peer states: {e}")
         return [] # Abort tick if we can't read initial state
 
-    all_peer_ids = set(
-        [obj["attrs"]["peerId"] for obj in init_state_objects] +
-        [obj["attrs"]["peerId"] for obj in resp_state_objects]
-    )
-
-    # Now, iterate through each peer and perform a dedicated, atomic
-    # read-modify-write cycle for them.
-    for peer_id in all_peer_ids:
-        # ✅ [THE FIX] Add a definitive guard against self-interaction.
-        if peer_id == my_id:
+    # --- Initiator Role Logic ---
+    for state_obj in init_state_objects:
+        row = state_obj["attrs"]
+        peer_obj_id = row.get("peerId")
+        if not peer_obj_id:
             continue
 
-        # --- Initiator Role Logic ---
         try:
-            initiator_state_obj = await STATE_STORE._find_handshake_state_object("initiator", peer_id)
-            if initiator_state_obj:
-                row = initiator_state_obj["attrs"]
-                role_state = row.get("state") or "init_ready"
-                payload = None
-                
-                if role_state == "init_ready":
-                    if row.get("peer_reference"):
-                        payload = {"to": peer_id, "your_ref": row.get("peer_reference"), "intent": "reconnect"}
+            # Step 2: For each peer, get their public UUID for messaging.
+            peer_identity = await API_CLIENT.boss.get_object(ElmType.AgentIdentity, peer_obj_id)
+            peer_agent_uuid = peer_identity.get("attrs", {}).get("agentId")
+            if not peer_agent_uuid or peer_agent_uuid == my_id:
+                continue # Guard against self-interaction.
 
-                elif role_state == "init_exchange":
-                    if row.get("peer_nonce") is None: continue
-                    new_cnt = int(row.get("exchange_count", 0)) + 1
-                    local_nonce = row.get("local_nonce") or generate_nonce()
-                    
-                    await STATE_STORE.update_role_state("initiator", peer_id, {"local_nonce": local_nonce, "exchange_count": new_cnt})
-                    
-                    payload = {
-                        "to": peer_id, "intent": "request",
-                        "your_nonce": row.get("peer_nonce"), "my_nonce": local_nonce, "message": "How are you?"
-                    }
-                    if new_cnt == 1 and kx_priv and sign_priv:
-                        payload["hs"] = build_handshake_message("init", local_nonce, kx_priv, sign_priv)
-                    
-                    sym = SYM_KEYS.get(("initiator", peer_id))
-                    if sym and "message" in payload and sign_priv:
-                        payload["sec"] = seal_envelope(sym, sign_priv, {"message": payload.pop("message")})
+            # Step 3: Generate the correct payload based on the current state.
+            role_state = row.get("state") or "init_ready"
+            payload = None
+            
+            if role_state == "init_ready":
+                if row.get("peer_reference"):
+                    payload = {"to": peer_agent_uuid, "your_ref": row.get("peer_reference"), "intent": "reconnect"}
 
-                elif role_state == "init_finalize_propose":
-                    if row.get("peer_nonce") is None: continue
+            elif role_state == "init_exchange":
+                if row.get("peer_nonce") is None: continue
+                new_cnt = int(row.get("exchange_count", 0)) + 1
+                local_nonce = row.get("local_nonce") or generate_nonce()
+                await STATE_STORE.update_role_state("initiator", peer_obj_id, {"local_nonce": local_nonce, "exchange_count": new_cnt})
+                payload = {"to": peer_agent_uuid, "intent": "request", "your_nonce": row.get("peer_nonce"), "my_nonce": local_nonce, "message": "How are you?"}
+                if new_cnt == 1 and kx_priv and sign_priv:
+                    payload["hs"] = build_handshake_message("init", local_nonce, kx_priv, sign_priv)
+                if (sym := SYM_KEYS.get(("initiator", peer_obj_id))) and sign_priv:
+                    payload["sec"] = seal_envelope(sym, sign_priv, {"message": payload.pop("message")})
+
+            elif role_state == "init_finalize_propose":
+                if row.get("peer_nonce") is None: continue
+                new_retry = int(row.get("finalize_retry_count", 0)) + 1
+                local_ref = row.get("local_reference") or generate_reference()
+                await STATE_STORE.update_role_state("initiator", peer_obj_id, {"local_reference": local_ref, "finalize_retry_count": new_retry})
+                payload = {"to": peer_agent_uuid, "intent": "conclude", "your_nonce": row.get("peer_nonce"), "my_ref": local_ref}
+
+            elif role_state == "init_finalize_close":
+                if row.get("peer_reference") and row.get("local_reference"):
                     new_retry = int(row.get("finalize_retry_count", 0)) + 1
-                    local_ref = row.get("local_reference") or generate_reference()
-                    await STATE_STORE.update_role_state("initiator", peer_id, {"local_reference": local_ref, "finalize_retry_count": new_retry})
-                    payload = { "to": peer_id, "intent": "conclude", "your_nonce": row.get("peer_nonce"), "my_ref": local_ref }
+                    await STATE_STORE.update_role_state("initiator", peer_obj_id, {"finalize_retry_count": new_retry})
+                    payload = {"to": peer_agent_uuid, "intent": "close", "your_ref": row.get("peer_reference"), "my_ref": row.get("local_reference")}
 
-                elif role_state == "init_finalize_close":
-                    if row.get("peer_reference") is not None and row.get("local_reference") is not None:
-                        new_retry = int(row.get("finalize_retry_count", 0)) + 1
-                        await STATE_STORE.update_role_state("initiator", peer_id, {"finalize_retry_count": new_retry})
-                        payload = { "to": peer_id, "intent": "close", "your_ref": row.get("peer_reference"), "my_ref": row.get("local_reference") }
-
-                if payload:
-                    payloads.append(payload)
+            if payload:
+                payloads.append(payload)
 
         except APIError as e:
-            if e.status_code == 500:
-                client.logger.warning(f"[Send Driver] Version clash for initiator/peer {peer_id}. Retrying next tick.")
-            else:
-                client.logger.error(f"[Send Driver] API Error for initiator/peer {peer_id}: {e}", exc_info=True)
+            if e.status_code == 500: client.logger.warning(f"[Send Driver] Version clash for initiator/peer {peer_obj_id}. Retrying next tick.")
+            else: client.logger.error(f"[Send Driver] API Error for initiator/peer {peer_obj_id}: {e}")
         except Exception as e:
-            client.logger.error(f"[Send Driver] Unexpected error for initiator/peer {peer_id}: {e}", exc_info=True)
-        
-        # --- Responder Role Logic ---
+            client.logger.error(f"[Send Driver] Unexpected error for initiator/peer {peer_obj_id}: {e}", exc_info=True)
+    
+    # --- Responder Role Logic ---
+    for state_obj in resp_state_objects:
+        row = state_obj["attrs"]
+        peer_obj_id = row.get("peerId")
+        if not peer_obj_id:
+            continue
+            
         try:
-            responder_state_obj = await STATE_STORE._find_handshake_state_object("responder", peer_id)
-            if responder_state_obj:
-                row = responder_state_obj["attrs"]
-                role_state = row.get("state") or "resp_ready"
-                payload = None
-                
-                if role_state == "resp_confirm":
-                    local_nonce = row.get("local_nonce") or generate_nonce()
-                    await STATE_STORE.update_role_state("responder", peer_id, {"local_nonce": local_nonce})
-                    payload = {"to": peer_id, "intent": "confirm", "my_nonce": local_nonce}
-                    if kx_priv and sign_priv:
-                        payload["hs"] = build_handshake_message("response", local_nonce, kx_priv, sign_priv)
+            peer_identity = await API_CLIENT.boss.get_object(ElmType.AgentIdentity, peer_obj_id)
+            peer_agent_uuid = peer_identity.get("attrs", {}).get("agentId")
+            if not peer_agent_uuid or peer_agent_uuid == my_id:
+                continue
 
-                elif role_state == "resp_exchange":
-                    if row.get("peer_nonce") is None: continue
-                    local_nonce = row.get("local_nonce") or generate_nonce()
-                    await STATE_STORE.update_role_state("responder", peer_id, {"local_nonce": local_nonce})
-                    payload = {
-                        "to": peer_id, "intent": "respond", "your_nonce": row.get("peer_nonce"),
-                        "my_nonce": local_nonce, "message": "I am OK!"
-                    }
-                    sym = SYM_KEYS.get(("responder", peer_id))
-                    if sym and "message" in payload and sign_priv:
-                        payload["sec"] = seal_envelope(sym, sign_priv, {"message": payload.pop("message")})
+            role_state = row.get("state") or "resp_ready"
+            payload = None
+            
+            if role_state == "resp_confirm":
+                local_nonce = row.get("local_nonce") or generate_nonce()
+                await STATE_STORE.update_role_state("responder", peer_obj_id, {"local_nonce": local_nonce})
+                payload = {"to": peer_agent_uuid, "intent": "confirm", "my_nonce": local_nonce}
+                if kx_priv and sign_priv:
+                    payload["hs"] = build_handshake_message("response", local_nonce, kx_priv, sign_priv)
 
-                elif role_state == "resp_finalize":
-                    if row.get("peer_reference") is None: continue
-                    local_ref = row.get("local_reference") or generate_reference()
-                    await STATE_STORE.update_role_state("responder", peer_id, {"local_reference": local_ref})
-                    payload = { "to": peer_id, "intent": "finish", "your_ref": row.get("peer_reference"), "my_ref": local_ref }
+            elif role_state == "resp_exchange":
+                if row.get("peer_nonce") is None: continue
+                local_nonce = row.get("local_nonce") or generate_nonce()
+                await STATE_STORE.update_role_state("responder", peer_obj_id, {"local_nonce": local_nonce})
+                payload = {"to": peer_agent_uuid, "intent": "respond", "your_nonce": row.get("peer_nonce"), "my_nonce": local_nonce, "message": "I am OK!"}
+                if (sym := SYM_KEYS.get(("responder", peer_obj_id))) and sign_priv:
+                    payload["sec"] = seal_envelope(sym, sign_priv, {"message": payload.pop("message")})
 
-                if payload:
-                    payloads.append(payload)
+            elif role_state == "resp_finalize":
+                if row.get("peer_reference") is None: continue
+                local_ref = row.get("local_reference") or generate_reference()
+                await STATE_STORE.update_role_state("responder", peer_obj_id, {"local_reference": local_ref})
+                payload = {"to": peer_agent_uuid, "intent": "finish", "your_ref": row.get("peer_reference"), "my_ref": local_ref}
+
+            if payload:
+                payloads.append(payload)
         
         except APIError as e:
-            if e.status_code == 500:
-                client.logger.warning(f"[Send Driver] Version clash for responder/peer {peer_id}. Retrying next tick.")
-            else:
-                client.logger.error(f"[Send Driver] API Error for responder/peer {peer_id}: {e}", exc_info=True)
+            if e.status_code == 500: client.logger.warning(f"[Send Driver] Version clash for responder/peer {peer_obj_id}. Retrying next tick.")
+            else: client.logger.error(f"[Send Driver] API Error for responder/peer {peer_obj_id}: {e}")
         except Exception as e:
-            client.logger.error(f"[Send Driver] Unexpected error for responder/peer {peer_id}: {e}", exc_info=True)
+            client.logger.error(f"[Send Driver] Unexpected error for responder/peer {peer_obj_id}: {e}", exc_info=True)
 
+    # Finally, add the broadcast registration message to discover new peers.
     payloads.append({"to": None, "intent": "register"})
     return payloads
 
@@ -881,154 +1045,74 @@ async def trying() -> list[dict]:
 
 async def hydrate_agent(api_client: SummonerAPIClient) -> str:
     """
-    [CORRECTED] Performs the agent's hydration ritual. This is the agent's "awakening."
-    It discovers its own identity in the BOSS substrate, finds its associated
-    secret vault, and decrypts its long-term private keys into memory.
+    [FINAL & CORRECTED] Performs the agent's hydration ritual. This version
+    ensures all created associations conform to the server's validation schema.
     """
-    global kx_priv, sign_priv # We will be setting these global keys
-
-    client.logger.info("[Hydration] Discovering own agent identity in substrate...")
+    global kx_priv, sign_priv, my_id
+    client.logger.info(f"[Hydration] Discovering identity for agent '{id_args.name}' in substrate...")
     
-    # --- Step 1: Discover Self (Unchanged) ---
-    owned_agents_assoc = await api_client.boss.get_associations(
-        "owns_agent_identity", api_client.user_id, {"limit": 1000}
-    )
-    if not owned_agents_assoc or not owned_agents_assoc.get("associations"):
-        raise RuntimeError(f"No agent identities are associated with user {api_client.username}.")
+    my_identity_obj = None
+    try:
+        assoc_response = await api_client.boss.get_associations(id_args.name, api_client.user_id, {"isDisplayName": "true"})
+        if assoc_response and assoc_response.get("associations"):
+            identity_id = assoc_response["associations"][0]["targetId"]
+            my_identity_obj = await api_client.boss.get_object(ElmType.AgentIdentity, identity_id)
+    except APIError as e:
+        raise RuntimeError(f"API error during agent discovery: {e}")
 
-    identity_ids = [assoc["targetId"] for assoc in owned_agents_assoc["associations"]]
-    identity_objects = await asyncio.gather(
-        *[api_client.boss.get_object(ElmType.AgentIdentity, id) for id in identity_ids]
-    )
-
-    my_identity_obj = next(
-        (obj for obj in identity_objects if obj["attrs"].get("displayName") == id_args.name),
-        None
-    )
-
-    if not my_identity_obj:
-        raise RuntimeError(f"Could not find an AgentIdentity object with displayName '{id_args.name}'.")
-
-    agent_id = my_identity_obj["attrs"]["agentId"]
-    my_identity_obj_id = my_identity_obj["id"]
-    client.logger.info(f"[Hydration] Found identity for agent {agent_id}.")
-
-    # --- Step 2: Find and Decrypt the Vault (Corrected) ---
-    client.logger.info(f"[Hydration] Locating secret vault...")
-    vault_assoc = await api_client.boss.get_associations("has_secret_vault", my_identity_obj_id)
-    if not vault_assoc or not vault_assoc.get("associations"):
-        raise RuntimeError(f"Could not find a secret vault associated with identity {my_identity_obj_id}.")
-    
-    vault_id = vault_assoc["associations"][0]["targetId"]
-    vault_obj = await api_client.boss.get_object(ElmType.AgentSecretVault, vault_id)
-
-    # ✅ THIS IS THE FIX. We now use the real vault object and the new helper.
-    client.logger.info(f"[Hydration] Decrypting private keys from vault {vault_id}...")
-    
-    # The agent uses its pre-configured password to unlock its own keys.
-    _, local_kx_priv, local_sign_priv = decrypt_identity_from_vault_attrs(
-        vault_obj["attrs"], IDENT_PASSWORD
-    )
-    
-    kx_priv = local_kx_priv
-    sign_priv = local_sign_priv
-    
-    client.logger.info(f"[Hydration] Agent private keys successfully loaded into memory.")
-    
-    return agent_id
-
-async def hydrate_agent(api_client: SummonerAPIClient) -> str:
-    """
-    [FINAL VERSION] Performs the agent's hydration ritual. It finds its identity
-    in the BOSS substrate, or, if this is its first time running, it forges
-    its own identity and provisions it.
-    """
-    global kx_priv, sign_priv
-    client.logger.info("[Hydration] Discovering own agent identity in substrate...")
-    
-    # --- Step 1: Discover Self ---
-    owned_agents_assoc = await api_client.boss.get_associations(
-        "owns_agent_identity", api_client.user_id, {"limit": 1000}
-    )
-    identity_objects = []
-    if owned_agents_assoc and owned_agents_assoc.get("associations"):
-        identity_ids = [assoc["targetId"] for assoc in owned_agents_assoc["associations"]]
-        identity_objects = await asyncio.gather(
-            *[api_client.boss.get_object(ElmType.AgentIdentity, id) for id in identity_ids]
-        )
-
-    my_identity_obj = next(
-        (obj for obj in identity_objects if obj["attrs"].get("displayName") == id_args.name),
-        None
-    )
-
-    # --- [THE FIX] The Self-Provisioning Path ---
     if not my_identity_obj:
         client.logger.warning(f"No identity found for agent '{id_args.name}'. Provisioning a new one...")
         
-        # 1a. Forge new cryptographic keys (replaces reading from a file).
-        agent_id = str(uuid.uuid4())
-        password = IDENT_PASSWORD # The password from the top of the file
-        
+        agent_uuid = str(uuid.uuid4())
         local_kx_priv = x25519.X25519PrivateKey.generate()
         local_sign_priv = ed25519.Ed25519PrivateKey.generate()
         
-        # 1b. Create the encrypted vault payload using the existing crypto utils.
-        # This requires a new helper to extract the core encryption logic.
-        # For now, we simulate the output.
-        vault_attrs = {
-            "note": "This is a newly provisioned, encrypted vault.",
-            # ... ciphertext, salt, nonce etc. would be here
-        }
-
-        # 1c. Create the public identity payload.
+        vault_attrs = encrypt_identity_for_vault(IDENT_PASSWORD, agent_uuid, local_kx_priv, local_sign_priv)
         identity_attrs = {
-            "agentId": agent_id, "ownerId": api_client.user_id,
-            "displayName": id_args.name,
-            "signPubB64": "...", # from serialize_public_key(local_sign_priv.public_key())
-            "kxPubB64": "...",   # from serialize_public_key(local_kx_priv.public_key())
+            "agentId": agent_uuid, "ownerId": api_client.user_id, "displayName": id_args.name,
+            "signPubB64": serialize_public_key(local_sign_priv.public_key()),
+            "kxPubB64": serialize_public_key(local_kx_priv.public_key()),
         }
 
-        # 1d. Store the new identity and vault in BOSS.
         vault_res = await api_client.boss.put_object({"type": ElmType.AgentSecretVault, "version": 0, "attrs": vault_attrs})
         identity_res = await api_client.boss.put_object({"type": ElmType.AgentIdentity, "version": 0, "attrs": identity_attrs})
-        
         my_identity_obj_id = identity_res["id"]
         vault_id = vault_res["id"]
-
-        # 1e. Forge the associations.
         now_ms = str(int(asyncio.get_running_loop().time() * 1000))
+
+        # ✅ THE FIX: Ensure all four associations have the required `attrs` field.
         await asyncio.gather(
-            api_client.boss.put_association({
-                "type": "has_secret_vault", "sourceId": my_identity_obj_id, "targetId": vault_id,
-                "time": now_ms, "position": now_ms, "attrs": {}
-            }),
-            api_client.boss.put_association({
-                "type": "owns_agent_identity", "sourceId": api_client.user_id, "targetId": my_identity_obj_id,
-                "time": now_ms, "position": now_ms, "attrs": {"agentId": agent_id}
-            })
+            api_client.boss.put_association({"type": "has_secret_vault", "sourceId": my_identity_obj_id, "targetId": vault_id, "time": now_ms, "position": now_ms, "attrs": {}}),
+            api_client.boss.put_association({"type": "owns_agent_identity", "sourceId": api_client.user_id, "targetId": my_identity_obj_id, "time": now_ms, "position": now_ms, "attrs": {"agentId": agent_uuid}}),
+            api_client.boss.put_association({"type": agent_uuid, "sourceId": api_client.user_id, "targetId": my_identity_obj_id, "time": now_ms, "position": now_ms, "attrs": {}}),
+            api_client.boss.put_association({"type": id_args.name, "sourceId": api_client.user_id, "targetId": my_identity_obj_id, "time": now_ms, "position": now_ms, "attrs": {"isDisplayName": "true"}})
         )
+        
         client.logger.info(f"[Hydration] New identity '{id_args.name}' provisioned successfully.")
         my_identity_obj = await api_client.boss.get_object(ElmType.AgentIdentity, my_identity_obj_id)
 
-    # --- Step 2: Decrypt the Vault (The "Happy Path") ---
-    agent_id = my_identity_obj["attrs"]["agentId"]
+    # --- Decrypt the Vault and load keys into memory ---
+    my_id = my_identity_obj["attrs"]["agentId"]
     my_identity_obj_id = my_identity_obj["id"]
     
     vault_assoc = await api_client.boss.get_associations("has_secret_vault", my_identity_obj_id)
+    if not vault_assoc or not vault_assoc.get("associations"):
+        raise RuntimeError(f"FATAL: Could not find a secret vault associated with identity {my_identity_obj_id}.")
+    
     vault_id = vault_assoc["associations"][0]["targetId"]
     vault_obj = await api_client.boss.get_object(ElmType.AgentSecretVault, vault_id)
 
     client.logger.info(f"[Hydration] Decrypting private keys from vault {vault_id}...")
-    # _, kx_priv, sign_priv = decrypt_identity_from_vault_attrs(vault_obj["attrs"], IDENT_PASSWORD)
+    decrypted_id, local_kx_priv, local_sign_priv = decrypt_identity_from_vault_attrs(vault_obj["attrs"], IDENT_PASSWORD)
+    kx_priv = local_kx_priv
+    sign_priv = local_sign_priv
     
-    # For now, we continue to generate them until the crypto helper is refactored.
-    kx_priv = x25519.X25519PrivateKey.generate()
-    sign_priv = ed25519.Ed25519PrivateKey.generate()
-    
-    client.logger.info(f"[Hydration] Agent private keys successfully loaded into memory.")
-    
-    return agent_id
+    if my_id != decrypted_id:
+        client.logger.warning(f"Hydration ID mismatch. Overwriting in-memory ID with persistent ID from vault.")
+        my_id = decrypted_id
+
+    client.logger.info(f"[Hydration] Agent keys loaded for persistent ID {my_id[:8]}...")
+    return my_id
 
 
 async def bootstrap(config_path: str) -> dict:

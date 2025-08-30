@@ -481,3 +481,49 @@ def decrypt_identity_from_vault_attrs(vault_attrs: dict, password: bytes):
     
     # We don't need the public keys, as they can be recomputed.
     return my_id, kx_priv, sign_priv
+
+# agents/agent_HSAgent_2/crypto_utils.py
+
+def encrypt_identity_for_vault(
+    password: bytes,
+    my_id: str,
+    kx_priv: x25519.X25519PrivateKey,
+    sign_priv: ed25519.Ed25519PrivateKey,
+) -> dict:
+    """
+    [NEW] Encrypts the core identity material into a dictionary format
+    suitable for storing in a BOSS AgentSecretVault object's attributes.
+    """
+    # 1) Collect raw key bytes
+    kx_priv_raw   = kx_priv.private_bytes(serialization.Encoding.Raw, serialization.PrivateFormat.Raw, serialization.NoEncryption())
+    kx_pub_raw    = kx_priv.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
+    sign_priv_raw = sign_priv.private_bytes(serialization.Encoding.Raw, serialization.PrivateFormat.Raw, serialization.NoEncryption())
+    sign_pub_raw  = sign_priv.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
+
+    # 2) Build the plaintext JSON object
+    plaintext_obj = {
+        "my_id": my_id,
+        "created_at": datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat(),
+        "kx_priv_b64":   b64_encode(kx_priv_raw),
+        "kx_pub_b64":    b64_encode(kx_pub_raw),
+        "sign_priv_b64": b64_encode(sign_priv_raw),
+        "sign_pub_b64":  b64_encode(sign_pub_raw),
+    }
+    plaintext = json.dumps(plaintext_obj, separators=(",", ":"), sort_keys=True).encode("utf-8")
+
+    # 3) Derive key and seal with AES-GCM
+    salt  = os.urandom(16)
+    key   = _kdf_scrypt(password, salt)
+    aes   = AESGCM(key)
+    nonce = os.urandom(12)
+    ct    = aes.encrypt(nonce, plaintext, associated_data=_ID_AAD)
+
+    # 4) Return the encrypted vault attributes
+    return {
+        "v": _ID_FILE_VERSION,
+        "kdf": "scrypt",
+        "salt": b64_encode(salt),
+        "nonce": b64_encode(nonce),
+        "aad": b64_encode(_ID_AAD),
+        "ciphertext": b64_encode(ct),
+    }
