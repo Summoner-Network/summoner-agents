@@ -1,10 +1,9 @@
-# agents/agent_HSAgent_2/api.py
 import asyncio
 from typing import Dict, Any, Optional, Tuple
 
 # We depend entirely on the high-level, battle-tested API client.
 # This assumes the summoner library is installed or in the python path.
-from client import SummonerAPIClient, APIError
+from adapt import SummonerAPIClient, APIError
 
 # ---[ Placeholder ElmTypes - these should live in a shared contract ]---
 # These constants define the "types" of our new objects in the BOSS substrate.
@@ -30,18 +29,17 @@ class HybridNonceStore:
         self.ttl_seconds = ttl_seconds
         self.journal_chain_key = {
             "tenant": self.api.username,
-            "chainName": f"nonce-journal:{self.self_id}:{self.peer_id}",
+            "chainName": f"nonce-journal-{self.self_id}-{self.peer_id}", # Using URL-safe separator
             "shardId": 0
         }
         self.index_source_id: Optional[str] = None
+
 
     async def _get_index_source_id(self) -> str:
         """Helper to lazily fetch the agent's own identity ID for the index."""
         if self.index_source_id:
             return self.index_source_id
         
-        # This lookup pattern assumes the owner has associated the agent's stable ID
-        # with its BOSS object ID.
         identity_assoc = await self.api.boss.get_associations(
             "owns_agent_identity", self.api.user_id, {"agentId": self.self_id}
         )
@@ -56,7 +54,8 @@ class HybridNonceStore:
         the BOSS "Index Card" system.
         """
         source_id = await self._get_index_source_id()
-        assoc_type = f"nonce_seen:{nonce}"
+        # ✅ FIX: Use a URL-safe separator for the association type.
+        assoc_type = f"nonce_seen-{nonce}"
         
         try:
             response = await self.api.boss.get_associations(assoc_type, source_id)
@@ -76,7 +75,8 @@ class HybridNonceStore:
         It writes to both the Fathom journal and the BOSS index.
         """
         source_id = await self._get_index_source_id()
-        assoc_type = f"nonce_seen:{nonce}"
+        # ✅ FIX: Use a URL-safe separator for the association type.
+        assoc_type = f"nonce_seen-{nonce}"
 
         marker_obj = await self.api.boss.put_object({
             "type": ElmType.NonceMarker, "version": 0, "attrs": {"nonce": nonce}
@@ -123,7 +123,8 @@ class SubstrateStateStore:
     async def _find_handshake_state_object(self, role: str, peer_id: str) -> Optional[Dict[str, Any]]:
         """Finds the HandshakeState object for a given conversation thread."""
         self_identity_id = await self._get_self_identity_id()
-        assoc_type = f"handshake_state:{role}:{peer_id}"
+        # ✅ FIX: Use a URL-safe separator for the association type.
+        assoc_type = f"handshake_state-{role}-{peer_id}"
         
         associations = await self.api.boss.get_associations(assoc_type, self_identity_id)
         if not associations.get("associations"):
@@ -135,28 +136,22 @@ class SubstrateStateStore:
     async def find_role_states(self, role: str) -> list[Dict[str, Any]]:
         """Finds all HandshakeState objects for a given role."""
         self_identity_id = await self._get_self_identity_id()
-        # This is a simplified query. A production system might use a more advanced
-        # query endpoint to find all associations of a certain prefix.
-        # For now, we assume we need to list all and filter.
-        # Let's imagine a prefix-based query for this:
-        params = {"type_prefix": f"handshake_state:{role}:"}
-        associations = await self.api.boss.get_associations("has_handshake_state", self_identity_id, params)
+        
+        associations = await self.api.boss.get_associations("has_handshake_state", self_identity_id, {"limit": 1000})
 
         if not associations.get("associations"):
             return []
 
-        state_ids = [assoc["targetId"] for assoc in associations["associations"]]
-        
-        # In a real system, you'd want a GET /api/objects/batch endpoint.
-        # For now, we fetch them one by one.
+        state_ids = [assoc["targetId"] for assoc in associations.get("associations", [])]
         tasks = [self.api.boss.get_object(ElmType.HandshakeState, state_id) for state_id in state_ids]
-        return await asyncio.gather(*tasks)
+        all_states = await asyncio.gather(*tasks)
 
+        return [state for state in all_states if state and state.get("attrs", {}).get("role") == role]
 
     async def ensure_role_state(self, role: str, peer_id: str, default_state: str) -> Tuple[Dict[str, Any], bool]:
         """
         Finds or creates the HandshakeState object for a conversation.
-        Returns (state_object, created_boolean).
+        Returns (state_object_dict, created_boolean).
         """
         state_obj = await self._find_handshake_state_object(role, peer_id)
         if state_obj:
@@ -174,19 +169,19 @@ class SubstrateStateStore:
         })
         new_state_id = create_res["id"]
 
+        now_ms = str(int(asyncio.get_running_loop().time() * 1000))
+
+        # ✅ FIX: Use a URL-safe separator for the association type.
         await self.api.boss.put_association({
-            "type": f"handshake_state:{role}:{peer_id}",
+            "type": f"handshake_state-{role}-{peer_id}",
             "sourceId": self_identity_id, "targetId": new_state_id,
-            "time": str(int(asyncio.get_running_loop().time() * 1000)),
-            "position": str(int(asyncio.get_running_loop().time() * 1000)), "attrs": {}
+            "time": now_ms, "position": now_ms, "attrs": {}
         })
         
-        # The main association for easier lookup of all states for an agent
         await self.api.boss.put_association({
             "type": "has_handshake_state",
             "sourceId": self_identity_id, "targetId": new_state_id,
-            "time": str(int(asyncio.get_running_loop().time() * 1000)),
-            "position": str(int(asyncio.get_running_loop().time() * 1000)), "attrs": {}
+            "time": now_ms, "position": now_ms, "attrs": {}
         })
 
         new_state_obj = await self.api.boss.get_object(ElmType.HandshakeState, new_state_id)
@@ -208,3 +203,4 @@ class SubstrateStateStore:
             "version": state_obj["version"],
             "attrs": state_obj["attrs"]
         })
+

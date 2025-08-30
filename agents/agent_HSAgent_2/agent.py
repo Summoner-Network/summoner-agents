@@ -65,8 +65,6 @@ import argparse
 import datetime as _dt
 import secrets
 from cryptography.hazmat.primitives.asymmetric import x25519, ed25519
-from agents.agent_HSAgent_2.client import SummonerAPIClient
-from agents.agent_HSAgent_2.selftest import runSelfTests
 from crypto_utils import (
     seal_envelope, open_envelope,
     build_handshake_message,
@@ -127,6 +125,8 @@ PERSIST_CRYPTO = True
 
 from db_sdk import Database
 from db_models import RoleState, NonceEvent
+from adapt import SummonerAPIClient
+from selftest import runSelfTests
 
 db_path = Path(__file__).resolve().parent / f"HSAgent-{my_id}.db"
 db = Database(db_path)

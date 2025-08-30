@@ -47,20 +47,19 @@ class _BaseClient:
             )
 
             if response.status_code != expected_status:
-                # If we get a 401, and this isn't already a retry attempt...
-                if response.status_code == 401 and not _is_retry:
+                # [FIX] This is the core of the fix. We treat authentication requests
+                # as "sacred" and do not attempt to re-login if they fail.
+                is_auth_request = path.startswith("/api/auth/")
+
+                if response.status_code == 401 and not _is_retry and not is_auth_request:
                     if not self._last_creds:
-                        # Cannot re-authenticate if we don't have credentials
                         raise APIError("Token expired and no credentials available for re-login.", 401, response.text)
                     
-                    # Perform the re-login. The `login` method is on the main client.
-                    # Because of inheritance, `self` here refers to the SummonerAPIClient instance.
                     await self.login(self._last_creds)
                     
-                    # Retry the original request one time with the new token.
                     return await self._request(method, path, expected_status, json_body, params, _is_retry=True)
 
-                if path == "/api/auth/login" and response.status_code == 401:
+                if is_auth_request and response.status_code == 401:
                     raise APIError("Invalid credentials", 401, response.text)
                 
                 raise APIError(
@@ -79,8 +78,6 @@ class _BaseClient:
     async def close(self):
         await self._client.aclose()
         
-    # This method will be implemented by the main client class, but is declared
-    # here for type hinting and conceptual clarity.
     async def login(self, creds: Dict[str, str]):
         raise NotImplementedError
 
@@ -90,28 +87,30 @@ class SummonerAuthAPIClient:
         self._client = parent_client
 
     async def login(self, creds: Dict[str, str]) -> None:
-        # Cache the credentials *before* attempting to log in.
         self._client._last_creds = creds
         
         key = creds.get("key")
         username = creds.get("username")
         password = creds.get("password")
 
+        login_payload = {}
         if key:
-            login_res = await self._client._request("POST", "/api/auth/login", 200, json_body={"key": key})
+            login_payload = {"key": key}
             self._client.auth_method = 'key'
         elif username and password:
-            try:
-                login_res = await self._client._request("POST", "/api/auth/login", 200, json_body=creds)
-            except APIError as e:
-                if e.status_code == 401:
-                    await self._client._request("POST", "/api/auth/register", 201, json_body=creds)
-                    login_res = await self._client._request("POST", "/api/auth/login", 200, json_body=creds)
-                else:
-                    raise e
+            login_payload = creds
             self._client.auth_method = 'password'
         else:
             raise ValueError("Credentials must include either 'key' or both 'username' and 'password'")
+
+        try:
+            login_res = await self._client._request("POST", "/api/auth/login", 200, json_body=login_payload)
+        except APIError as e:
+            if e.status_code == 401 and self._client.auth_method == 'password':
+                await self._client._request("POST", "/api/auth/register", 201, json_body=creds)
+                login_res = await self._client._request("POST", "/api/auth/login", 200, json_body=creds)
+            else:
+                raise e
 
         self._client.token = login_res.get("jwt")
         if not self._client.token:
@@ -190,67 +189,10 @@ class SummonerChainsAPIClient:
         path = f"/api/chains/append/{self._client.username}/{chain_key['chainName']}/{chain_key['shardId']}"
         return await self._client._request("POST", path, 201, json_body=data)
         
-    async def prepend(self, chain_key: Dict, data: Dict) -> Dict:
-        self._client._check_auth("prepend")
-        path = f"/api/chains/prepend/{self._client.username}/{chain_key['chainName']}/{chain_key['shardId']}"
-        return await self._client._request("POST", path, 201, json_body=data)
-
     async def get_metadata(self, chain_key: Dict) -> Dict:
         self._client._check_auth("get_metadata")
         path = f"/api/chains/metadata/{self._client.username}/{chain_key['chainName']}/{chain_key['shardId']}"
         return await self._client._request("GET", path, 200)
-
-    async def get_block(self, chain_key: Dict, block_idx: Union[str, int]) -> Dict:
-        self._client._check_auth("get_block")
-        path = f"/api/chains/{self._client.username}/{chain_key['chainName']}/{chain_key['shardId']}/{block_idx}"
-        return await self._client._request("GET", path, 200)
-
-    async def get_first(self, chain_key: Dict) -> Dict:
-        self._client._check_auth("get_first")
-        path = f"/api/chains/first/{self._client.username}/{chain_key['chainName']}/{chain_key['shardId']}"
-        return await self._client._request("GET", path, 200)
-
-    async def get_last(self, chain_key: Dict) -> Dict:
-        self._client._check_auth("get_last")
-        path = f"/api/chains/last/{self._client.username}/{chain_key['chainName']}/{chain_key['shardId']}"
-        return await self._client._request("GET", path, 200)
-
-    async def get_range(self, chain_key: Dict, params: Dict) -> Dict:
-        self._client._check_auth("get_range")
-        path = f"/api/chains/range/{self._client.username}/{chain_key['chainName']}/{chain_key['shardId']}"
-        return await self._client._request("GET", path, 200, params=params)
-
-    async def get_recent(self, chain_key: Dict, params: Dict) -> Dict:
-        self._client._check_auth("get_recent")
-        path = f"/api/chains/recent/{self._client.username}/{chain_key['chainName']}/{chain_key['shardId']}"
-        return await self._client._request("GET", path, 200, params=params)
-
-    async def validate(self, chain_key: Dict) -> Dict:
-        self._client._check_auth("validate")
-        path = f"/api/chains/validate/{self._client.username}/{chain_key['chainName']}/{chain_key['shardId']}"
-        return await self._client._request("GET", path, 200)
-
-    async def delete(self, chain_key: Dict) -> Dict:
-        self._client._check_auth("delete")
-        path = f"/api/chains/{self._client.username}/{chain_key['chainName']}/{chain_key['shardId']}"
-        return await self._client._request("DELETE", path, 200)
-
-    async def get_stats(self, tenant: str) -> Dict:
-        self._client._check_auth("get_stats")
-        if self._client.username != tenant:
-            raise PermissionError("Can only request stats for your own tenant.")
-        path = f"/api/chains/stats/{tenant}"
-        return await self._client._request("GET", path, 200)
-
-    async def get_block_metadata(self, chain_key: Dict, block_idx: Union[str, int]) -> Dict:
-        self._client._check_auth("get_block_metadata")
-        path = f"/api/chains/metadata/{self._client.username}/{chain_key['chainName']}/{chain_key['shardId']}/{block_idx}"
-        return await self._client._request("GET", path, 200)
-    
-    async def get_blocks_range_metadata(self, chain_key: Dict, params: Dict) -> Dict:
-        self._client._check_auth("get_blocks_range_metadata")
-        path = f"/api/chains/metadata/range/{self._client.username}/{chain_key['chainName']}/{chain_key['shardId']}"
-        return await self._client._request("GET", path, 200, params=params)
 
 class SummonerAPIClient(_BaseClient):
     """
