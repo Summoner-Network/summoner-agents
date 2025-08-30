@@ -180,7 +180,7 @@ async def maybe_open_secure(role: str, peer_id: str, content: dict) -> None:
 
 """ ========================= CLIENT & FLOW SETUP =========================== """
 
-client = SummonerClient(name=f"HSAgent_1")  # crypto variant
+client = SummonerClient(name=f"HSAgent_2")  # crypto variant (cloud native)
 
 client_flow = client.flow().activate()
 client_flow.add_arrow_style(stem="-", brackets=("[","]"), separator=",", tip=">")

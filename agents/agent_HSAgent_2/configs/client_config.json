@@ -1,6 +1,6 @@
 {
-    "host": null,
-    "port": null,
+    "host": "host.docker.internal",
+    "port": 8888,
 
     "logger": {
         "log_level": "INFO",
