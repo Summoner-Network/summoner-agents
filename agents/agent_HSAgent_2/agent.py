@@ -48,6 +48,7 @@
 
 
 """ ============================ IMPORTS & TYPES ============================ """
+import json
 from summoner.client import SummonerClient
 from summoner.protocol import Move, Stay, Node, Direction, Event
 import argparse
@@ -64,6 +65,8 @@ import argparse
 import datetime as _dt
 import secrets
 from cryptography.hazmat.primitives.asymmetric import x25519, ed25519
+from agents.agent_HSAgent_2.client import SummonerAPIClient
+from agents.agent_HSAgent_2.selftest import runSelfTests
 from crypto_utils import (
     seal_envelope, open_envelope,
     build_handshake_message,
@@ -958,11 +961,64 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run a Summoner client with a specified config.")
     parser.add_argument('--config', dest='config_path', required=False, help='Relative path to the client config JSON (e.g., --config configs/client_config.json)')
     args, _ = parser.parse_known_args()
+    config_path = args.config_path or "configs/client_config.json"
 
-    # Ensure DB schema before client loop starts.
-    client.loop.run_until_complete(setup())
+    # [NEW] This is the new, robust startup sequence.
+    async def bootstrap():
+        print("======================================================")
+        print("  HSAgent-2 BOOTSTRAP AND SELF-TEST SEQUENCE")
+        print("======================================================")
+        
+        # 1. Load config to get the base URL for the substrate.
+        with open(config_path, 'r') as f: config = json.load(f)
+        base_url = config.get("api", {}).get("base_url")
+        if not base_url:
+            raise RuntimeError(f"api.base_url not found in {config_path}")
 
+        # 2. Provision a new, random, single-use user for the test.
+        #    This ensures our test runs in a clean, isolated environment.
+        test_creds = {
+            "username": f"selftest-user-{uuid.uuid4().hex[:8]}",
+            "password": secrets.token_hex(16)
+        }
+        print(f"[Bootstrap] Provisioning temporary test user: {test_creds['username']}")
+        
+        # We need a temporary API client just to register our test user.
+        temp_api_client = SummonerAPIClient(base_url)
+        try:
+            # The login method will auto-register the user if they don't exist.
+            await temp_api_client.login(test_creds)
+            print("[Bootstrap] Temporary user provisioned successfully.")
+        finally:
+            await temp_api_client.close()
+
+
+        # 3. RUN THE SELF-TESTS for our adapters using the temporary credentials.
+        #    This is the "pre-flight check." If this fails, the agent will not start.
+        await runSelfTests(base_url, test_creds)
+        
+        print("\n[Bootstrap] Self-tests passed. Proceeding with agent startup.")
+        print("======================================================")
+
+    # Run the bootstrap and self-test sequence first.
+    # If it fails, an exception will be thrown and the script will exit.
+    asyncio.run(bootstrap())
+
+    # If the self-tests passed, we can now safely start the main agent.
+    # The `client.run()` call will perform its own API login using the
+    # credentials specified in the config file.
     try:
-        client.run(host="127.0.0.1", port=8888, config_path=args.config_path or "configs/client_config.json")
+        # In a real migration, the old `setup()` call would be removed.
+        # client.loop.run_until_complete(setup())
+        
+        # The main, blocking call to start the agent's primary mission.
+        client.run(
+            host="127.0.0.1",
+            port=8888,
+            config_path=config_path
+        )
     finally:
-        asyncio.run(db.close())
+        # In a real migration, this would be removed.
+        # asyncio.run(db.close())
+        print("Agent shutdown complete.")
+
