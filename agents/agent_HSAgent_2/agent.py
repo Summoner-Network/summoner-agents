@@ -1062,55 +1062,95 @@ async def bootstrap(config_path: str) -> dict:
     # 4. Return the real configuration for the main agent's mission.
     return {"base_url": base_url, "auth_creds": real_creds}
 
-async def main():
-    """The master orchestrator for the agent's lifecycle."""
+async def setup():
+    """
+    [MIGRATED] The master orchestrator for the agent's lifecycle.
+    This function replaces the original, simple database setup with a full
+    bootstrap, self-test, and provisioning sequence.
+    """
     global API_CLIENT, STATE_STORE, NONCE_STORE_FACTORY, my_id
 
+    # --- Act I: The Bootstrap ---
+    # We run the pre-flight check to ensure the world is safe.
+
+    print("======================================================")
+    print("  HSAgent-2 BOOTSTRAP AND SELF-TEST SEQUENCE")
+    print("======================================================")
+    
+    # 1. Load config to get the base URL.
     parser = argparse.ArgumentParser(description="Run a Summoner client with a specified config.")
-    parser.add_argument('--config', dest='config_path', required=False, help='Relative path to the client config JSON (e.g., --config configs/client_config.json)')
+    parser.add_argument('--config', dest='config_path', required=False)
     args, _ = parser.parse_known_args()
     config_path = args.config_path or "configs/client_config.json"
 
-    # Act I: The Bootstrap.
-    run_config = await bootstrap(config_path)
+    with open(config_path, 'r') as f: config = json.load(f)
+    api_config = config.get("api", {})
+    base_url = api_config.get("base_url")
+    if not base_url:
+        raise RuntimeError(f"api.base_url not found in {config_path}")
 
-    # Act II: The Provisioning.
-    API_CLIENT = SummonerAPIClient(run_config["base_url"])
+    # 2. Provision a temporary, single-use user for the test.
+    test_creds = {
+        "username": f"selftest-user-{uuid.uuid4().hex[:8]}",
+        "password": secrets.token_hex(16)
+    }
+    print(f"[Bootstrap] Provisioning temporary test user: {test_creds['username']}")
+    
+    temp_api_client = SummonerAPIClient(base_url)
     try:
-        await API_CLIENT.login(run_config["auth_creds"])
-        client.logger.info(f"Main API Client initialized and authenticated as {API_CLIENT.username}")
-        
-        my_id = await hydrate_agent(API_CLIENT)
-        
-        STATE_STORE = SubstrateStateStore(api=API_CLIENT, self_agent_id=my_id)
-        client.logger.info("Agent's SubstrateStateStore has been provisioned.")
-
-        def nonce_store_factory(peer_id: str) -> HybridNonceStore:
-            if not API_CLIENT or not my_id:
-                raise RuntimeError("API Client and agent ID must be initialized before creating a nonce store.")
-            return HybridNonceStore(api=API_CLIENT, self_id=my_id, peer_id=peer_id)
-
-        NONCE_STORE_FACTORY = nonce_store_factory
-        client.logger.info("Agent's HybridNonceStore factory has been provisioned.")
-        
-        # Act III: The Mission.
-        # [THE FIX] We run the blocking `client.run` method in a separate thread.
-        # This prevents it from colliding with our main event loop. Our main
-        # function can now safely `await` its completion.
-        print("\n[Orchestrator] Handing control to the SummonerClient protocol loop...")
-        await asyncio.to_thread(
-            client.run,
-            host="127.0.0.1",
-            port=8888,
-            config_path=config_path
-        )
-
+        await temp_api_client.login(test_creds)
+        print("[Bootstrap] Temporary user provisioned successfully.")
     finally:
-        if API_CLIENT:
-            await API_CLIENT.close()
-        print("Agent shutdown complete.")
+        await temp_api_client.close()
+
+    # 3. Run the self-tests. If this fails, it will raise an exception.
+    await runSelfTests(base_url, test_creds)
+    
+    print("\n[Bootstrap] Self-tests passed. Proceeding with agent startup.")
+    print("======================================================")
+
+    # --- Act II: The Provisioning ---
+    # The Quartermaster equips the agent for its mission.
+
+    real_creds = api_config.get("credentials")
+    if not real_creds:
+        raise RuntimeError(f"api.credentials not found in {config_path}")
+
+    API_CLIENT = SummonerAPIClient(base_url)
+    await API_CLIENT.login(real_creds)
+    client.logger.info(f"Main API Client initialized and authenticated as {API_CLIENT.username}")
+    
+    my_id = await hydrate_agent(API_CLIENT)
+    
+    STATE_STORE = SubstrateStateStore(api=API_CLIENT, self_agent_id=my_id)
+    client.logger.info("Agent's SubstrateStateStore has been provisioned.")
+
+    def nonce_store_factory(peer_id: str) -> HybridNonceStore:
+        if not API_CLIENT or not my_id:
+            raise RuntimeError("API Client and agent ID must be initialized before creating a nonce store.")
+        return HybridNonceStore(api=API_CLIENT, self_id=my_id, peer_id=peer_id)
+
+    NONCE_STORE_FACTORY = nonce_store_factory
+    client.logger.info("Agent's HybridNonceStore factory has been provisioned.")
+
+    # --- Act III: The Handoff ---
+    # We start the main protocol client, using our "hack" to manage the event loops.
+
+    client.logger.warning("Applying monkey patch to client.set_termination_signals() to prevent thread conflict.")
+    client.set_termination_signals = lambda: None
+
+    print("\n[Orchestrator] Handing control to the SummonerClient protocol loop...")
 
 
 if __name__ == "__main__":
-    # This remains the single, top-level entry point.
-    asyncio.run(main())
+    parser = argparse.ArgumentParser(description="Run a Summoner client with a specified config.")
+    parser.add_argument('--config', dest='config_path', required=False, help='Relative path to the client config JSON (e.g., --config configs/client_config.json)')
+    args, _ = parser.parse_known_args()
+
+    # Ensure DB schema before client loop starts.
+    client.loop.run_until_complete(setup())
+
+    try:
+        client.run(host="127.0.0.1", port=8888, config_path=args.config_path or "configs/client_config.json")
+    finally:
+        print("Oh dear, you are dead!")
