@@ -1008,6 +1008,7 @@ if __name__ == "__main__":
     # The `client.run()` call will perform its own API login using the
     # credentials specified in the config file.
     try:
+        client.loop.run_until_complete(setup())
         # In a real migration, the old `setup()` call would be removed.
         # client.loop.run_until_complete(setup())
         
@@ -1019,6 +1020,6 @@ if __name__ == "__main__":
         )
     finally:
         # In a real migration, this would be removed.
-        # asyncio.run(db.close())
+        asyncio.run(db.close())
         print("Agent shutdown complete.")
 
