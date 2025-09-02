@@ -125,7 +125,7 @@ async def test_concurrency_safety(api: SummonerAPIClient, self_id: str):
 
         assertpy.assert_that(successes).is_length(1)
         assertpy.assert_that(failures).is_length(1)
-        assertpy.assert_that(failures[0].status_code).is_equal_to(500)
+        assertpy.assert_that(failures[0].status_code).is_equal_to(409)
 
         print("  [SUCCESS] test_concurrency_safety")
     finally:

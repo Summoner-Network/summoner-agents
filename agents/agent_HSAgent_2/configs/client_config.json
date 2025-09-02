@@ -46,7 +46,7 @@
 
     "api": {
         
-        "base_url": "https://summoner.org",
+        "base_url": "http://127.0.0.1:8080",
         "credentials": {
             "username": "your-agent-username",
             "password": "your-strong-password"
