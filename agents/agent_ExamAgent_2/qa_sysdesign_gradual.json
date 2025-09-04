@@ -1,0 +1,128 @@
+[
+  {
+    "question": "HTTP caching: which strategy best balances freshness and scalability for mostly-static assets with occasional updates?",
+    "answers": {
+      "A": { "val": "Versioned URLs (content hashes) with long max-age and immutable; re-deploy bumps the URL.", "pts": 5 },
+      "B": { "val": "Short max-age for everything to ensure quick refresh everywhere.", "pts": 3 },
+      "C": { "val": "Always use no-store so clients fetch every time.", "pts": 1 },
+      "D": { "val": "Disable caching globally and rely on CDN origin shielding only.", "pts": 0 }
+    }
+  },
+  {
+    "question": "Backoff strategy: which is generally the safest for client retries at scale?",
+    "answers": {
+      "A": { "val": "Linear backoff with a fixed small delay.", "pts": 3 },
+      "B": { "val": "No retries; let users manually retry.", "pts": 1 },
+      "C": { "val": "Immediate retry loop until success.", "pts": 0 },
+      "D": { "val": "Exponential backoff with jitter (full or decorrelated).", "pts": 5 }
+    }
+  },
+  {
+    "question": "Idempotency: pick the best approach for ensuring safe payment replays.",
+    "answers": {
+      "A": { "val": "Use increasing sequence numbers without server storage.", "pts": 3 },
+      "B": { "val": "Use an idempotency key stored with the operation result; duplicate requests return the same outcome.", "pts": 5 },
+      "C": { "val": "Retry only GET requests; never retry POST.", "pts": 1 },
+      "D": { "val": "Trust client timestamps to detect duplicates.", "pts": 0 }
+    }
+  },
+  {
+    "question": "Rate limiting at the edge: which technique reduces hot-key amplification best?",
+    "answers": {
+      "A": { "val": "Sliding window with per-instance memory only (no sync).", "pts": 3 },
+      "B": { "val": "No limit; rely on auto-scaling.", "pts": 0 },
+      "C": { "val": "Token bucket per principal with distributed counters + local leaky bucket smoothing.", "pts": 5 },
+      "D": { "val": "Fixed window counters in a single central store.", "pts": 1 }
+    }
+  },
+  {
+    "question": "Consistency models: which statement is most accurate for a global read-heavy feed service?",
+    "answers": {
+      "A": { "val": "Eventual consistency with monotonic reads per session and read-repair is often acceptable.", "pts": 5 },
+      "B": { "val": "Strong linearizability on all regions is necessary for any feed.", "pts": 0 },
+      "C": { "val": "Causal consistency is a middle ground that preserves happens-before relationships.", "pts": 3 },
+      "D": { "val": "Read-your-writes only is sufficient to guarantee global order.", "pts": 1 }
+    }
+  },
+  {
+    "question": "Message processing: which queue semantics minimize duplicates while keeping throughput high?",
+    "answers": {
+      "A": { "val": "Best-effort fire-and-forget.", "pts": 0 },
+      "B": { "val": "Exactly-once via distributed transactions for all topics.", "pts": 3 },
+      "C": { "val": "At-most-once delivery with no retries.", "pts": 1 },
+      "D": { "val": "At-least-once delivery with idempotent consumers and dedupe window.", "pts": 5 }
+    }
+  },
+  {
+    "question": "Database indexing: which plan is best for a table with frequent writes and point-lookups by user_id and created_at range?",
+    "answers": {
+      "A": { "val": "Two separate single-column indexes on user_id and created_at.", "pts": 3 },
+      "B": { "val": "Full-text index on both columns.", "pts": 0 },
+      "C": { "val": "Composite index (user_id, created_at) with clustering by created_at.", "pts": 5 },
+      "D": { "val": "No index; rely on sequential scans and caching.", "pts": 1 }
+    }
+  },
+  {
+    "question": "Pagination at scale: which approach avoids missing or duplicating items under concurrent writes?",
+    "answers": {
+      "A": { "val": "Offset/limit pagination with ORDER BY NOW().", "pts": 0 },
+      "B": { "val": "Cursor-based (keyset) pagination using a stable sort key.", "pts": 5 },
+      "C": { "val": "Offset/limit pagination with deterministic ORDER BY id.", "pts": 3 },
+      "D": { "val": "Client-side pagination over a single large response.", "pts": 1 }
+    }
+  },
+  {
+    "question": "Circuit breaking: which behavior is preferred to protect downstream dependencies?",
+    "answers": {
+      "A": { "val": "Failure rate + latency thresholds trigger open; half-open probes test recovery; serve fallbacks when open.", "pts": 5 },
+      "B": { "val": "Retry indefinitely until downstream recovers.", "pts": 0 },
+      "C": { "val": "Open the circuit on the first error to be safe.", "pts": 1 },
+      "D": { "val": "Throttle random requests; otherwise proceed normally.", "pts": 3 }
+    }
+  },
+  {
+    "question": "Caching writes: what’s the safest pattern to keep cache and DB coherent?",
+    "answers": {
+      "A": { "val": "Cache first, eventually sync to DB when convenient.", "pts": 0 },
+      "B": { "val": "Update DB and rely on TTL expiry only.", "pts": 1 },
+      "C": { "val": "Delete cache on write, then update DB.", "pts": 3 },
+      "D": { "val": "Write-through cache or write-behind with durable log + invalidation on update.", "pts": 5 }
+    }
+  },
+  {
+    "question": "Hot shard mitigation: what is a practical technique for a skewed key space?",
+    "answers": {
+      "A": { "val": "Put all hot keys on a single powerful node.", "pts": 0 },
+      "B": { "val": "Key salting/sharding (e.g., append random suffix) with scatter-gather on read.", "pts": 5 },
+      "C": { "val": "Increase replication factor only.", "pts": 3 },
+      "D": { "val": "Turn off caching for hot keys.", "pts": 1 }
+    }
+  },
+  {
+    "question": "Schema evolution: how to roll out a breaking write-path change safely?",
+    "answers": {
+      "A": { "val": "Deploy new writers and drop old columns immediately.", "pts": 1 },
+      "B": { "val": "Big-bang migration during peak traffic to expose issues quickly.", "pts": 0 },
+      "C": { "val": "Expand-migrate-contract: add new fields, dual-write/transform, then remove old fields after backfill.", "pts": 5 },
+      "D": { "val": "Rely on ORM auto-migrations in production without staging.", "pts": 3 }
+    }
+  },
+  {
+    "question": "Observability: which metric mix best detects user-visible incidents early?",
+    "answers": {
+      "A": { "val": "RED (Rate, Errors, Duration) per critical endpoint with SLO-aligned alerts.", "pts": 5 },
+      "B": { "val": "Number of deploys per day.", "pts": 0 },
+      "C": { "val": "Log volume and disk usage.", "pts": 3 },
+      "D": { "val": "CPU and memory per host only.", "pts": 1 }
+    }
+  },
+  {
+    "question": "Data pipelines: which ingestion pattern balances reliability and throughput?",
+    "answers": {
+      "A": { "val": "Send records via UDP to reduce overhead.", "pts": 0 },
+      "B": { "val": "Batch small messages into larger chunks, compress, at-least-once with idempotent sink.", "pts": 5 },
+      "C": { "val": "Keep everything in memory until the end of the day, then dump.", "pts": 1 },
+      "D": { "val": "Write every record individually synchronously to the warehouse.", "pts": 3 }
+    }
+  }
+]
