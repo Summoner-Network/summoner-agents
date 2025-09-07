@@ -8,7 +8,7 @@ on:
 env:
   AWS_REGION: "us-east-1"
   # This name MUST match the agent's key in your Terraform agent_cells map.
-  AGENT_NAME: "ExamAgent-2" 
+  AGENT_NAME: "examinator" 
   # Path to the agent's code and Dockerfile from the repo root.
   AGENT_PATH: "agents/agent_ExamAgent_2"
   ECR_REPOSITORY_URL: "752849390967.dkr.ecr.us-east-1.amazonaws.com/splt-agents"
