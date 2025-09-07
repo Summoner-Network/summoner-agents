@@ -1,0 +1,60 @@
+name: Deploy Agent Cell to Substrate
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  AWS_REGION: "us-east-1"
+  # This name MUST match the agent's key in your Terraform agent_cells map.
+  AGENT_NAME: "ExamAgent-1" 
+  # Path to the agent's code and Dockerfile from the repo root.
+  AGENT_PATH: "agents/agent_ExamAgent_1"
+  ECR_REPOSITORY_URL: "752849390967.dkr.ecr.us-east-1.amazonaws.com/splt-agents"
+  ECS_CLUSTER_NAME: "SPLT-main-cluster"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-push-deploy:
+    name: Build, Push, and Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AGENT_DEPLOYER_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set Image Tag
+        id: image-tag
+        run: echo "IMAGE_TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Build, tag, and push image to Amazon ECR
+        run: |
+          echo "Building Docker image from context: ${{ env.AGENT_PATH }}"
+          # The final argument specifies the build context path
+          docker build -t ${{ env.ECR_REPOSITORY_URL }}:${{ env.IMAGE_TAG }} ${{ env.AGENT_PATH }}
+          docker push ${{ env.ECR_REPOSITORY_URL }}:${{ env.IMAGE_TAG }}
+          echo "Pushed image: ${{ env.ECR_REPOSITORY_URL }}:${{ env.IMAGE_TAG }}"
+
+      - name: Update ECS Service to Force New Deployment
+        run: |
+          SERVICE_NAME="AGENT-${{ env.AGENT_NAME }}-svc"
+          echo "Updating service: ${SERVICE_NAME} in cluster: ${{ env.ECS_CLUSTER_NAME }}"
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER_NAME }} \
+            --service ${SERVICE_NAME} \
+            --force-new-deployment
+          echo "Deployment triggered successfully."
