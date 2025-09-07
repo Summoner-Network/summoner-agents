@@ -1,3 +1,6 @@
+import os
+import sys
+from urllib.parse import urlparse
 from summoner.client import SummonerClient
 from summoner.protocol import Direction, Move, Stay, Node, Event
 from typing import Any, Optional, Literal
@@ -278,10 +281,30 @@ async def send_driver() -> str:
 
 
 if __name__ == "__main__":
+    # --- Standard argument parsing ---
     parser = argparse.ArgumentParser(description="Run a Summoner client with a specified config.")
     parser.add_argument('--config', dest='config_path', required=False, help='Path to the client config JSON (e.g., --config configs/client_config.json)')
     args, _ = parser.parse_known_args()
 
-    client.loop.run_until_complete(setup())
+    # --- Get connection details from environment variables ---
+    splt_url = os.getenv("SPLT_URL")
+    
+    # If SPLT_URL is not set, print an error and exit.
+    if not splt_url:
+        print(f"{Style.format('[ERROR]', color='red', bold=True)} SPLT_URL environment variable is not set.")
+        sys.exit(1)
 
-    client.run(host="127.0.0.1", port=8888, config_path=args.config_path or "configs/client_config.json")
+    # Add a default scheme if missing (e.g., "mynlb.com" -> "tcp://mynlb.com")
+    if "://" not in splt_url:
+        splt_url = f"tcp://{splt_url}"
+
+    # Parse the URL to get the hostname and port
+    parsed_url = urlparse(splt_url)
+    host = parsed_url.hostname
+    port = parsed_url.port or 8888 # Default to port 8888 if not specified
+
+    print(f"Attempting to connect to {Style.format(host, bold=True)} on port {Style.format(port, bold=True)}...")
+
+    # --- Run the client ---
+    client.loop.run_until_complete(setup())
+    client.run(host=host, port=port, config_path=args.config_path or "configs/client_config.json")
