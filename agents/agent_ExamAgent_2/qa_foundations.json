@@ -1,0 +1,162 @@
+[
+  {
+    "question": "In TCP, what is the correct order and purpose of the three-way handshake?",
+    "answers": {
+      "A": { "val": "ACK -> SYN -> SYN-ACK; the client acknowledges before advertising its ISN.", "pts": 1 },
+      "B": { "val": "SYN -> ACK -> SYN; the server chooses sequence numbers after the client’s ACK.", "pts": 3 },
+      "C": { "val": "SYN -> SYN-ACK -> ACK; establishes sequence numbers and confirms both directions before data transfer.", "pts": 5 }
+    }
+  },
+  {
+    "question": "When should you prefer UDP over TCP for an application-level protocol?",
+    "answers": {
+      "A": { "val": "Real-time streaming or gaming where timeliness is more important than reliability; you add app-level loss handling.", "pts": 5 },
+      "B": { "val": "Database replication over the public internet with strong durability guarantees.", "pts": 3 },
+      "C": { "val": "Bulk file transfer where every byte must arrive exactly once and in order.", "pts": 1 }
+    }
+  },
+  {
+    "question": "What is the distinction between TCP flow control and congestion control?",
+    "answers": {
+      "A": { "val": "Both are the same: they limit the sender to the bandwidth-delay product.", "pts": 1 },
+      "B": { "val": "Flow control is end-to-end receiver-driven (advertised window); congestion control is network-driven (cwnd, slow start, AIMD).", "pts": 5 },
+      "C": { "val": "Flow control is only for datagram protocols; congestion control is only for streams.", "pts": 3 }
+    }
+  },
+  {
+    "question": "Which technique specifically mitigates SYN flood attacks on TCP servers?",
+    "answers": {
+      "A": { "val": "Using HTTP keep-alive aggressively.", "pts": 1 },
+      "B": { "val": "SYN cookies: encode state in the SYN-ACK’s ISN to avoid per-connection allocation until the final ACK.", "pts": 5 },
+      "C": { "val": "Increasing the listen backlog to extremely large values.", "pts": 3 }
+    }
+  },
+  {
+    "question": "What is the clean TCP connection teardown sequence for a graceful close?",
+    "answers": {
+      "A": { "val": "FIN -> ACK (from peer) -> FIN (from peer) -> ACK; each direction closes independently (half-close).", "pts": 5 },
+      "B": { "val": "ACK -> FIN -> SYN; the client reuses the handshake to close.", "pts": 3 },
+      "C": { "val": "Send RST immediately when done sending data to speed up tear-down.", "pts": 1 }
+    }
+  },
+  {
+    "question": "In Python asyncio, why prefer 'asyncio.create_task' over awaiting the coroutine directly in long-running agents?",
+    "answers": {
+      "A": { "val": "Direct await creates a background OS thread; create_task runs synchronously.", "pts": 1 },
+      "B": { "val": "They are identical unless debug mode is on.", "pts": 3 },
+      "C": { "val": "create_task schedules concurrent work and lets the current coroutine keep running; direct await blocks until completion.", "pts": 5 }
+    }
+  },
+  {
+    "question": "For producer-consumer within one Python process, why choose 'asyncio.Queue' over a plain list?",
+    "answers": {
+      "A": { "val": "A list is faster for concurrent tasks because it is lock-free.", "pts": 1 },
+      "B": { "val": "It’s awaitable and backpressure-aware: producers await when full, consumers await when empty; safe across tasks.", "pts": 5 },
+      "C": { "val": "Queue automatically persists to disk between runs.", "pts": 3 }
+    }
+  },
+  {
+    "question": "In Python, what does 'await' actually do?",
+    "answers": {
+      "A": { "val": "Forces synchronous execution and blocks the whole interpreter.", "pts": 1 },
+      "B": { "val": "Suspends the current coroutine until the awaited awaitable completes, yielding control back to the event loop.", "pts": 5 },
+      "C": { "val": "Spins a new OS thread to run the awaited function.", "pts": 3 }
+    }
+  },
+  {
+    "question": "Rust: summarize ownership and borrowing in one statement.",
+    "answers": {
+      "A": { "val": "Ownership is dynamic and tracked by a GC; borrows are runtime-checked.", "pts": 1 },
+      "B": { "val": "Mutable and immutable borrows can always coexist as long as lifetimes are elided.", "pts": 3 },
+      "C": { "val": "Every value has one owner; at any time you can have either many immutable borrows (&T) or one mutable borrow (&mut T), enforcing memory safety at compile time.", "pts": 5 }
+    }
+  },
+  {
+    "question": "Rust async: difference between 'tokio::spawn' and 'fut.await'?",
+    "answers": {
+      "A": { "val": "spawn is only for CPU-bound work.", "pts": 1 },
+      "B": { "val": "await drives the future to completion on the current task; spawn runs the future concurrently on the runtime.", "pts": 5 },
+      "C": { "val": "spawn blocks the thread; await does not schedule work.", "pts": 3 }
+    }
+  },
+  {
+    "question": "Rust trait bounds: when must a type be 'Send' and 'Sync'?",
+    "answers": {
+      "A": { "val": "'Send' if moved across threads; 'Sync' if shared across threads via &T. Data used by multi-thread executors often needs both.", "pts": 5 },
+      "B": { "val": "'Send' is only for async functions; 'Sync' is only for traits with default methods.", "pts": 3 },
+      "C": { "val": "Only unsafe code needs these traits.", "pts": 1 }
+    }
+  },
+  {
+    "question": "Agentic AI loop: what is the minimal recurring structure?",
+    "answers": {
+      "A": { "val": "One-shot prompt/response with no external tools.", "pts": 1 },
+      "B": { "val": "Observe -> Plan (or Re-plan) -> Act (tool/use) -> Reflect -> Repeat, with memory/state informing each turn.", "pts": 5 },
+      "C": { "val": "Plan once, run forever with no feedback.", "pts": 3 }
+    }
+  },
+  {
+    "question": "How does backpressure manifest in an agent platform and how to respond?",
+    "answers": {
+      "A": { "val": "Ignore it and retry as fast as possible to avoid losing throughput.", "pts": 1 },
+      "B": { "val": "Switch to UDP to bypass limits.", "pts": 3 },
+      "C": { "val": "Server warns or rejects; agent should slow sends, buffer intelligently, and surface rate-limit info (e.g., defenses route).", "pts": 5 }
+    }
+  },
+  {
+    "question": "Summoner basics: what do '@client.send' and '@client.receive' represent?",
+    "answers": {
+      "A": { "val": "Only decorators for logging; they don’t define behavior.", "pts": 1 },
+      "B": { "val": "Synchronous hooks that block the server.", "pts": 3 },
+      "C": { "val": "Async handlers for outbound and inbound pipelines; the client loop calls them to emit and process messages.", "pts": 5 }
+    }
+  },
+  {
+    "question": "Summoner multiline input (as used by ChatAgent_0): what is the purpose of a trailing backslash?",
+    "answers": {
+      "A": { "val": "Trigger a reconnect.", "pts": 1 },
+      "B": { "val": "Signal continuation: the agent strips '\\\\', opens a new prompt line, and sends one payload with real newlines.", "pts": 5 },
+      "C": { "val": "Escape the next character inside the message payload.", "pts": 3 }
+    }
+  },
+  {
+    "question": "Summoner travel: what is the difference between '/travel' and '/self.travel' in ChatAgent_1?",
+    "answers": {
+      "A": { "val": "Both commands broadcast to all connected peers.", "pts": 1 },
+      "B": { "val": "Remote vs local: '/travel' instructs the peer to move; '/self.travel' moves this client without sending a payload.", "pts": 5 },
+      "C": { "val": "They are aliases; behavior is identical.", "pts": 3 }
+    }
+  },
+  {
+    "question": "Summoner automaton (ChatAgent_2): how does state select which receiver runs?",
+    "answers": {
+      "A": { "val": "All receivers run; state is printed only for UI.", "pts": 1 },
+      "B": { "val": "The server chooses a random handler each tick.", "pts": 3 },
+      "C": { "val": "client.flow().activate() + @upload_states() provide the current state; the engine routes to matching @receive(route=...).", "pts": 5 }
+    }
+  },
+  {
+    "question": "Summoner automaton transitions (ChatAgent_3): why return 'Move(Trigger.ok)' or 'Stay(Trigger.ok)'?",
+    "answers": {
+      "A": { "val": "They are no-ops; state changes only via CLI flags.", "pts": 1 },
+      "B": { "val": "Move triggers server restarts; Stay triggers client restarts.", "pts": 3 },
+      "C": { "val": "Receivers emit flow events to evolve the automaton deterministically (e.g., 'opened --> locked').", "pts": 5 }
+    }
+  },
+  {
+    "question": "TCP Nagle’s algorithm vs delayed ACK: what pathological interaction can occur?",
+    "answers": {
+      "A": { "val": "They always increase throughput with no downsides.", "pts": 1 },
+      "B": { "val": "They only affect UDP.", "pts": 3 },
+      "C": { "val": "Small writes get coalesced while ACKs are delayed, causing high latency for request/response unless Nagle is disabled or app batches wisely.", "pts": 5 }
+    }
+  },
+  {
+    "question": "Designing an agent scoreboard: what is the safest clock for time windows?",
+    "answers": {
+      "A": { "val": "System wall time (time.time) because NTP can fix drift during windows.", "pts": 3 },
+      "B": { "val": "Sleep for a fixed duration and assume the window is exact.", "pts": 1 },
+      "C": { "val": "A monotonic clock (e.g., time.monotonic) to avoid wall-clock jumps and define precise deadlines.", "pts": 5 }
+    }
+  }
+]
