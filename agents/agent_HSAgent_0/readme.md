@@ -14,130 +14,166 @@ A multi-peer **handshake** agent that uses [`db_sdk.py`](./db_sdk.py) to manage 
 
 1. On startup, `setup()` creates two tables and indexes:
 
-   * **`RoleState`** — one row per `(self_id, role, peer_id)` with fields like `state`, `local_nonce`, `peer_nonce`, `local_reference`, `peer_reference`, `exchange_count`, `finalize_retry_count`, `peer_address`, timestamps.
+    * **`RoleState`** — one row per `(self_id, role, peer_id)` with fields like `state`, `local_nonce`, `peer_nonce`, `local_reference`, `peer_reference`, `exchange_count`, `finalize_retry_count`, `peer_address`, timestamps.
 
-     * **Unique index** on `(self_id, role, peer_id)` that identifies a conversation thread.
-     * **Scan index** on `(self_id, role)` to speed the send loop.
-   * **`NonceEvent`** — append-only nonce log for the current conversation; cleared when finalize succeeds.
+    * **Unique index** on `(self_id, role, peer_id)` (conversation thread).
+    * **Scan index** on `(self_id, role)` (send loops).
+    * **`NonceEvent`** — append-only nonce log for the current conversation; cleared when finalize succeeds.
 
-     * **Index** on `(self_id, role, peer_id)` for fast filtering.
+    * **Index** on `(self_id, role, peer_id)` for fast filtering.
+    * **Replay guard:** we only de-dup **received** nonces (`flow='received'`). `flow='sent'` is audit-only.
 
-2. State sync (ROM → RAM)
+2. During state sync, upload/download keeps flow and DB aligned:
 
-   * `@client.upload_states()` surfaces DB-backed ("ROM") state for the peer (or defaults if unknown).
-   * `@client.download_states()` receives allowed nodes and updates local rows so the **client** can deterministically choose which **receive** handler to run next.
-   * Unknown peers default to `init_ready` / `resp_ready`.
-   * Typical logs for this phase look like:
+    * `@client.upload_states()` reports **peer-scoped** keys for the inbound peer, e.g.
+    `{"initiator:<peer>": <state>, "responder:<peer>": <state>}`.
+    If no `from` is present, it returns `{}` (don't advertise globals).
 
-     ```
-     [upload] peer=<...> | initiator=<state> | responder=<state>
-     [download] possible states '<role>': [...]
-     [download] '<role>' updating `state` to '<node>'
-     ```
+    * `@client.download_states()` ingests allowed nodes and writes the chosen node to **that** `(self_id, role, peer_id)` row.
 
-   > 📝 **Note:**
-   > Routes are parsed and owned on the client (via `client.flow()`) while the server mainly relays.
-   >
-   > **Peer scoping:** Upload now returns **per-peer** keys in the form `"initiator:<peer_id>"` and `"responder:<peer_id>"`. The download handler splits that key to target the exact `(self_id, role, peer_id)` row instead of updating all rows for a role.
-   >
-   > **Guard:** The receive hook drops payloads that lack a valid `from` (i.e., `content["from"] is None`) to avoid creating or mutating a thread with `peer_id=None`.
+    * Unknown peers default to `init_ready` / `resp_ready`.
 
-3. Receive routes (what each transition means and what you will see):
+    > 📝 **Note:**
+    > **Peer scoping & guards:**
+    > * Upload returns keys of the form `"initiator:<peer_id>"`, `"responder:<peer_id>"`.
+    > * Download splits the key to target exactly one row.
+    > * Download ignores global per-role keys that lack a ":" (we only accept peer-scoped entries)
+    > * The **receive hook** drops payloads without `from`, or with `to != my_id` when `to` is not `None`.
 
-   **Responder side**
+    Typical cues:
 
-   * `resp_ready → resp_confirm` — **HELLO / reconnect intake**
-     Accept a fresh `"register"` or a `"reconnect"` carrying our remembered `local_reference` as their `your_ref`.
-     *Terminal cues:*
+    ```
+    [upload] peer=<...> | initiator=<state> | responder=<state>
+    [download] possible states 'responder:<peer>': [Node(resp_confirm)]
+    [download] 'responder' set state -> 'resp_confirm' for <peer>
+    ```
 
-     ```
-     [resp_ready -> resp_confirm] REGISTER | peer_id=<peer>
-     # or, for reconnect:
-     [resp_ready -> resp_confirm] RECONNECT | peer_id=<...> under my_ref=<...>
-     ```
-   * `resp_confirm → resp_exchange` — **First request validation**
-     Expect `intent="request"` with `your_nonce == local_nonce` from our previous confirm, and a new `my_nonce` from the peer.
+3. On receive, each route validates, updates DB, and either `Move(Trigger.ok)` or `Stay(Trigger.ignore)`:
 
-     ```
-     [resp_confirm -> resp_exchange] check local_nonce='<n1>' ?= your_nonce='<n1>'
-     [resp_confirm -> resp_exchange] FIRST REQUEST
-     ```
-   * `resp_exchange → resp_finalize` — **Ping-pong or accept conclude**
-     Either continue with `intent="request"` and increment `exchange_count`, or accept `intent="conclude"` carrying the initiator's `my_ref`.
+    **Responder side**
 
-     ```
-     [resp_exchange -> resp_finalize] REQUEST RECEIVED #2
-     # or:
-     [resp_exchange -> resp_finalize] REQUEST TO CONCLUDE
-     ```
-   * `resp_finalize → resp_ready` — **Close**
-     Expect `intent="close"` with both refs; verify `your_ref == local_reference`, then clear the nonce log.
+    * `resp_ready → resp_confirm` — HELLO / reconnect intake
+    Accept `"register"` (fresh hello) when `to` is `None` (broadcast) and we don't hold a `local_reference`.
+    Accept `"reconnect"` when `your_ref == local_reference`; clear our `local_reference` to allow a clean finalize.
 
-     ```
-     [resp_finalize -> resp_ready] CLOSE SUCCESS
-     ```
+    ```
+    [resp_ready -> resp_confirm] REGISTER | peer_id=<peer>
+    # or:
+    [resp_ready -> resp_confirm] RECONNECT | peer_id=<...> under my_ref=<...>
+    ```
 
-   **Initiator side**
+    * `resp_confirm → resp_exchange` — first request validation
+    Require `intent="request"`, `your_nonce == local_nonce` (echo), and a fresh `my_nonce`.
+    Reject if that `my_nonce` was already **received** (replay guard).
+    Accepting clears `local_nonce` (sender will mint), sets `exchange_count=1`, logs the received nonce.
 
-   * `init_ready → init_exchange` — **HELLO intake**
-     Receive `intent="confirm"` with responder's `my_nonce`; store as `peer_nonce`.
+    ```
+    [resp_confirm -> resp_exchange] check local_nonce='<n1>' ?= your_nonce='<n1>'
+    [resp_confirm -> resp_exchange] FIRST REQUEST
+    ```
 
-     ```
-     [init_ready -> init_exchange] peer_nonce set: <n2>
-     ```
-   * `init_exchange → init_finalize_propose` — **Respond or cut to finalize**
-     Expect `intent="respond"` with `your_nonce == local_nonce`. If `exchange_count > EXCHANGE_LIMIT`, cut to finalize; otherwise keep ping-ponging.
+    * `resp_exchange → resp_finalize` — ping-pong or accept conclude
+    With `intent="request"`: echo + replay checks, bump `exchange_count`, store peer's `my_nonce`, clear ours.
+    With `intent="conclude"`: capture initiator's `my_ref`, reset `exchange_count`, move to finalize.
 
-     ```
-     [init_exchange -> init_finalize_propose] RESPOND
-     # or (limit reached):
-     [init_exchange -> init_finalize_propose] EXCHANGE CUT (limit reached)
-     ```
-   * `init_finalize_propose → init_finalize_close` — **Finish**
-     Expect `intent="finish"` with `your_ref == local_reference` and peer's `my_ref`.
-     Clear the nonce log on success.
+    ```
+    [resp_exchange -> resp_finalize] REQUEST RECEIVED #2
+    # or:
+    [resp_exchange -> resp_finalize] REQUEST TO CONCLUDE
+    ```
 
-     ```
-     [init_finalize_propose -> init_finalize_close] CLOSE
-     ```
-   * `init_finalize_close → init_ready` — **Back to idle**
-     If `finalize_retry_count > FINAL_LIMIT`, cut back to ready while keeping references for potential reconnect in the **same run**.
+    * `resp_finalize → resp_ready` — close & cleanup
+    Expect initiator's `intent="close"` with **both** refs; require `your_ref == local_reference`.
+    On success: persist `peer_reference`, clear nonces/counters, **delete** `NonceEvent` log.
+    While waiting, we bump `finalize_retry_count`; if it **exceeds** `RESP_FINAL_LIMIT`, wipe refs and return to ready.
 
-     ```
-     [init_finalize_close -> init_ready] CUT (refs preserved)
-     ```
+    ```
+    [resp_finalize -> resp_ready] CLOSE SUCCESS
+    # or, timeout path:
+    [resp_finalize -> resp_ready] FINALIZE RETRY LIMIT REACHED | FAILED TO CLOSE
+    ```
 
-   > 📝 **Note:**
-   > Handlers are **guarded/idempotent** — if checks fail, the handler returns `Stay(Trigger.ignore)` and you will see a short log, not a state change.
+    **Initiator side**
 
-4. Send driver (every second, per peer & role)
-   Emits role-appropriate messages based on each row's `state`:
+    * `init_ready → init_exchange` — HELLO intake
+    Receive responder's `"confirm"` with `my_nonce`; store as `peer_nonce`, clear `local_nonce` and both refs.
 
-   The driver is declared with `multi=True`, so one tick can emit **multiple payloads** (e.g., an initiator message, a responder message, and the broadcast register), which matches the interleaved logs.
+    ```
+    [init_ready -> init_exchange] peer_nonce set: <n2>
+    ```
 
-   * **Initiator**:
+    * `init_exchange → init_finalize_propose` — respond or cut to finalize
+    Expect `"respond"` with `your_nonce == local_nonce` (echo) and a fresh `my_nonce` not previously **received**.
+    If `exchange_count > EXCHANGE_LIMIT`, cut to finalize; otherwise stay in exchange.
 
-     * `init_ready`: optional `"reconnect"` when we already know `peer_reference`.
-     * `init_exchange`: `"request"` with a fresh `my_nonce` (and `your_nonce = peer_nonce`).
-     * `init_finalize_propose`: `"conclude"` with `my_ref`.
-     * `init_finalize_close`: `"close"` with both refs until acknowledged *(log line prefix is "finish", payload `intent` is `"close"`)*.
+    ```
+    [init_exchange -> init_finalize_propose] GOT RESPONSE #1
+    # or:
+    [init_exchange -> init_finalize_propose] EXCHANGE CUT (limit reached)
+    ```
 
-   * **Responder**:
+    * `init_finalize_propose → init_finalize_close` — finish accepted
+    Expect responder's `"finish"` with `your_ref == local_reference` plus peer's `my_ref`.
+    Persist `peer_reference`, clear `NonceEvent` log, and proceed to the close loop.
 
-     * `resp_confirm`: `"confirm"` with a fresh `my_nonce`.
-     * `resp_exchange`: `"respond"` with fresh `my_nonce` (and `your_nonce = peer_nonce`).
-     * `resp_finalize`: `"finish"` with `my_ref`.
+    ```
+    [init_finalize_propose -> init_finalize_close] CLOSE
+    ```
 
-   Every tick also broadcasts `{"intent": "register", "to": null}` for discovery.
+    * `init_finalize_close → init_ready` — back to idle (reconnect enabled)
+    If `finalize_retry_count > INIT_FINAL_LIMIT`, cut back to ready **but keep both refs** so we can reconnect during the same run.
 
-5. Storage & identity
-   A per-agent SQLite file `HSAgent-{my_id}.db` is created next to the script and closed on shutdown.
-   `my_id` is generated at start, so reconnect works **within the same run**; after a restart a new HELLO occurs.
-   `EXCHANGE_LIMIT` and `FINAL_LIMIT` are **operational counters** for demo flow control.
+    ```
+    [init_finalize_close -> init_ready] CUT (refs preserved)
+    ```
+
+    > 📝 **Note:**
+    > Handlers are **guarded/idempotent** — if checks fail, the handler returns `Stay(Trigger.ignore)` and you will see a short log, not a state change.
+
+4. On send, two drivers avoid races and keep logs readable:
+
+    * `@client.send(route="sending", multi=True)` — background sender (\~1s)
+    Drives periodic duties independent of a specific receive:
+
+    * Initiator: `reconnect` when `peer_reference` is known; `close` retries while in `init_finalize_close`.
+    * Responder: `finish` while in `resp_finalize`.
+    * Always emits broadcast `{"intent":"register","to":null}`.
+
+    ```
+    [send tick]
+    [send][initiator:init_ready] reconnect with <peer> under <ref>
+    [send][responder:resp_finalize] finish #<k> | my_ref=<...>
+    [send][initiator:init_finalize_close] close #<k> | your_ref=<...>
+    ```
+
+    * `@client.send(route="/all --> /all", multi=True, on_triggers={Trigger.ok, Trigger.error})` — queued sender (hub)
+    Runs **after** receive handlers complete, so it reads the freshest DB state (e.g., `local_nonce` recently cleared).
+    Drives chatty paths:
+
+    * Initiator: `request` loop and `conclude`.
+    * Responder: `confirm` and `respond`.
+
+    ```
+    [queued send tick]
+    [send][initiator:init_exchange] request #<i> | my_nonce=<...>
+    [send][responder:resp_exchange] respond #<i> | my_nonce=<...>
+    [send][initiator:init_finalize_propose] conclude #<j> | my_ref=<...>
+    ```
+
+    > 📝 **Note:**
+    > Because the queued sender fires *after* receives, you should see less overlap than with the background sender: clusters of receive logs followed by a single “queued send tick” that emits the appropriate messages.
+
+    > 📝 **Note:**
+    > The drivers are declared with `multi=True`, so one tick can emit **multiple payloads** (e.g., an initiator message, a responder message, and the broadcast register).
+
+5. On storage & identity, each run is isolated:
+
+    * A per-agent SQLite file `HSAgent-{my_id}.db` is created next to the script and closed on shutdown.
+    * `my_id` is generated at start, so reconnect works **within the same run**; across restarts, a fresh HELLO occurs.
 
 </details>
 
-### SDK Features Used
+## SDK Features Used
 
 | Feature                                                                             | Description                                                                                                                                                                |
 | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -152,12 +188,13 @@ A multi-peer **handshake** agent that uses [`db_sdk.py`](./db_sdk.py) to manage 
 | `@client.hook(Direction.RECEIVE)`                                                   | Validates or filters all incoming payloads before they reach the route handlers.                                                                                           |
 | `@client.hook(Direction.SEND)`                                                      | Augments or inspects all outbound payloads (e.g. tagging `from=my_id`).                                                                                                    |
 | `@client.receive(route="A --> B")`                                                  | Registers an async handler for a specific route; the flow engine parses `"A --> B"` using the active arrow style.                                                          |
-| `@client.send(route=..., multi=True)`                                               | Defines the periodic "send driver" that wakes every tick (1 s) to emit messages per peer based on `RoleState.state`.                                                       |
+| `@client.send(route="sending", multi=True)`                                         | Background send-driver that wakes every tick (1 s) to emit maintenance duties (`register`, `finish`, `close`, `reconnect`).          |
+| `@client.send(route="/all --> /all", multi=True, on_triggers={...})`                | Queued, event-driven send-driver that runs after receive events to avoid nonce races and double-emits.     |
 | `client.logger`                                                                     | Centralized logger for all lifecycle events, ensuring consistent formatting and easy filtering.                                                                            |
 | `client.loop.run_until_complete(setup())`                                           | Runs the `setup()` coroutine to create tables and indexes before the main loop starts.                                                                                     |
 | `client.run(...)`                                                                   | Connects to the Summoner server and starts the asyncio event loop, coordinating both the **receive** and **send** workflows.                                               |
 
-### `db_sdk` Features Used
+## `db_sdk` Features Used
 
 | Feature                                         | Description                                                            |
 | ----------------------------------------------- | ---------------------------------------------------------------------- |
@@ -183,6 +220,14 @@ Then run the agent:
 python agents/agent_HSAgent_0/agent.py
 ```
 
+If you run **one agent** (server + a single client) you will only see periodic broadcasts and ticks; no handshake can complete without a peer:
+```bash
+[send tick]
+[queued send tick]
+[send][hook] {'to': None, 'intent': 'register', ...}
+```
+Start a second agent in another terminal to observe HELLO → exchange → finalize → close.
+
 A per-agent database file (`HSAgent-{my_id}.db`) will be created next to the script.
 On shutdown (`Ctrl+C`), the agent closes the database cleanly.
 
@@ -207,39 +252,39 @@ You will see a HELLO, nonce exchanges (`request`/`respond`), a request to conclu
 
 * **HELLO / Register**
 
-  ```
-  ... - INFO - [send tick]
-  ... - INFO - [resp_ready -> resp_confirm] REGISTER | peer_id=<peer>
-  ... - INFO - [send][responder:resp_confirm] confirm | my_nonce=<n1>
-  ```
+    ```
+    ... - INFO - [send tick]
+    ... - INFO - [resp_ready -> resp_confirm] REGISTER | peer_id=<peer>
+    ... - INFO - [send][responder:resp_confirm] confirm | my_nonce=<n1>
+    ```
 * **First inbound request → exchange begins**
 
-  ```
-  ... - INFO - [resp_confirm -> resp_exchange] check local_nonce='<n1>' ?= your_nonce='<n1>'
-  ... - INFO - [resp_confirm -> resp_exchange] FIRST REQUEST
-  ... - INFO - [init_ready -> init_exchange] peer_nonce set: <n2>
-  ```
+    ```
+    ... - INFO - [resp_confirm -> resp_exchange] check local_nonce='<n1>' ?= your_nonce='<n1>'
+    ... - INFO - [resp_confirm -> resp_exchange] FIRST REQUEST
+    ... - INFO - [init_ready -> init_exchange] peer_nonce set: <n2>
+    ```
 * **Ping-pong (a few rounds)**
 
-  ```
-  ... - INFO - [send][initiator:init_exchange] request #1 | my_nonce=<n3>
-  ... - INFO - [init_exchange -> init_finalize_propose] RESPOND
-  ... - INFO - [resp_exchange -> resp_finalize] REQUEST RECEIVED #2
-  ```
+    ```
+    ... - INFO - [send][initiator:init_exchange] request #1 | my_nonce=<n3>
+    ... - INFO - [init_exchange -> init_finalize_propose] GOT RESPONSE #1
+    ... - INFO - [resp_exchange -> resp_finalize] REQUEST RECEIVED #2
+    ```
 * **Conclude / Finish / Close**
 
-  ```
-  ... - INFO - [send][initiator:init_finalize_propose] conclude #1 | my_ref=<r1>
-  ... - INFO - [send][responder:resp_finalize] finish #1 | my_ref=<r2>
-  ... - INFO - [resp_finalize -> resp_ready] CLOSE SUCCESS
-  ... - INFO - [init_finalize_propose -> init_finalize_close] CLOSE
-  ```
+    ```
+    ... - INFO - [send][initiator:init_finalize_propose] conclude #1 | my_ref=<r1>
+    ... - INFO - [send][responder:resp_finalize] finish #1 | my_ref=<r2>
+    ... - INFO - [resp_finalize -> resp_ready] CLOSE SUCCESS
+    ... - INFO - [init_finalize_propose -> init_finalize_close] CLOSE
+    ```
 * **Reconnect attempts (same run)**
 
-  ```
-  ... - INFO - [send][initiator:init_ready] reconnect with <peer> under <peer_reference>
-  ... - INFO - [resp_ready -> resp_confirm] RECONNECT | peer_id=<...> under my_ref=<...>
-  ```
+    ```
+    ... - INFO - [send][initiator:init_ready] reconnect with <peer> under <peer_reference>
+    ... - INFO - [resp_ready -> resp_confirm] RECONNECT | peer_id=<...> under my_ref=<...>
+    ```
 
 > [!NOTE]
 > `my_id` is generated in memory on each start. This means that across **restarts**, peers will not automatically reconnect (a new HELLO will occur).

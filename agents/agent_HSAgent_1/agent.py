@@ -4,13 +4,13 @@
 # OVERVIEW
 #   This variant extends the basic handshake with DID-style identity material:
 #     - Long-term identity file (encrypted) containing:
-#         * my_id   : stable agent identifier (UUID string here)
-#         * kx_priv : X25519 private key for ECDH (key agreement)
-#         * sign_priv: Ed25519 private key for signing
+#         * my_id     : stable agent identifier (UUID string here)
+#         * kx_priv   : X25519 private key for key agreement (long-term in this demo)
+#         * sign_priv : Ed25519 private key for signatures (long-term in this demo)
 #     - A signed "handshake blob" (hs) exchanged at the beginning to:
 #         * prove possession of sign_priv
-#         * include an ephemeral public key for KX
-#         * bind to a fresh nonce for replay protection
+#         * advertise a KX public key (derived from kx_priv)
+#         * bind the handshake to a fresh nonce for replay protection
 #     - A derived symmetric key (SYM_KEYS[(role, peer)]) for optional message sealing.
 #
 # MESSAGE LAYERS
@@ -18,13 +18,17 @@
 #     - "intent", "to", "from", "my_nonce", "your_nonce", "my_ref", "your_ref"
 #   Crypto fields:
 #     - "hs"  : signed handshake blob with KX pubkey, signature, and a bound nonce
-#     - "sec" : sealed envelope {message: "..."} signed+MACed with the derived SYM key
+#     - "sec" : AEAD-encrypted envelope {message: "..."} (AES-GCM) whose JSON is also
+#              Ed25519-signed; open_envelope verifies signature and decrypts.
 #
 # STATE & STORAGE
 #   - RoleState rows track per-thread state, nonces, references, counters, peer addr.
-#   - NonceEvent logs nonces {sent|received}, also reused as a replay/TTL store for hs.
-#   - SYM_KEYS[(role, peer)] and PEER_SIGN_PUB[(role, peer)] live in RAM.
-#   - Optional persistence via persist_crypto_meta (best-effort, safe if columns exist).
+#   - NonceEvent logs nonces {sent|received}. "received" is used for replay defense,
+#     including the hs replay window (via DBNonceStore). We clear rows after finalize.
+#   - SYM_KEYS[(role, peer)] lives in RAM only (not persisted).
+#   - PEER_SIGN_PUB[(role, peer)] lives in RAM and is also persisted to RoleState.* for
+#     convenience; maybe_open_secure() will fall back to DB if RAM key isn't populated.
+#   - Optional persistence via persist_crypto_meta (best-effort; safe if columns exist).
 #
 # INVARIANTS
 #   1) Echo rule (nonces):
@@ -32,19 +36,24 @@
 #   2) Finalize rule (refs):
 #        conclude(my_ref) → finish(your_ref,my_ref) → close(your_ref,my_ref)
 #   3) Handshake rule (hs):
-#        - The initiator attaches hs on the first request.
+#        - The initiator attaches hs on the first request of the cycle.
 #        - The responder attaches hs on confirm.
-#        - validate_handshake_message(...) checks signature, nonce freshness, and derives SYM key.
+#        - validate_handshake_message(...) verifies signature, checks replay/TTL via
+#          DBNonceStore, and derives the symmetric key.
 #
 # SECURITY NOTES
-#   - HS nonces are inserted in NonceEvent for replay defense; a TTL backs cleanup.
-#   - Encrypted identity file storage: load_identity_json_encrypted / save_identity_json_encrypted.
-#   - Envelope sealing uses sign+MAC with a derived symmetric key; open_envelope verifies and decrypts.
+#   - Handshake nonces are recorded into NonceEvent("received") and checked via a TTL
+#     in DBNonceStore; regular exchange nonces are also recorded as "received" and
+#     de-duplicated. "sent" entries are audit-only.
+#   - Identity material is stored encrypted on disk; keys are loaded at startup.
+#   - Sealed envelopes add Ed25519 signatures over the JSON and AES-GCM for privacy+
+#     integrity (AEAD). The decrypted plaintext is surfaced at content["message"].
 #
 # TUNABLES
-#   - EXCHANGE_LIMIT, FINAL_LIMIT: bound exchange loops and finalize retries.
-#   - DBNonceStore.ttl_seconds: window for handshake nonce replays.
+#   - EXCHANGE_LIMIT, INIT_FINAL_LIMIT, RESP_FINAL_LIMIT: bound exchange loops and finalize retries.
+#   - DBNonceStore.ttl_seconds: TTL window for handshake nonce replays.
 # =============================================================================
+
 
 
 """ ============================ IMPORTS & TYPES ============================ """
@@ -77,8 +86,9 @@ from crypto_utils import (
 # Counters to simulate conversation with several exchanges.
 # exchange = alternating request/response rounds before we cut to finalize
 # finalize = # of "finish/close" attempts before cutting back to ready
-EXCHANGE_LIMIT = 3
-FINAL_LIMIT = 3
+EXCHANGE_LIMIT = 3 # Only for initiator side
+INIT_FINAL_LIMIT = 3
+RESP_FINAL_LIMIT = 5 # Needs to wait for "conclude"
 
 def generate_nonce() -> str:
     # 32 hex chars (128 bits) - cryptographically strong
@@ -86,7 +96,7 @@ def generate_nonce() -> str:
 
 def generate_reference() -> str:
     # Refs are short tokens used for demonstration purposes.
-    return ''.join(random.choices('123456789', k=5))
+    return ''.join(random.choices('123456789', k=10))
 
 
 
@@ -160,8 +170,11 @@ async def setup() -> None:
 
 
 """ ============================= CRYPTO HELPERS ============================ """
-# ---[ CRYPTO ADDITIONS ]---
-# Storage-agnostic adapter that makes NonceEvent usable for handshake replay/TTL.
+
+# Storage-agnostic adapter that backs hs replay/TTL using NonceEvent("received").
+# - exists(nonce): consults the per-peer "received" log
+# - is_expired(ts): enforces a simple wall-clock TTL for hs timestamps
+# - add(nonce,...): idempotently records the nonce as "received"
 class DBNonceStore:
     def __init__(self, *, self_id: str, role: str, peer_id: str, ttl_seconds: int = 60):
         self.self_id = self_id
@@ -186,17 +199,20 @@ class DBNonceStore:
         return (_dt.datetime.now() - ts).total_seconds() > self.ttl_seconds
 
     async def add(self, nonce: str, ts: _dt.datetime) -> None:
-        # Mark this signed-handshake nonce as seen.
-        await NonceEvent.insert(
-            db,
-            self_id=self.self_id,
-            role=self.role,
-            peer_id=self.peer_id,
-            flow="received",
-            nonce=nonce
-        )
+        # Mark this signed-handshake nonce as seen (idempotent via the helper).
+        await record_received_nonce_once(self.role, self.peer_id, nonce)
 
-# ---[ CRYPTO ADDITIONS ]---
+
+# Idempotent "received" nonce recorder used by both hs validator and normal paths.
+# Guarantees at-most-once insertion for a given (self_id, role, peer_id, nonce).
+async def record_received_nonce_once(role: str, peer_id: str, nonce: Optional[str]) -> None:
+    if not nonce:
+        return
+    exists = await NonceEvent.exists(db, {"self_id": my_id, "role": role, "peer_id": peer_id, "flow": "received", "nonce": nonce})
+    if not exists:
+        await NonceEvent.insert(db, self_id=my_id, role=role, peer_id=peer_id, flow="received", nonce=nonce)
+
+
 async def persist_crypto_meta(role: str, peer_id: str, **fields) -> None:
     """Best-effort persistence; safe to leave enabled even if columns don't exist yet."""
     if not PERSIST_CRYPTO:
@@ -213,21 +229,41 @@ async def persist_crypto_meta(role: str, peer_id: str, **fields) -> None:
         # client.logger.debug(f"[crypto:persist] skipped: {e}")
         pass
     
+
+async def get_peer_sign_pub(role: str, peer_id: str) -> Optional[str]:
+    v = PEER_SIGN_PUB.get((role, peer_id))
+    if v:
+        return v
+    rows = await RoleState.find(
+        db,
+        where={"self_id": my_id, "role": role, "peer_id": peer_id},
+        fields=["peer_sign_pub"]
+    )
+    v = rows and rows[0].get("peer_sign_pub")
+    if v:
+        PEER_SIGN_PUB[(role, peer_id)] = v
+    return v
+
+
 async def maybe_open_secure(role: str, peer_id: str, content: dict) -> None:
     """
-    If a secure envelope is present and we have keys, verify + decrypt it
-    and surface the plaintext at content['message'] for normal handling.
+    If a secure envelope is present and we have keys, verify + decrypt it and
+    surface the plaintext at content['message'] for normal handling.
 
-    Contract:
-      - Requires SYM_KEYS[(role, peer_id)] and PEER_SIGN_PUB[(role, peer_id)].
-      - Expects content["sec"] to be a sealed envelope created by seal_envelope(...).
-      - On success, sets content["message"] to plaintext and records last_secure_at.
+    Requirements:
+      - Symmetric key is in RAM at SYM_KEYS[(role, peer_id)] (derived after hs).
+      - Peer signing key is available either in RAM (PEER_SIGN_PUB) or persisted
+        in RoleState.peer_sign_pub (loaded via get_peer_sign_pub()).
+
+    Notes:
+      - On success, sets content["message"] and updates last_secure_at in RoleState.
+      - Failure to verify/decrypt is logged and ignored (payload is treated as plain).
     """
     sec = content.get("sec")
     if not sec:
         return
     sym  = SYM_KEYS.get((role, peer_id))
-    peer = PEER_SIGN_PUB.get((role, peer_id))
+    peer = await get_peer_sign_pub(role, peer_id)
     if not (sym and peer):
         return
     try:
@@ -258,7 +294,7 @@ Trigger = client_flow.triggers()
 # Roughly:
 # - *_ready: idle/buffer state
 # - *_exchange: alternating nonce ping-pong
-# - *_finalize_propose / resp_finalize: exchange refs
+# - init_finalize_propose / resp_finalize: exchange refs
 # - init_finalize_close: initiator keeps sending "close" until responder acknowledges
 
 
@@ -302,11 +338,12 @@ async def ensure_role_state(self_id: str, role: str, peer_id: str, default_state
 @client.upload_states()
 async def upload(payload: dict) -> dict[str, str]:
     """
-    Client calls this periodically. We return the allowed states for a peer derived from payload['from'].
+    Client calls this periodically. We report allowed states scoped to the peer
+    derived from payload['from'].
 
     Behavior:
-      - If payload does not identify a peer, return {} to avoid global leakage.
-      - Otherwise, provide scoped keys:
+      - If there is no identifiable peer, return {} (do not advertise globals).
+      - Otherwise, return peer-scoped keys like:
           {"initiator:<peer>": <state>, "responder:<peer>": <state>}
     """
     peer_id = None
@@ -318,28 +355,29 @@ async def upload(payload: dict) -> dict[str, str]:
         return {}
 
     # Peer-scoped advertisement, e.g. {"initiator:<peer>": "...", "responder:<peer>": "..."}
-    i_rows = await RoleState.find(db, where={"self_id": my_id, "role": "initiator", "peer_id": peer_id}, fields=["state"])
-    r_rows = await RoleState.find(db, where={"self_id": my_id, "role": "responder", "peer_id": peer_id}, fields=["state"])
+    init_rows = await RoleState.find(db, where={"self_id": my_id, "role": "initiator", "peer_id": peer_id}, fields=["state"])
+    resp_rows = await RoleState.find(db, where={"self_id": my_id, "role": "responder", "peer_id": peer_id}, fields=["state"])
 
-    i_state = i_rows[0]["state"] if i_rows and i_rows[0]["state"] else "init_ready"
-    r_state = r_rows[0]["state"] if r_rows and r_rows[0]["state"] else "resp_ready"
+    init_state = init_rows[0]["state"] if init_rows and init_rows[0]["state"] else "init_ready"
+    resp_state = resp_rows[0]["state"] if resp_rows and resp_rows[0]["state"] else "resp_ready"
 
-    client.logger.info(f"\033[92m[upload] peer={peer_id[:5]} | initiator={i_state} | responder={r_state}\033[0m")
-    return {f"initiator:{peer_id}": i_state, f"responder:{peer_id}": r_state}
+    client.logger.info(f"\033[92m[upload] peer={peer_id[:5]} | initiator={init_state} | responder={resp_state}\033[0m")
+    return {f"initiator:{peer_id}": init_state, f"responder:{peer_id}": resp_state}
 
 @client.download_states()
 async def download(possible_states: dict[Optional[str], list[Node]]) -> None:
     """
-    Client tells us which states are currently permissible *per role*. We then set the RoleState.state
-    to one of those. This applies to all peers of a role.
+    Client tells us which states are permissible per role, per *peer-scoped* key.
+    We set RoleState.state for exactly that (role, peer) according to our preference:
 
-    Preference order:
-      - Initiator: init_ready > init_finalize_close > init_finalize_propose > init_exchange
-      - Responder: resp_ready > resp_finalize > resp_exchange > resp_confirm
+      Initiator: init_ready > init_finalize_close > init_finalize_propose > init_exchange
+      Responder: resp_ready > resp_finalize > resp_confirm > resp_exchange
+
+    Global per-role keys (no ":") are ignored.
     """
     ordered_states = {
         "initiator": ["init_ready", "init_finalize_close", "init_finalize_propose", "init_exchange"],
-        "responder": ["resp_ready", "resp_finalize", "resp_exchange", "resp_confirm"],
+        "responder": ["resp_ready", "resp_finalize", "resp_confirm", "resp_exchange"],
     }
 
     for key, role_states in possible_states.items():
@@ -361,13 +399,7 @@ async def download(possible_states: dict[Optional[str], list[Node]]) -> None:
         if not target_state:
             continue
 
-        rows = await RoleState.find(db, where={"self_id": my_id, "role": role, "peer_id": peer_id})
-        for row in rows:
-            await RoleState.update(
-                db,
-                where={"self_id": my_id, "role": role, "peer_id": row["peer_id"]},
-                fields={"state": target_state},
-            )
+        await RoleState.update(db, where={"self_id": my_id, "role": role, "peer_id": peer_id}, fields={"state": target_state})
         client.logger.info(f"[download] '{role}' set state -> '{target_state}' for {peer_id[:5]}")
 
 
@@ -414,11 +446,12 @@ async def signature(payload: Any) -> Optional[dict]:
 @client.receive(route="resp_ready --> resp_confirm")
 async def handle_register(payload: dict) -> Optional[Event]:
     """
-    HELLO stage (responder). Accept a fresh 'register' or a 'reconnect' with the initiator's remembered ref.
+    First request after confirm. We verify echo (your_nonce == our last local_nonce).
+    If present, validate the initiator's signed hs and derive a symmetric key.
 
-    Reconnect rule:
-      Initiator must present our prior local_reference as your_ref. On acceptance we clear local_reference
-      to allow a fresh finalize cycle.
+    Replay/record:
+      - Drop the message if my_nonce was already observed (NonceEvent 'received').
+      - After updating RoleState, idempotently record my_nonce via record_received_nonce_once.
     """
     addr = payload["remote_addr"]
     content = payload["content"]
@@ -475,9 +508,13 @@ async def handle_request(payload: dict) -> Optional[Event]:
     client.logger.info(f"[resp_confirm -> resp_exchange] check local_nonce={row.get('local_nonce')!r} ?= your_nonce={content['your_nonce']!r}")
     if row.get("local_nonce") != content["your_nonce"]:
         return Stay(Trigger.ignore)
+    
+    seen_my_nonce = await NonceEvent.exists(db, {"self_id": my_id, "role": "responder", "peer_id": peer_id, "flow": "received", "nonce": content["my_nonce"]})
+    if seen_my_nonce:
+        client.logger.info(f"[resp_confirm -> resp_exchange] received my_nonce={content['my_nonce']!r} previously used")
+        return Stay(Trigger.ignore)
 
     # ---[ CRYPTO ADDITIONS ]---
-    inserted_by_validator = False
     if "hs" in content:
         store = DBNonceStore(self_id=my_id, role="responder", peer_id=peer_id, ttl_seconds=60)
         try:
@@ -495,17 +532,22 @@ async def handle_request(payload: dict) -> Optional[Event]:
                 peer_kx_pub=content["hs"].get("kx_pub"),
                 hs_derived_at=_dt.datetime.now(_dt.timezone.utc).isoformat()
             )
-            inserted_by_validator = True
         except Exception as e:
             client.logger.warning(f"[resp_confirm -> resp_exchange] handshake verify failed: {e}")
 
-    await RoleState.update(
-        db,
-        where={"self_id": my_id, "role": "responder", "peer_id": peer_id},
-        fields={"peer_nonce": content["my_nonce"], "local_nonce": None, "exchange_count": 1, "peer_address": addr}
+    await RoleState.update(db, where={"self_id": my_id, "role": "responder", "peer_id": peer_id},
+        fields={
+            "peer_nonce": content["my_nonce"], 
+            "local_nonce": None,
+            "peer_reference": None,
+            "local_reference": None,
+            "exchange_count": 1, 
+            "peer_address": addr
+        }
     )
-    if not inserted_by_validator:
-        await NonceEvent.insert(db, self_id=my_id, role="responder", peer_id=peer_id, flow="received", nonce=content["my_nonce"])
+
+    # Record the initiator's my_nonce exactly once (validator may have already recorded it)
+    await record_received_nonce_once("responder", peer_id, content["my_nonce"])
 
     # Try to open a secure payload (if any)
     await maybe_open_secure("responder", peer_id, content)
@@ -513,14 +555,16 @@ async def handle_request(payload: dict) -> Optional[Event]:
     client.logger.info("[resp_confirm -> resp_exchange] FIRST REQUEST")
     return Move(Trigger.ok)
 
+
 @client.receive(route="resp_exchange --> resp_finalize")
 async def handle_request_or_conclude(payload: dict) -> Optional[Event]:
     """
-    Either continue the exchange loop (new nonce) or accept the initiator's 'conclude' carrying their ref.
+    Continue the exchange loop (new nonce) or accept 'conclude' carrying their ref.
 
-    Secure payloads:
-      - At any point in exchange, if SYM_KEYS exists and 'sec' is present,
-        we decrypt+verify and surface content['message'].
+    Replay/record:
+      - Drop duplicate my_nonce (already in NonceEvent 'received').
+      - On 'request', bump exchange_count, clear our local_nonce, and record the
+        received my_nonce exactly once via record_received_nonce_once.
     """
     addr = payload["remote_addr"]
     content = payload["content"]
@@ -551,6 +595,11 @@ async def handle_request_or_conclude(payload: dict) -> Optional[Event]:
             })
         client.logger.info("[resp_exchange -> resp_finalize] REQUEST TO CONCLUDE")
         return Move(Trigger.ok)
+    
+    seen_my_nonce = await NonceEvent.exists(db, {"self_id": my_id, "role": "responder", "peer_id": peer_id, "flow": "received", "nonce": content["my_nonce"]})
+    if seen_my_nonce:
+        client.logger.info(f"[resp_exchange -> resp_finalize] received my_nonce={content['my_nonce']!r} previously used")
+        return Stay(Trigger.ignore)
 
     # request (keep ping-pong going)
     new_count = int(row.get("exchange_count", 0)) + 1
@@ -561,7 +610,10 @@ async def handle_request_or_conclude(payload: dict) -> Optional[Event]:
             "exchange_count": new_count, 
             "peer_address": addr
         })
-    await NonceEvent.insert(db, self_id=my_id, role="responder", peer_id=peer_id, flow="received", nonce=content["my_nonce"])
+    
+    # Record the initiator's my_nonce exactly once (validator may have already recorded it)
+    await record_received_nonce_once("responder", peer_id, content["my_nonce"])
+
     client.logger.info(f"[resp_exchange -> resp_finalize] REQUEST RECEIVED #{new_count}")
     return Stay(Trigger.ok)
 
@@ -606,7 +658,7 @@ async def handle_close(payload: dict) -> Optional[Event]:
         return Move(Trigger.ok)
     
     # Retry path (we didn't see a valid 'close' yet).
-    if int(row.get("finalize_retry_count", 0)) > FINAL_LIMIT:
+    if int(row.get("finalize_retry_count", 0)) > RESP_FINAL_LIMIT:
         client.logger.warning("[resp_finalize -> resp_ready] FINALIZE RETRY LIMIT REACHED | FAILED TO CLOSE")
         await RoleState.update(db, where={"self_id": my_id, "role": "responder", "peer_id": peer_id},
             fields={
@@ -618,11 +670,11 @@ async def handle_close(payload: dict) -> Optional[Event]:
                 "finalize_retry_count": 0,
                 "peer_address": addr
             })
-        return Move(Trigger.ok)
+        return Move(Trigger.error)
 
     new_retry = int(row.get("finalize_retry_count", 0)) + 1
     await RoleState.update(db, where={"self_id": my_id, "role": "responder", "peer_id": peer_id}, fields={"finalize_retry_count": new_retry, "peer_address": addr})
-    return Stay(Trigger.error)
+    return Stay(Trigger.ok)
 
 
 
@@ -631,13 +683,12 @@ async def handle_close(payload: dict) -> Optional[Event]:
 @client.receive(route="init_ready --> init_exchange")
 async def handle_confirm(payload: dict) -> Optional[Event]:
     """
-    HELLO stage (initiator): we receive the responder's 'confirm' and capture their first nonce.
-    If present, we also validate the responder's signed handshake blob ('hs') and derive a symmetric key.
+    HELLO (initiator): accept responder's 'confirm' and its my_nonce.
+    If 'hs' is present, validate (expected_type='response') and derive SYM_KEYS.
 
-    Handshake (response):
-      - expected_type="response"
-      - binds to responder's my_nonce
-      - successful validation stores SYM_KEYS[('initiator', peer)] and PEER_SIGN_PUB
+    Replay/record:
+      - The hs validator may record the nonce; we still call record_received_nonce_once
+        so the insert is idempotent and unified with non-hs paths.
     """
     addr = payload["remote_addr"]
     content = payload["content"]
@@ -646,12 +697,14 @@ async def handle_confirm(payload: dict) -> Optional[Event]:
     if not(content["intent"] == "confirm" and content["to"] is not None): return
     client.logger.info("[init_ready -> init_exchange] intent OK")
 
+    if not("my_nonce" in content): return Stay(Trigger.ignore)
+    client.logger.info("[init_ready -> init_exchange] validation OK")
+
     await ensure_role_state(my_id, "initiator", peer_id, "init_ready")
 
-    inserted_by_validator = False
     # ---[ CRYPTO ADDITIONS ]---
     # If responder attached a signed handshake blob, validate & derive sym key.
-    if "my_nonce" in content and "hs" in content:
+    if "hs" in content:
         store = DBNonceStore(self_id=my_id, role="initiator", peer_id=peer_id, ttl_seconds=60)
         try:
             sym = await validate_handshake_message(
@@ -668,33 +721,37 @@ async def handle_confirm(payload: dict) -> Optional[Event]:
                 peer_kx_pub=content["hs"].get("kx_pub"),
                 hs_derived_at=_dt.datetime.now(_dt.timezone.utc).isoformat()
             )
-            inserted_by_validator = True
         except Exception as e:
             client.logger.warning(f"[init_ready -> init_exchange] handshake verify failed: {e}")
 
-    if "my_nonce" in content:
-        await RoleState.update(
-            db,
-            where={"self_id": my_id, "role": "initiator", "peer_id": peer_id},
-            fields={"peer_nonce": content["my_nonce"], "peer_address": addr}
-        )
-        if not inserted_by_validator:
-            await NonceEvent.insert(db, self_id=my_id, role="initiator", peer_id=peer_id, flow="received", nonce=content["my_nonce"])
+    await RoleState.update(db, where={"self_id": my_id, "role": "initiator", "peer_id": peer_id},
+        fields={
+            "peer_nonce": content["my_nonce"], 
+            "exchange_count": 0,
+            "local_nonce": None,
+            "peer_reference": None,
+            "local_reference": None,
+            "peer_address": addr
+        })
+    
+    # Record responder's my_nonce exactly once (validator may have already recorded it)
+    await record_received_nonce_once("initiator", peer_id, content["my_nonce"])
 
-        # Try to open a secure payload (if any). (Unusual on confirm, but harmless.)
-        await maybe_open_secure("initiator", peer_id, content)
+    # Try to open a secure payload (if any). (Unusual on confirm, but harmless.)
+    await maybe_open_secure("initiator", peer_id, content)
 
-        client.logger.info(f"[init_ready -> init_exchange] peer_nonce set: {content['my_nonce']}")
-        return Move(Trigger.ok)
+    client.logger.info(f"[init_ready -> init_exchange] peer_nonce set: {content['my_nonce']}")
+    return Move(Trigger.ok)
 
 @client.receive(route="init_exchange --> init_finalize_propose")
 async def handle_respond(payload: dict) -> Optional[Event]:
     """
-    Exchange stage (initiator): we expect 'respond' where your_nonce == our last local_nonce.
-    When exchange_count exceeds EXCHANGE_LIMIT, we cut to finalize.
+    Exchange (initiator): expect 'respond' where your_nonce == our last local_nonce.
+    When exchange_count exceeds EXCHANGE_LIMIT, cut to finalize.
 
-    Secure payloads:
-      - If sec present and we have a SYM key, message is surfaced as plaintext at content['message'].
+    Replay/record:
+      - Drop duplicate my_nonce (observed already).
+      - Always record the received my_nonce with record_received_nonce_once.
     """
     addr = payload["remote_addr"]
     content = payload["content"]
@@ -711,20 +768,25 @@ async def handle_respond(payload: dict) -> Optional[Event]:
     if row.get("local_nonce") != content["your_nonce"]:
         return Stay(Trigger.ignore)
 
+    seen_my_nonce = await NonceEvent.exists(db, {"self_id": my_id, "role": "initiator", "peer_id": peer_id, "flow": "received", "nonce": content["my_nonce"]})
+    if seen_my_nonce:
+        client.logger.info(f"[init_exchange -> init_finalize_propose] received my_nonce={content['my_nonce']!r} previously used")
+        return Stay(Trigger.ignore)
+
     # Try to open a secure payload (if any)
     await maybe_open_secure("initiator", peer_id, content)
-    
+
     if int(row.get("exchange_count", 0)) > EXCHANGE_LIMIT:
         # CUT: accept their nonce but reset the counter, then progress to finalize
-        await RoleState.update(db, where={"self_id": my_id, "role": "initiator", "peer_id": peer_id}, fields={"peer_nonce": content["my_nonce"], "exchange_count": 0, "peer_address": addr})
-        await NonceEvent.insert(db, self_id=my_id, role="initiator", peer_id=peer_id, flow="received", nonce=content["my_nonce"])
+        await RoleState.update(db, where={"self_id": my_id, "role": "initiator", "peer_id": peer_id}, fields={"peer_nonce": content["my_nonce"], "local_nonce": None, "peer_address": addr})
+        await record_received_nonce_once("initiator", peer_id, content["my_nonce"])
         client.logger.info(f"[init_exchange -> init_finalize_propose] EXCHANGE CUT (limit reached)")
         return Move(Trigger.ok)
 
     # Normal exchange: store their nonce and clear ours (we'll generate a new one when we send)
     await RoleState.update(db, where={"self_id": my_id, "role": "initiator", "peer_id": peer_id}, fields={"peer_nonce": content["my_nonce"], "local_nonce": None, "peer_address": addr})
-    await NonceEvent.insert(db, self_id=my_id, role="initiator", peer_id=peer_id, flow="received", nonce=content["my_nonce"])
-    client.logger.info(f"[init_exchange -> init_finalize_propose] RESPOND")
+    await record_received_nonce_once("initiator", peer_id, content["my_nonce"])
+    client.logger.info(f"[init_exchange -> init_finalize_propose] GOT RESPONSE #{row.get('exchange_count', 0)}")
     return Stay(Trigger.ok)
 
 @client.receive(route="init_finalize_propose --> init_finalize_close")
@@ -751,15 +813,14 @@ async def handle_finish(payload: dict) -> Optional[Event]:
     client.logger.info(f"[init_finalize_propose -> init_finalize_close] check local_reference={row.get('local_reference')!r} ?= your_ref={content['your_ref']!r}")
     if row.get("local_reference") != content["your_ref"]:
         return Stay(Trigger.ignore)
-    
-    if int(row.get("finalize_retry_count", 0)) > FINAL_LIMIT:
-        # CUT back to init_ready but *keep* references so reconnect can happen.
-        await RoleState.update(db, where={"self_id": my_id, "role": "initiator", "peer_id": peer_id}, fields={"finalize_retry_count": 0, "peer_address": addr})
-        client.logger.info("[init_finalize_propose -> init_finalize_close] CUT (finalize retry limit)")
-        return Move(Trigger.ok)
 
     # Success: we now know the responder's ref; clear the transient nonce log.
-    await RoleState.update(db, where={"self_id": my_id, "role": "initiator", "peer_id": peer_id}, fields={"peer_reference": content["my_ref"], "finalize_retry_count": 0, "peer_address": addr})
+    await RoleState.update(db, where={"self_id": my_id, "role": "initiator", "peer_id": peer_id}, 
+            fields={
+                "peer_reference": content["my_ref"], 
+                "finalize_retry_count": 0, 
+                "peer_address": addr
+            })
     await NonceEvent.delete(db, where={"self_id": my_id, "role": "initiator", "peer_id": peer_id})
     client.logger.info("[init_finalize_propose -> init_finalize_close] CLOSE")
     return Move(Trigger.ok)
@@ -778,7 +839,7 @@ async def finish_to_idle(payload: dict) -> Optional[Event]:
     if peer_id is None: return Stay(Trigger.ignore)
 
     row = await ensure_role_state(my_id, "initiator", peer_id, "init_ready")
-    if int(row.get("finalize_retry_count", 0)) > FINAL_LIMIT:
+    if int(row.get("finalize_retry_count", 0)) > INIT_FINAL_LIMIT:
         await RoleState.update(db, where={"self_id": my_id, "role": "initiator", "peer_id": peer_id},
             fields={
                 "local_nonce": None,
@@ -790,20 +851,26 @@ async def finish_to_idle(payload: dict) -> Optional[Event]:
         client.logger.info("[init_finalize_close -> init_ready] CUT (refs preserved)")
         return Move(Trigger.ok)
 
+    return Stay(Trigger.ok)
+
 
 
 """ ============================ SEND DRIVER ================================ """
 
 @client.send(route="sending", multi=True)
-async def trying() -> list[dict]:
+async def tick_background_sender() -> list[dict]:
     """
-    This is the driver that periodically emits outbound messages *per peer* and *per role*
-    based on the current RoleState.
+    Background tick (~1s): periodic per-peer duties independent of a specific
+    receive event.
 
-    Crypto behavior:
-      - Initiator: attaches "init" hs on the first request (new_cnt == 1).
-      - Responder: attaches "response" hs on confirm.
-      - If SYM_KEYS exists for (role, peer), plaintext "message" is moved into a sealed "sec".
+    Behavior:
+      - Initiator: 'reconnect' attempts when refs exist; 'close' retries while
+        in init_finalize_close (bounded by INIT_FINAL_LIMIT).
+      - Responder: 'finish' while in resp_finalize (bounded by RESP_FINAL_LIMIT).
+      - Always emits a broadcast {"intent":"register","to":null} each tick.
+
+    Crypto:
+      - Not used here (hs attaches on confirm/first request in the queued driver).
     """
     client.logger.info("[send tick]")
     await asyncio.sleep(1)
@@ -813,7 +880,7 @@ async def trying() -> list[dict]:
     init_rows = await RoleState.find(db, where={"self_id": my_id, "role": "initiator"})
     resp_rows = await RoleState.find(db, where={"self_id": my_id, "role": "responder"})
 
-    # Initiator role sends
+    # ---------------------------- Initiator role ----------------------------
     for row in init_rows:
         role_state = row.get("state") or "init_ready"
         peer_id    = row["peer_id"]
@@ -824,7 +891,96 @@ async def trying() -> list[dict]:
                 client.logger.info(f"[send][initiator:{role_state}] reconnect with {peer_id} under {row.get('peer_reference')}")
                 payload = {"to": peer_id, "your_ref": row.get("peer_reference"), "intent": "reconnect"}
 
-        elif role_state == "init_exchange":
+        elif role_state == "init_finalize_close":
+            # guard: need both refs before close
+            if row.get("peer_reference") is None or row.get("local_reference") is None:
+                client.logger.info(f"[send][initiator:{role_state}] waiting for refs before close")
+                continue
+            # Send close repeatedly until counter exceeded FINAL_LIMIT.
+            if int(row.get("finalize_retry_count", 0)) > INIT_FINAL_LIMIT:
+                await RoleState.update(db, where={"self_id": my_id, "role": "initiator", "peer_id": peer_id},
+                    fields={
+                        "local_nonce": None,
+                        "peer_nonce": None,
+                        # keep local_reference / peer_reference
+                        "state": "init_ready",
+                        "exchange_count": 0,
+                        "finalize_retry_count": 0
+                    })
+                client.logger.info("[init_finalize_close -> init_ready] CUT (refs preserved)")
+            else:
+                new_retry = int(row.get("finalize_retry_count", 0)) + 1
+                await RoleState.update(db, where={"self_id": my_id, "role": "initiator", "peer_id": peer_id}, fields={"finalize_retry_count": new_retry})
+                client.logger.info(f"[send][initiator:{role_state}] close #{new_retry} | your_ref={row.get('peer_reference')}")
+                payload = {
+                    "to": peer_id,
+                    "intent": "close",
+                    "your_ref": row.get("peer_reference"),
+                    "my_ref": row.get("local_reference"),
+                }
+
+        if payload is not None:
+            payloads.append(payload)
+
+    # ---------------------------- Responder role ----------------------------
+    for row in resp_rows:
+        role_state = row.get("state") or "resp_ready"
+        peer_id    = row["peer_id"]
+        payload = None
+        if role_state == "resp_finalize":
+            # guard: need peer_reference to populate your_ref
+            if row.get("peer_reference") is None:
+                client.logger.info(f"[send][responder:{role_state}] waiting for peer_reference before finish")
+                continue
+            # provide our reference; initiator will later 'close'
+            local_ref = row.get("local_reference") or generate_reference()
+            await RoleState.update(db, where={"self_id": my_id, "role": "responder", "peer_id": peer_id}, fields={"local_reference": local_ref})
+            client.logger.info(f"[send][responder:{role_state}] finish #{row.get('finalize_retry_count', 0)} | my_ref={local_ref}")
+            payload = {
+                "to": peer_id,
+                "intent": "finish",
+                "your_ref": row.get("peer_reference"),
+                "my_ref": local_ref,
+            }
+
+        if payload is not None:
+            payloads.append(payload)
+
+    # Broadcast a registration each tick so new peers can discover us.
+    payloads.append({"to": None, "intent": "register"})
+    return payloads
+
+
+@client.send(route="/all --> /all", multi=True, on_triggers = {Trigger.ok, Trigger.error})
+async def queued_sender() -> list[dict]:
+    """
+    Queued, event-driven sender: runs after receive handlers (on_triggers) and
+    includes a short sleep (~1s) to batch/log coherently.
+
+    Behavior:
+      - Initiator: 'request' loop (with fresh my_nonce), then 'conclude'.
+      - Responder: 'confirm' (with my_nonce), then 'respond' loop.
+
+    Crypto:
+      - Attach 'init' hs on the initiator's first request of the cycle.
+      - Attach 'response' hs on the responder's confirm.
+      - If a SYM key exists, move plaintext 'message' into a sealed 'sec'.
+    """
+    client.logger.info("[queued send tick]")
+    await asyncio.sleep(1)
+    payloads = []
+
+    # iterate all known peers for both roles (multi-peer)
+    init_rows = await RoleState.find(db, where={"self_id": my_id, "role": "initiator"})
+    resp_rows = await RoleState.find(db, where={"self_id": my_id, "role": "responder"})
+
+    # ---------------------------- Initiator role ----------------------------
+    for row in init_rows:
+        role_state = row.get("state") or "init_ready"
+        peer_id    = row["peer_id"]
+        payload = None
+
+        if role_state == "init_exchange":
             # guard: need peer_nonce to populate your_nonce
             if row.get("peer_nonce") is None:
                 client.logger.info(f"[send][initiator:{role_state}] waiting for peer_nonce before first request")
@@ -870,26 +1026,10 @@ async def trying() -> list[dict]:
                 "my_ref": local_ref,
             }
 
-        elif role_state == "init_finalize_close":
-            # guard: need both refs before close
-            if row.get("peer_reference") is None or row.get("local_reference") is None:
-                client.logger.info(f"[send][initiator:{role_state}] waiting for refs before close")
-                continue
-            # keep sending 'close' until acknowledged by the responder
-            new_retry = int(row.get("finalize_retry_count", 0)) + 1
-            await RoleState.update(db, where={"self_id": my_id, "role": "initiator", "peer_id": peer_id}, fields={"finalize_retry_count": new_retry})
-            client.logger.info(f"[send][initiator:{role_state}] finish #{new_retry} | your_ref={row.get('peer_reference')}")
-            payload = {
-                "to": peer_id,
-                "intent": "close",
-                "your_ref": row.get("peer_reference"),
-                "my_ref": row.get("local_reference"),
-            }
-
         if payload is not None:
             payloads.append(payload)
 
-    # Responder role sends
+    # ---------------------------- Responder role ----------------------------
     for row in resp_rows:
         role_state = row.get("state") or "resp_ready"
         peer_id    = row["peer_id"]
@@ -912,6 +1052,7 @@ async def trying() -> list[dict]:
             # respond with a fresh nonce each round
             local_nonce = row.get("local_nonce") or generate_nonce()
             await RoleState.update(db, where={"self_id": my_id, "role": "responder", "peer_id": peer_id}, fields={"local_nonce": local_nonce})
+            await NonceEvent.insert(db, self_id=my_id, role="responder", peer_id=peer_id, flow="sent", nonce=local_nonce)
             client.logger.info(f"[send][responder:{role_state}] respond #{row.get('exchange_count', 0)} | my_nonce={local_nonce}")
             payload = {
                 "to": peer_id,
@@ -927,27 +1068,9 @@ async def trying() -> list[dict]:
                 msg_obj = {"message": payload.pop("message")}
                 payload["sec"] = seal_envelope(sym, sign_priv, msg_obj)
 
-        elif role_state == "resp_finalize":
-            # guard: need peer_reference to populate your_ref
-            if row.get("peer_reference") is None:
-                client.logger.info(f"[send][responder:{role_state}] waiting for peer_reference before finish")
-                continue
-            # provide our reference; initiator will later 'close'
-            local_ref = row.get("local_reference") or generate_reference()
-            await RoleState.update(db, where={"self_id": my_id, "role": "responder", "peer_id": peer_id}, fields={"local_reference": local_ref})
-            client.logger.info(f"[send][responder:{role_state}] finish #{row.get('finalize_retry_count', 0)} | my_ref={local_ref}")
-            payload = {
-                "to": peer_id,
-                "intent": "finish",
-                "your_ref": row.get("peer_reference"),
-                "my_ref": local_ref,
-            }
-
         if payload is not None:
             payloads.append(payload)
 
-    # Broadcast a registration each tick so new peers can discover us.
-    payloads.append({"to": None, "intent": "register"})
     return payloads
 
 

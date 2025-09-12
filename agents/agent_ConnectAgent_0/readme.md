@@ -6,7 +6,7 @@ A connector agent that relays between the Summoner server and two SQLite files u
 * **Batching + multi-send**: incoming messages are buffered and flushed on a timer; outgoing messages use `multi=True` to emit lists as separate sends.
 * **CLI-selectable DB paths**: `--send_db` and `--recv_db` let you point the agent at different files.
 
-Behind the scenes, all messages live in at most **two databases** (they can be the same file if you pass only one flag). Storage is powered by the [`Message` model](./db_models.py), which creates the `messages` table and an index suitable for FIFO reads. For interactive testing, the project includes [`mcp_sim.py`](./mcp_sim.py), a tiny CLI that acts like an external process:
+Behind the scenes, all messages live in at most **two databases** (they can be the same file if you pass only one flag). Storage is powered by the [`Message`](./db_models.py) model, which creates the `messages` table and an index suitable for FIFO reads. For interactive testing, the project includes [`mcp_sim.py`](./mcp_sim.py), a tiny CLI that acts like an external process:
 
 * `/get` prints and **consumes** new items from the **send DB** (changing `state` from `new` → `processed`),
 * `/post "..."` inserts a new, **outgoing** item into the **receive DB**.
@@ -49,7 +49,7 @@ The CLI simulator plays the **client**: `/get` calls the "read" tool; `/post` ca
    > **[MCP lens]** At this point, you can picture two minimal **tools** backed by DB tables:
    >
    > * *post* → write JSON into the **receive DB** (creates "pending" work for the connector to hold),
-   > * *get* → read/consume JSON from the **send DB** (the connector’s outbound queue).
+   > * *get* → read/consume JSON from the **send DB** (the connector's outbound queue).
 
 2. When a message arrives (`@client.receive(route="")`), the handler serializes the **entire** inbound object with `json.dumps(msg).strip()` and appends it to an in-memory buffer.
 
@@ -158,7 +158,7 @@ Watch the connector terminal: after the batch interval, it flushes its in-memory
 
 **Terminal 2 (the connector emits them back using `multi=True`):**
 
-Return to the chat agent: it receives each stored line as an individual message because the connector’s send handler returns a list with `multi=True`.
+Return to the chat agent: it receives each stored line as an individual message because the connector's send handler returns a list with `multi=True`.
 
 ```
 [Received] {'remote_addr': '127.0.0.1:62290', 'content': 'Hello'}
@@ -175,8 +175,8 @@ Return to the chat agent: it receives each stored line as an individual message 
 This simulates an **external agent** that reads from one DB and writes to the other.
 The DB roles are **intentionally reversed** between the simulator and the connector so they "hand off" messages correctly:
 
-* The simulator’s `/get` should read what the connector **stored** → point simulator **send_db** to the connector’s **receive DB** file.
-* The simulator’s `/post` should feed the connector’s **outgoing** queue → point simulator **recv_db** to the connector’s **send DB** file.
+* The simulator's `/get` should read what the connector **stored** → point simulator **send_db** to the connector's **receive DB** file.
+* The simulator's `/post` should feed the connector's **outgoing** queue → point simulator **recv_db** to the connector's **send DB** file.
 
 ```bash
 # Terminal 1: server
@@ -241,7 +241,7 @@ mcp> /get
 
 **Terminal 2 (simulator `/post` writes into `out.db`):**
 
-Post a reply to `out.db` so the connector’s send handler will read and emit it back to the server.
+Post a reply to `out.db` so the connector's send handler will read and emit it back to the server.
 
 ```
 mcp> /post Ok, bye!

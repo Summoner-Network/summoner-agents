@@ -144,7 +144,7 @@ Then type `/self.travel` in Terminal 2 so the controller follows to testnet.
 ```
 
 > [!NOTE]
-> The line `Are still there?` is sent while the target is already on testnet and the controller is still local, so it won’t be seen by the target. After `/self.travel`, both agents are again on the same server (testnet), and messages sync up.
+> The line `Are still there?` is sent while the target is already on testnet and the controller is still local, so it won't be seen by the target. After `/self.travel`, both agents are again on the same server (testnet), and messages sync up.
 
 **Terminal 3 (target)**
 

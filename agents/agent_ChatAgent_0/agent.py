@@ -1,6 +1,6 @@
 from summoner.client import SummonerClient
 from multi_ainput import multi_ainput
-from aioconsole import ainput
+from aioconsole import ainput, aprint
 from typing import Any
 import argparse
 
@@ -23,8 +23,8 @@ async def receiver_handler(msg: Any) -> None:
     tag = ("\r[From server]" if isinstance(content, str) and content[:len("Warning:")] == "Warning:" else "\r[Received]")
 
     # Print the message and then re-show the primary prompt marker.
-    print(tag, content, flush=True)
-    print("> ", end="", flush=True)
+    await aprint(tag, str(content))
+    await aprint("> ", end="")
 
 @client.send(route="")
 async def send_handler() -> str:

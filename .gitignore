@@ -12,7 +12,8 @@ id_agent_*.json
 *.db-wal
 mov2gif
 private_*
-test.py
+agent_todo.txt
+build_sdk_dev.sh
 
 
 # Byte-compiled / optimized / DLL files

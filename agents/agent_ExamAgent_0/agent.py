@@ -1,6 +1,7 @@
 from summoner.client import SummonerClient
 from typing import Any, Optional, Literal
 import argparse, asyncio, time
+from aioconsole import aprint
 
 # --- Helpers (shared utilities) ---
 from exam_utils import (
@@ -143,10 +144,10 @@ async def receive_response(msg: Any) -> None:
 
     # Print all incoming messages for visibility
     if str(content).startswith("Warning:"):
-        print("\r[From server]", f"{content}", flush=True) # server-originated warning; no addr
+        await aprint("\r[From server]", str(content)) # server-originated warning; no addr
         return
     else:
-        print("\r[Received]", f"{addr} answered: {content}", flush=True)
+        await aprint("\r[Received]", f"{addr} answered: {content}") 
     
     # If this is the first answer received, trigger the start of the exam
     async with variables_lock:

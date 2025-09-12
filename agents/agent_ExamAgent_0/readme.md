@@ -138,7 +138,7 @@ The included files [qa_foundations.json](./qa_foundations.json) and [qa_sysdesig
 Labels are compared case-insensitively. Any compatible file in this format will work with `--qa`.
 
 
-Great note. Here’s a **drop-in replacement** for Scenario 1 with the step-by-step back-and-forth you asked for.
+Great note. Here's a **drop-in replacement** for Scenario 1 with the step-by-step back-and-forth you asked for.
 
 
 ### Scenario 1 — one chat agent answering two questions

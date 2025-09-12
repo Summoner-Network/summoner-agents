@@ -285,3 +285,55 @@ class Model(metaclass=ModelMeta):
         # If still missing, it means the row existed but was filtered; return that.
         fallback = await cls.find(db_conn, where=kwargs)
         return fallback[0], False
+    
+    @classmethod
+    async def exists(
+        cls,
+        db: Union[Database, Path, str],
+        where: Dict[str, Any] = None
+    ) -> bool:
+        """
+        Fast existence check. Returns True if at least one row matches `where`, else False.
+        Mirrors `find`'s operator-suffix behavior.
+        """
+        db_conn = db if isinstance(db, Database) else Database(db)
+        sql = f"SELECT 1 FROM {cls.__tablename__}"
+        params: List[Any] = []
+
+        if where:
+            # Validate field names (like `find`)
+            invalid_fields = [
+                k.split('__', 1)[0] for k in where.keys()
+                if k.split('__', 1)[0] not in cls._fields
+            ]
+            if invalid_fields:
+                raise ValueError(f"Unknown fields for {cls.__name__}: {invalid_fields}")
+
+            conditions = []
+            for key, val in where.items():
+                if '__' in key:
+                    fname, op = key.split('__', 1)
+                    sql_op = _OPERATOR_MAP.get(op)
+                    if sql_op == 'IN' and isinstance(val, (list, tuple)):
+                        placeholders = ",".join("?" for _ in val)
+                        conditions.append(f"{fname} IN ({placeholders})")
+                        params.extend(val)
+                    elif sql_op == 'NOT IN' and isinstance(val, (list, tuple)):
+                        placeholders = ",".join("?" for _ in val)
+                        conditions.append(f"{fname} NOT IN ({placeholders})")
+                        params.extend(val)
+                    elif sql_op:
+                        conditions.append(f"{fname} {sql_op} ?")
+                        params.append(val)
+                    else:
+                        # Fall back to literal key equality, matching `find`'s behavior
+                        conditions.append(f"{key} = ?")
+                        params.append(val)
+                else:
+                    conditions.append(f"{key} = ?")
+                    params.append(val)
+            sql += " WHERE " + " AND ".join(conditions)
+
+        sql += " LIMIT 1"
+        row = await db_conn.fetchone(sql, tuple(params))
+        return row is not None

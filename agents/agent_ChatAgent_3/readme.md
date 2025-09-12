@@ -65,8 +65,8 @@ This agent shows how `SummonerClient` can orchestrate **which handler runs** bas
 | **Local (typed, not sent)** | `/self.travel`        | Move **this** client to testnet                                   | —                                 |
 |                             | `/self.go_home`       | Return this client to `default_host:default_port`                 | —                                 |
 |                             | `/self.quit`          | Quit this client                                                  | —                                 |
-|                             | `/self.lock`          | Set this client’s state to `locked`                               | —                                 |
-|                             | `/self.open`          | Set this client’s state to `opened`                               | —                                 |
+|                             | `/self.lock`          | Set this client's state to `locked`                               | —                                 |
+|                             | `/self.open`          | Set this client's state to `opened`                               | —                                 |
 
 > 📝 **Note:**
 > Remote commands are **executed by the receiver** only when its automaton is in the state shown above. While `locked`, the receiver **prints** most commands (e.g., `/travel`, `/quit`) without executing them; only `/open HelloSummoner` causes an unlock. Local `/self.*` commands act immediately and never send a payload.
@@ -82,7 +82,7 @@ This agent shows how `SummonerClient` can orchestrate **which handler runs** bas
 | `client_flow.add_arrow_style(...)`           | Declares how routes like `opened --> locked` are parsed                          |
 | `client_flow.triggers()`                     | Loads trigger names (e.g., `ok`) used in `Move(Trigger.ok)` / `Stay(Trigger.ok)` |
 | `@client.upload_states()`                    | Uploads the current state so the flow engine can choose the active receiver      |
-| `@client.download_states()`                  | Integrates aggregated next states back into the client’s local `state`           |
+| `@client.download_states()`                  | Integrates aggregated next states back into the client's local `state`           |
 | `@client.receive(route="opened --> locked")` | Executes travel/quit and transitions to `locked` on `/lock`                      |
 | `@client.receive(route="locked --> opened")` | Prints only; transitions to `opened` on `/open HelloSummoner`                    |
 | `Move` / `Stay` (return type `Event`)        | Drive the automaton by signaling a transition or sticking with the current state |
@@ -193,7 +193,7 @@ First you try `/open` (no password) and send a normal message ("Whoops"). The ta
 [opened]>    # prompt switches immediately upon unlock
 ```
 
-**Step 4. Travel again to confirm we’re truly opened, then finish by quitting.**
+**Step 4. Travel again to confirm we're truly opened, then finish by quitting.**
 Now that the target is opened again, remote travel works; you move the target to testnet, follow it, then remote-quit the target and local-quit the controller.
 
 **Terminal 2 (controller)**

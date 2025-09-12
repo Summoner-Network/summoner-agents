@@ -3,6 +3,7 @@ import asyncio
 import os, json
 from pathlib import Path
 from typing import Any, List, Optional
+from aioconsole import aprint
 
 from summoner.client import SummonerClient
 import aiosqlite
@@ -129,7 +130,7 @@ class ReceiveBatcher:
         # Print after commit to reflect what was persisted.
         for msg in batch:
             tag = "\r[From server]" if isinstance(msg, str) and msg.startswith("Warning:") else "\r[Received]"
-            print(tag, msg, flush=True)
+            await aprint(tag, str(msg))
 
 
 class SendPoller:

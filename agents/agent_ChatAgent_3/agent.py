@@ -1,7 +1,7 @@
 from summoner.client import SummonerClient
 from summoner.protocol import Move, Stay, Node, Event
 from multi_ainput import multi_ainput
-from aioconsole import ainput
+from aioconsole import ainput, aprint
 from typing import Any, Literal, Optional
 import argparse, asyncio
 
@@ -77,14 +77,14 @@ async def receiver_opened(msg: Any) -> Event:
         elif strip == "/lock":
             # allow remote command to *lock* this agent
             tag = ("\r[From server]" if isinstance(content, str) and content[:len("Warning:")] == "Warning:" else "\r[Received]")
-            print(tag, content, flush=True)
-            print(f"[locked]> ", end="", flush=True)
+            await aprint(tag, str(content))
+            await aprint(f"[locked]> ", end="")
             return Move(Trigger.ok)  # transition "opened" -> "locked"
 
     # Not a command: print and stay in the same state.
     tag = ("\r[From server]" if isinstance(content, str) and content[:len("Warning:")] == "Warning:" else "\r[Received]")
-    print(tag, content, flush=True)
-    print(f"[opened]> ", end="", flush=True)
+    await aprint(tag, str(content))
+    await aprint(f"[opened]> ", end="")
     return Stay(Trigger.ok)
 
 # ---- Receive: locked --> opened ---------------------------------------------
@@ -104,16 +104,16 @@ async def receiver_locked(msg: Any) -> Event:
                 if cmd == "/open" and pw == "HelloSummoner":
                     # remote-controlled unlock
                     tag = ("\r[From server]" if isinstance(content, str) and content[:len("Warning:")] == "Warning:" else "\r[Received]")
-                    print(tag, content, flush=True)
-                    print(f"[opened]> ", end="", flush=True)
+                    await aprint(tag, str(content))
+                    await aprint(f"[opened]> ", end="")
                     return Move(Trigger.ok)  # transition "locked" -> "opened"
         except Exception:
             pass  # fall through to print+stay
 
     # In 'locked', we only display messages; commands like '/travel' are shown, not executed.
     tag = ("\r[From server]" if isinstance(content, str) and content[:len("Warning:")] == "Warning:" else "\r[Received]")
-    print(tag, content, flush=True)
-    print(f"[locked]> ", end="", flush=True)
+    await aprint(tag, str(content))
+    await aprint(f"[locked]> ", end="")
     return Stay(Trigger.ok)
 
 # ---- Send: available in any state -------------------------------------------

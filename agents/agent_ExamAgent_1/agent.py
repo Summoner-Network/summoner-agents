@@ -2,6 +2,7 @@ from summoner.client import SummonerClient
 from summoner.protocol import Direction, Move, Stay, Node, Event
 from typing import Any, Optional, Literal
 import argparse, asyncio, time
+from aioconsole import aprint
 
 # --- Helpers (shared utilities) ---
 from exam_utils import (
@@ -170,15 +171,15 @@ async def validate(msg: Any) -> Optional[dict]:
 
     # Print all incoming messages for visibility
     if str(content).startswith("Warning:"):
-        print("\r[From server]", f"{content}", flush=True) # server-originated warning; no addr
+        await aprint("\r[From server]", str(content)) # server-originated warning; no addr
         # Return None to filter this message out
         return 
     elif isinstance(msg, str): 
-        print("\r[Received]", f"{msg}", flush=True)
+        await aprint("\r[Received]", str(content))
         # Return None to filter this message out
         return
     else:
-        print("\r[Received]", f"{addr} answered: {content}", flush=True)     
+        await aprint("\r[Received]", f"{addr} answered: {content}")     
 
     return msg
     

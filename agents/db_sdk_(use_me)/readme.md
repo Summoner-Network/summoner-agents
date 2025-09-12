@@ -1,6 +1,6 @@
 # db_sdk: A Minimal Async ORM for SQLite with AioSQLite
 
-`db_sdk` provides a declarative layer on top of **aiosqlite**. You define your tables as Python classes using `Field` objects, and `ModelMeta` automatically generates the corresponding `CREATE TABLE` SQL. The `Database` class allows you to create a long‐lived connection to your database, while the `Model` base class supplies async CRUD methods (`insert`, `insert_or_ignore`, `find`, `update`, `delete`, `get_or_create`), flexible querying with operator suffixes, and automatic timestamp updates.
+`db_sdk` provides a declarative layer on top of **aiosqlite**. You define your tables as Python classes using `Field` objects, and `ModelMeta` automatically generates the corresponding `CREATE TABLE` SQL. The `Database` class allows you to create a long-lived connection to your database, while the `Model` base class supplies async CRUD methods (`insert`, `insert_or_ignore`, `find`, `update`, `delete`, `get_or_create`, `exists`), flexible querying with operator suffixes, and automatic timestamp updates.
 
 ## Table of Contents
 
@@ -15,6 +15,7 @@
    - `update`  
    - `delete`  
    - `get_or_create`  
+   - `exists`  
 7. [Advanced Querying](#advanced-querying)  
    - Operator suffixes (`__gt`, `__lt`, `__in`, `__not_in`, etc.)  
 8. [Automatic Timestamps & Defaults](#automatic-timestamps--defaults)  
@@ -66,9 +67,9 @@ async def main():
     # 5) Query records:
     rows = await Message.find(
         db,
-        where={"remote_addr": "127.0.0.1:8888"}
+        where={"addr": "127.0.0.1:8888"}
     )
-    print(rows)  # → [{"id": 1, "remote_addr": "...", "content": "Hello"}]
+    print(rows)  # → [{"id": 1, "addr": "...", "content": "Hello"}]
 
     # 6) Clean up
     await db.close()
@@ -101,7 +102,6 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
 ```
 
 * **Connection pooling**: one `aiosqlite.Connection` under the hood, reused for all operations
@@ -128,7 +128,7 @@ class State(Model):
 * `nullable`: `False` adds `NOT NULL`.
 * `default`: literal value or `CURRENT_*` SQL function.
 * `check`: SQL `CHECK(...)` constraint.
-* `on_update`: if `True`, uses `DEFAULT CURRENT_TIMESTAMP` and auto‐updates on `.update()`.
+* `on_update`: if `True`, uses `DEFAULT CURRENT_TIMESTAMP` and auto-updates on `.update()`.
 
 
 ## Initializing the Database
@@ -282,25 +282,48 @@ else:
 > **When to use:** When you need to ensure a record exists before performing other operations. Common in initialization code or when handling events that might be the first interaction with a particular entity.
 
 
+### `exists`
+
+Fast existence check. Returns `True` if at least one row matches `where`; `False` otherwise. Mirrors `find`'s operator-suffix behavior and validates field names.
+
+```python
+# Check if any active negotiation exists
+has_active = await State.exists(db, where={"negotiation_active": 1})
+
+# Check presence by range and set
+present = await State.exists(
+    db,
+    where={
+        "current_offer__gt": 25,
+        "agent_id__in": ["agent_1", "agent_2"]
+    }
+)
+```
+
+> [!TIP]
+> **When to use:** short-circuit conditions, guards, and preflight checks without fetching full rows.
+
+
 ## Advanced Querying
 
 You can filter records using powerful **operator suffixes** on your `where` keys. These get translated to SQL conditions behind the scenes.
 
 ### Supported Operators
 
-| Suffix     | SQL Translation | Example value     | Description                   |
-| ---------- | --------------- | ----------------- | ----------------------------- |
-| `__eq`     | `=`             | `5`               | Equals (default if no suffix) |
-| `__ne`     | `!=`            | `"inactive"`      | Not equal                     |
-| `__gt`     | `>`             | `10`              | Greater than                  |
-| `__lt`     | `<`             | `3.14`            | Less than                     |
-| `__gte`    | `>=`            | `100`             | Greater than or equal         |
-| `__lte`    | `<=`            | `0`               | Less than or equal            |
-| `__in`     | `IN (...)`        | `["A", "B", "C"]` | Must be a list or tuple       |
-| `__not_in` | `NOT IN (...)`    | `("X", "Y")`      | Excludes listed values        |
+| Suffix     | SQL Translation | Example value     | Description             |
+| ---------- | --------------- | ----------------- | ----------------------- |
+| *(none)*   | `=`             | `5`               | Equality (default)      |
+| `__ne`     | `!=`            | `"inactive"`      | Not equal               |
+| `__gt`     | `>`             | `10`              | Greater than            |
+| `__lt`     | `<`             | `3.14`            | Less than               |
+| `__gte`    | `>=`            | `100`             | Greater than or equal   |
+| `__lte`    | `<=`            | `0`               | Less than or equal      |
+| `__in`     | `IN (...)`      | `["A", "B", "C"]` | Must be a list or tuple |
+| `__not_in` | `NOT IN (...)`  | `("X", "Y")`      | Must be a list or tuple |
 
 > [!NOTE]
-> The default condition is equality—so `{"foo": 42}` is equivalent to `{"foo__eq": 42}`.
+> * The default condition is equality, so `{"foo": 42}` is equivalent to `{"foo__eq": 42}`. However, do **not** use an explicit `__eq` as it is not recognized.
+> * If you pass a non-list/tuple to `__in`/`__not_in`, the generated SQL will be invalid. Always pass a sequence.
 
 ### Examples
 
@@ -330,8 +353,8 @@ await BannedAddress.find(db, where={"address__not_in": trusted_set})
 
 ### Behavior Notes
 
-* Operator suffixes are parsed by splitting the key name at the **last `__`**.
-* If you use an invalid suffix (e.g., `__unknown`), a `ValueError` will be raised.
+* Operator suffixes are parsed by splitting the key name at the **first `__`**.
+* Unknown suffixes are treated as part of the column name (for example, `field__unknown` becomes a literal column named `field__unknown`), which typically causes a SQL error. Stick to the supported list above.
 * `__in` and `__not_in` require the value to be a **list or tuple**.
 * All filters are combined with **AND** logic by default (no support for OR queries).
 * Queries are translated to SQL and executed directly via parameterized `aiosqlite` statements—performance depends on index usage.
@@ -539,6 +562,11 @@ async def on_offer(msg):
             "transaction_id": msg.get("txid")
         }
     )
+
+    # Fast guard (exists)
+    if await State.exists(db, where={"negotiation_active": 1}):
+        # do something knowing at least one negotiation is active
+        ...
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

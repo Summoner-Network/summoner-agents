@@ -1,6 +1,6 @@
 # `RateLimitAgent_1`
 
-A variant of [`RateLimitAgent_0`](../agent_RateLimitAgent_0/) that uses `multi=True` to emit batches of messages at once, allowing it to hit the server’s rate limit in just two sends. It builds on the send/receive tracking of `RateLimitAgent_0` while demonstrating bulk emission.
+A variant of [`RateLimitAgent_0`](../agent_RateLimitAgent_0/) that uses `multi=True` to emit batches of messages at once, allowing it to hit the server's rate limit in just two sends. It builds on the send/receive tracking of `RateLimitAgent_0` while demonstrating bulk emission.
 
 ## Behavior
 

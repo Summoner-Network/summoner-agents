@@ -1,6 +1,6 @@
 from summoner.client import SummonerClient
 from multi_ainput import multi_ainput
-from aioconsole import ainput
+from aioconsole import ainput, aprint
 from typing import Any, Optional, Literal
 import argparse, asyncio
 
@@ -60,8 +60,8 @@ async def receiver_opened(msg: Any) -> None:
 
     # Not a command: print as a normal message.
     tag = ("\r[From server]" if isinstance(content, str) and content[:len("Warning:")] == "Warning:" else "\r[Received]")
-    print(tag, content, flush=True)
-    print(f"[opened]> ", end="", flush=True)
+    await aprint(tag, str(content))
+    await aprint(f"[opened]> ", end="")
 
 # ---- Receive when state == "locked" ----------------------------------------
 # In this state, we *ignore* remote command verbs and only display messages.
@@ -74,8 +74,8 @@ async def receiver_locked(msg: Any) -> None:
 
     # Only display (no command processing here).
     tag = ("\r[From server]" if isinstance(content, str) and content[:len("Warning:")] == "Warning:" else "\r[Received]")
-    print(tag, content, flush=True)
-    print(f"[locked]> ", end="", flush=True)
+    await aprint(tag, str(content))
+    await aprint(f"[locked]> ", end="")
 
 # ---- Send: available in any state ------------------------------------------
 # We keep a single send handler; the prompt shows the current state and we

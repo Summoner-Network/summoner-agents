@@ -30,7 +30,6 @@
     * [Feedback Agents](#feedback-agents)
     * [Connector Agents (to MCP, LangChain, CrewAI, etc.)](#connector-agents)
     * [Security and Handshake Agents](#security-and-handshake-agents)
-    * [Negotiation Agents](#negotiation-agents)
     * [API Agents 🚧 (panned)](#api-agents)
     * [Code Exchange Agents 🚧 (planned)](#code-exchange-agents)
 
@@ -168,6 +167,27 @@ source venv/bin/activate  # For POSIX systems (Linux/macOS)
 > ```bash
 > source build_sdk.sh setup
 > ```
+
+
+**Install agent requirements before running any agent**
+
+If you want run **one specific agent**, install the agent's dependencies as follows:
+
+```bash
+pip install -r agents/agent_<name>/requirements.txt
+```
+
+If you want **all agents** to be ready, run the helper script from the repository root (POSIX/bash):
+
+```bash
+bash install_requirements.sh
+```
+
+This script iterates over `agents/agent_*` and installs each `requirements.txt` it finds. If an agent folder has no `requirements.txt`, nothing is installed for that agent.
+
+> 💡 **Tip:**
+> If you encounter `ModuleNotFoundError` when launching an agent, install the requirements using one of the commands above.
+
 
 ### Launch the Summoner Server
 
@@ -414,7 +434,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
     </thead>
     <tbody>
     <tr>
-        <td><code><strong><a href="agents/agent_ReporterAgent_0/">ReporterAgent_0</a></strong></code></td>
+        <td><code><strong><a href="agents/agent_ReportAgent_0/">ReportAgent_0</a></strong></code></td>
         <td style="font-size: 0.8em;">Queues messages for a short window, then sends one newline-joined report.</td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
         <td><code>core</code></td>
@@ -422,7 +442,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
         <td>✗</td><td>✅</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td>
     </tr>
     <tr>
-        <td><code><strong><a href="agents/agent_ReporterAgent_1/">ReporterAgent_1</a></strong></code></td>
+        <td><code><strong><a href="agents/agent_ReportAgent_1/">ReportAgent_1</a></strong></code></td>
         <td style="font-size: 0.8em;">Queues messages for a short window, then emits them separately using <code>multi=True</code>.</td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
         <td><code>core</code> <code>multi</code></td>
@@ -527,7 +547,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 ### Security and Handshake Agents
 
 <details>
-<summary><b>(Click to expand)</b> Agents of <b>level 1, 4, and 5</b> covering backpressure tests, validation hooks, and cryptographic DID handshakes.</summary>
+<summary><b>(Click to expand)</b> Agents of <b>level 1, 4, and 5</b> covering backpressure tests, validation hooks, cryptographic DID handshakes, and decision-making in negotiation flows.</summary>
 <br>
 
 <div style="display: flex; justify-content: center;">
@@ -567,7 +587,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
     </tr>
     <tr>
         <td><code><strong><a href="agents/agent_RateLimitAgent_2/">RateLimitAgent_2</a></strong></code></td>
-        <td style="font-size: 0.8em;">Tests backpressure using <code>@send(multi=True)</code> and terminates via <code>.quit()</code> in <code>@receive<code></td>
+        <td style="font-size: 0.8em;">Tests backpressure using <code>@send(multi=True)</code> and terminates via <code>.quit()</code> in <code>@receive</code></td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
          <td><code>core</code> <code>multi</code> <code>traveling</code> </td>
         <td><img src="https://img.shields.io/badge/Red_Team-%20?color=cd280a" alt=""></td>
@@ -575,17 +595,33 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
     </tr>
     <tr>
         <td><code><strong><a href="agents/agent_HSAgent_0/">HSAgent_0</a></strong></code></td>
-        <td style="font-size: 0.8em;">Explores a handshake design to initiate and finalize an exchange</td>
+        <td style="font-size: 0.8em;">Explores a nonce-echo handshake to initiate and finalize an exchange</td>
         <td><img src="https://img.shields.io/badge/LVL_4-%20?color=DF7919" alt=""></td>
-         <td><code>core</code> <code>multi</code> <code>upload_states</code> <code>download_states</code> <code>validation</code> <code>DID</code></td>
+         <td><code>core</code> <code>multi</code> <code>upload_states</code> <code>download_states</code> <code>on_triggers</code> <code>validation</code> <code>DID</code></td>
         <td><img src="https://img.shields.io/badge/Handshake-%20?color=cd710a" alt=""></td>
+        <td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✗</td>
+    </tr>
+    <tr>
+        <td><code><strong><a href="agents/agent_HSSellAgent_0/">HSSellAgent_0</a></strong></code></td>
+        <td style="font-size: 0.8em;">Explores a selling negotiation overlay on top of the handshake to initiate and finalize a deal</td>
+        <td><img src="https://img.shields.io/badge/LVL_4-%20?color=DF7919" alt=""></td>
+         <td><code>core</code> <code>multi</code> <code>upload_states</code> <code>download_states</code> <code>on_triggers</code> <code>validation</code> <code>DID</code></td>
+        <td><img src="https://img.shields.io/badge/Handshake-%20?color=cd710a" alt=""> <img src="https://img.shields.io/badge/Negotiation-%20?color=f1c822" alt=""></td>
+        <td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✗</td>
+    </tr>
+    <tr>
+        <td><code><strong><a href="agents/agent_HSBuyAgent_0/">HSBuyAgent_0</a></strong></code></td>
+        <td style="font-size: 0.8em;">Explores a buying negotiation overlay on top of the handshake to initiate and finalize a deal</td>
+        <td><img src="https://img.shields.io/badge/LVL_4-%20?color=DF7919" alt=""></td>
+         <td><code>core</code> <code>multi</code> <code>upload_states</code> <code>download_states</code> <code>on_triggers</code> <code>validation</code> <code>DID</code></td>
+        <td><img src="https://img.shields.io/badge/Handshake-%20?color=cd710a" alt=""> <img src="https://img.shields.io/badge/Negotiation-%20?color=f1c822" alt=""></td>
         <td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✗</td>
     </tr>
     <tr>
         <td><code><strong><a href="agents/agent_HSAgent_1/">HSAgent_1</a></strong></code></td>
-        <td style="font-size: 0.8em;">Explores a cryptographic handshake design with persistent, encrypted identity (DID) to initiate and finalize an exchange</td>
+        <td style="font-size: 0.8em;">Explores a cryptographic handshake with persistent DID identity to initiate and finalize an exchange</td>
         <td><img src="https://img.shields.io/badge/LVL_5-%20?color=DF4119" alt=""></td>
-         <td><code>core</code> <code>multi</code> <code>upload_states</code> <code>download_states</code> <code>validation</code> <code>DID</code></td>
+         <td><code>core</code> <code>multi</code> <code>upload_states</code> <code>download_states</code> <code>on_triggers</code> <code>validation</code> <code>DID</code></td>
         <td><img src="https://img.shields.io/badge/Handshake-%20?color=cd710a" alt=""></td>
         <td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✗</td>
     </tr>
@@ -595,53 +631,6 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 
 </details>
 
-
-### Negotiation Agents
-
-<details>
-<summary><b>(Click to expand)</b> Agents of <b>level 4</b> modeling seller-buyer interactions and decision-making in negotiation flows.</summary>
-<br>
-
-<div style="display: flex; justify-content: center;">
-<table style="border-collapse: collapse; width: 95%; text-align: center;">
-    <thead>
-    <tr>
-        <th style="width: 10%; text-align: center;">Agent Name</th>
-        <th style="width: 33%; text-align: center;">Description</th>
-        <th style="width: 12%; text-align: center;">Level</th>
-        <th style="width: 12%; text-align: center;">Features</th>
-        <th style="width: 12%; text-align: center;">Applications</th>
-        <th style="width: 3%; text-align: center;">DB</th>
-        <th style="width: 3%; text-align: center;">Queue</th>
-        <th style="width: 3%; text-align: center;">Flows</th>
-        <th style="width: 3%; text-align: center;">Logs</th>
-        <th style="width: 3%; text-align: center;">Hooks</th>
-        <th style="width: 3%; text-align: center;">Temp.</th>
-        <th style="width: 3%; text-align: center;">Comp.</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr>
-        <td><code><strong>Seller</strong></code></td>
-        <td style="font-size: 0.8em;">...</td>
-        <td><img src="https://img.shields.io/badge/LVL_4-%20?color=DF7919" alt=""></td>
-         <td><code>core</code></td>
-        <td><img src="https://img.shields.io/badge/Negotiation-%20?color=f1c822" alt=""></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
-    </tr>
-    <tr>
-        <td><code><strong>Buyer</strong></code></td>
-        <td style="font-size: 0.8em;">...</td>
-        <td><img src="https://img.shields.io/badge/LVL_4-%20?color=DF7919" alt=""></td>
-         <td><code>core</code></td>
-        <td><img src="https://img.shields.io/badge/Negotiation-%20?color=f1c822" alt=""></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
-    </tr>
-    </tbody>
-</table>
-</div>
-
-</details>
 
 
 <a id="api-agents"></a>
@@ -806,36 +795,4 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 
 </details>
 
-
-<!-- 
-
----
-reporter queue (sequence for orchestration)
-storage db (GET POSt service)
-subscribe (db)
-event emiter
-question / answer ~ pub / sub
-
----
-
-seller (negotiation)
-buyer (negotiation)
-
-----
-
-connector: connecting other framework (e..g mcp) to summoner
-
----
-
-api-based
-- search
-- process text (summary, improve)
-- live updates
-- get
-
-api-metrics
-
----
-exchange pice of code over the wire:
-smart tools -->
 

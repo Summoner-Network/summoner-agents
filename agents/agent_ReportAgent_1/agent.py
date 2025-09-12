@@ -1,6 +1,7 @@
 from summoner.client import SummonerClient
 from typing import Any
 import argparse, asyncio
+from aioconsole import aprint
 
 client = SummonerClient(name="ReportAgent_1")
 
@@ -17,7 +18,7 @@ async def custom_receive(msg: Any) -> None:
     if isinstance(content, str):
         await message_buffer.put(content)
         tag = "\r[From server]" if content.startswith("Warning:") else "\r[Received]"
-        print(tag, content, flush=True)
+        await aprint(tag, content)
 
 @client.send(route="", multi=True)
 async def custom_send() -> list:

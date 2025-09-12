@@ -27,10 +27,10 @@
         },
 
         "sender": {
-        "concurrency_limit": 16,
-        "batch_drain": false,
-        "queue_maxsize": 128,
-        "event_bridge_maxsize": 2000,
+        "concurrency_limit": 24,
+        "batch_drain": true,
+        "queue_maxsize": 192,
+        "event_bridge_maxsize": 3000,
         "max_worker_errors": 3
         },
 

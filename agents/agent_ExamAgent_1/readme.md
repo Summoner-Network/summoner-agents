@@ -8,7 +8,7 @@ An exam-style agent based on [`ExamAgent_0`](../agent_ExamAgent_0/) that runs ti
 You can also provide your own JSON file in the same format.
 
 > [!NOTE]
-> **What’s new vs. [`ExamAgent_0`](../agent_ExamAgent_0/):** this version uses the **flow engine** (routes + events) to orchestrate receivers, reducing the lifecycle to **two states**—`none` and `started`. It introduces:
+> **What's new vs. [`ExamAgent_0`](../agent_ExamAgent_0/):** this version uses the **flow engine** (routes + events) to orchestrate receivers, reducing the lifecycle to **two states**—`none` and `started`. It introduces:
 >
 > * `@client.receive(route="none --> started")` to **start** a round on any valid message.
 > * `@client.receive(route="started")` to accept and score labels during a round.
@@ -92,7 +92,7 @@ You can also provide your own JSON file in the same format.
 | `@client.download_states()`                                                          | Receives the **allowed next nodes** aggregated from handlers and folds them back into `phase` (e.g., set to `"started"` when `Node("started")` is present; otherwise `"none"`).                                                              |
 | `@client.hook(Direction.RECEIVE)`                                                    | Validates/logs inbound payloads *once* before routing: prints text; **drops** messages starting with `Warning:`; forwards only well-shaped dicts (with `content`/`remote_addr`) to the receivers; raw strings are shown then filtered out.   |
 | `@client.receive(route="none --> started")`                                          | **Start trigger.** Any valid inbound message moves the flow to `started`; `Q#0` will publish on the next send tick.                                                                                                                          |
-| `@client.receive(route="started")`                                                   | Accepts answer labels during a round; enqueues `(addr, idx, pts, ts)` for the **current** question. If a label arrives before `Q#0` is published, it’s ignored gracefully.                                                                   |
+| `@client.receive(route="started")`                                                   | Accepts answer labels during a round; enqueues `(addr, idx, pts, ts)` for the **current** question. If a label arrives before `Q#0` is published, it's ignored gracefully.                                                                   |
 | `Move` / `Stay` (return type `Event`)                                                | Handlers return `Move(Trigger.ok)` to transition (`none → started`) and `Stay(Trigger.ok)` to remain in place while processing answers.                                                                                                      |
 | `@client.send(route="")`                                                             | Publishes questions, opens a 5-second answer window starting at the first answer, applies tie-breaks (first per address → current-question answers → higher points → earlier time), updates the scoreboard, and resets the round after 2 Qs. |
 | `client.loop.run_until_complete(setup())`                                            | Initializes shared structures (e.g., `answer_buffer = asyncio.Queue()`) before starting the client.                                                                                                                                          |

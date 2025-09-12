@@ -50,7 +50,7 @@ async def test_quick_start():
     # 5) Query records:
     rows = await Message.find(
         db,
-        where={"remote_addr": "127.0.0.1:8888"}
+        where={"addr": "127.0.0.1:8888"}
     )
     print("Found rows:", rows)
     assert len(rows) == 1
@@ -397,6 +397,62 @@ async def test_error_handling():
     db_path.unlink()
     print("✅ Error Handling test passed!")
 
+async def test_exists():
+    """Test the Model.exists helper"""
+    print("🧪 Testing exists...")
+
+    import tempfile
+    from pathlib import Path
+
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
+        db_path = Path(tmp.name)
+
+    class Item(Model):
+        __tablename__ = "items"
+        id    = Field("INTEGER", primary_key=True)
+        name  = Field("TEXT")
+        price = Field("REAL")
+
+    db = Database(db_path)
+    await Item.create_table(db)
+
+    # Initially no rows
+    assert not await Item.exists(db, where={"name": "foo"})
+    assert not await Item.exists(db)  # empty table → False
+
+    # Insert some data
+    await Item.insert(db, name="foo", price=10.0)
+    await Item.insert(db, name="bar", price=20.0)
+    await Item.insert(db, name="baz", price=30.0)
+
+    # Now at least one row exists
+    assert await Item.exists(db)
+
+    # Equality
+    assert await Item.exists(db, where={"name": "foo"})
+    assert not await Item.exists(db, where={"name": "qux"})
+
+    # Comparison operator
+    assert await Item.exists(db, where={"price__gt": 25})
+    assert not await Item.exists(db, where={"price__gt": 100})
+
+    # IN / NOT IN (must pass a list/tuple)
+    assert await Item.exists(db, where={"name__in": ["qux", "bar"]})   # 'bar' exists
+    assert not await Item.exists(db, where={"name__in": ["qux", "quux"]})
+    assert await Item.exists(db, where={"name__not_in": ["foo"]})      # 'bar'/'baz' exist
+    assert not await Item.exists(db, where={"name__not_in": ["foo", "bar", "baz"]})
+
+    # Invalid field name should raise ValueError (mirrors find)
+    try:
+        await Item.exists(db, where={"invalid_field": 1})
+        assert False, "Should have raised ValueError for invalid field"
+    except ValueError as e:
+        assert "Unknown fields for Item" in str(e)
+
+    await db.close()
+    db_path.unlink()
+    print("✅ exists test passed!")
+
 
 async def main():
     """Run all tests"""
@@ -412,6 +468,7 @@ async def main():
         await test_timestamps_and_defaults()
         await test_indexes()
         await test_error_handling()
+        await test_exists()
         
         print("\n🎉 All README snippets work correctly!")
         
