@@ -547,7 +547,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 ### Security and Handshake Agents
 
 <details>
-<summary><b>(Click to expand)</b> Agents of <b>level 1, 4, and 5</b> covering backpressure tests, validation hooks, cryptographic DID handshakes, and decision-making in negotiation flows.</summary>
+<summary><b>(Click to expand)</b> Agents of <b>level 1, 4, 5 and 6</b> covering backpressure tests, validation hooks, cryptographic DID handshakes, and decision-making in negotiation flows.</summary>
 <br>
 
 <div style="display: flex; justify-content: center;">
@@ -602,9 +602,17 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
         <td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✗</td>
     </tr>
     <tr>
+        <td><code><strong><a href="agents/agent_HSAgent_1/">HSAgent_1</a></strong></code></td>
+        <td style="font-size: 0.8em;">Explores a cryptographic handshake with persistent DID identity to initiate and finalize an exchange</td>
+        <td><img src="https://img.shields.io/badge/LVL_5-%20?color=DF4119" alt=""></td>
+         <td><code>core</code> <code>multi</code> <code>upload_states</code> <code>download_states</code> <code>on_triggers</code> <code>validation</code> <code>DID</code></td>
+        <td><img src="https://img.shields.io/badge/Handshake-%20?color=cd710a" alt=""></td>
+        <td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✗</td>
+    </tr>
+    <tr>
         <td><code><strong><a href="agents/agent_HSSellAgent_0/">HSSellAgent_0</a></strong></code></td>
         <td style="font-size: 0.8em;">Explores a selling negotiation overlay on top of the handshake to initiate and finalize a deal</td>
-        <td><img src="https://img.shields.io/badge/LVL_4-%20?color=DF7919" alt=""></td>
+        <td><img src="https://img.shields.io/badge/LVL_6-%20?color=F20F40" alt=""></td>
          <td><code>core</code> <code>multi</code> <code>upload_states</code> <code>download_states</code> <code>on_triggers</code> <code>validation</code> <code>DID</code></td>
         <td><img src="https://img.shields.io/badge/Handshake-%20?color=cd710a" alt=""> <img src="https://img.shields.io/badge/Negotiation-%20?color=f1c822" alt=""></td>
         <td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✗</td>
@@ -612,17 +620,9 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
     <tr>
         <td><code><strong><a href="agents/agent_HSBuyAgent_0/">HSBuyAgent_0</a></strong></code></td>
         <td style="font-size: 0.8em;">Explores a buying negotiation overlay on top of the handshake to initiate and finalize a deal</td>
-        <td><img src="https://img.shields.io/badge/LVL_4-%20?color=DF7919" alt=""></td>
+        <td><img src="https://img.shields.io/badge/LVL_6-%20?color=F20F40" alt=""></td>
          <td><code>core</code> <code>multi</code> <code>upload_states</code> <code>download_states</code> <code>on_triggers</code> <code>validation</code> <code>DID</code></td>
         <td><img src="https://img.shields.io/badge/Handshake-%20?color=cd710a" alt=""> <img src="https://img.shields.io/badge/Negotiation-%20?color=f1c822" alt=""></td>
-        <td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✗</td>
-    </tr>
-    <tr>
-        <td><code><strong><a href="agents/agent_HSAgent_1/">HSAgent_1</a></strong></code></td>
-        <td style="font-size: 0.8em;">Explores a cryptographic handshake with persistent DID identity to initiate and finalize an exchange</td>
-        <td><img src="https://img.shields.io/badge/LVL_5-%20?color=DF4119" alt=""></td>
-         <td><code>core</code> <code>multi</code> <code>upload_states</code> <code>download_states</code> <code>on_triggers</code> <code>validation</code> <code>DID</code></td>
-        <td><img src="https://img.shields.io/badge/Handshake-%20?color=cd710a" alt=""></td>
         <td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✗</td>
     </tr>
     </tbody>
