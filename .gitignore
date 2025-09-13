@@ -1,5 +1,6 @@
 # Remy's
 .DS_Store
+*/.DS_Store
 save/
 *.old
 native_build
