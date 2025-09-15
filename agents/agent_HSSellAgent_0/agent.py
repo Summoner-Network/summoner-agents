@@ -1,36 +1,67 @@
 # =============================================================================
-# HSAgent_0 — Handshake + Nonce Exchange Demo
+# HSSellAgent_0 — Initiator Handshake + Seller Decision Track
 #
 # OVERVIEW
-#   Two roles:
-#     - Initiator  : init_ready → init_exchange → init_finalize_propose → init_finalize_close → init_ready
+#   Two coordinated tracks in a single-role agent:
+#
+#   Handshake (initiator):
+#     init_ready → init_exchange_0 → init_exchange_1
+#                → init_finalize_propose → init_finalize_close → init_ready
+#
+#   Seller (negotiation overlay during exchange):
+#     Forks from init_exchange_0 based on buyer messages:
+#       init_exchange_0 → init_interested
+#       init_exchange_0 → init_accept
+#       init_exchange_0 → init_refuse
+#     Merges into handshake’s init_exchange_1 when counterpart confirms:
+#       init_interested → init_exchange_1, init_accept_too
+#       init_interested → init_exchange_1, init_refuse_too
+#       init_accept     → init_exchange_1
+#       init_refuse     → init_exchange_1
 #
 #   High-level:
 #     1) Discovery / Hello            : register ↔ confirm
 #     2) Nonce Ping-Pong              : request/respond (bounded by EXCHANGE_LIMIT)
-#     3) Finalize (swap references)   : conclude/finish, then init sends close until retries count is exceeded
-#     4) Reconnect                    : initiator can rejoin if both sides remember refs
+#        • Seller decisions ride in content["message"] (compact JSON)
+#     3) Finalize (swap references)   : conclude/finish, then initiator repeats close
+#     4) Reconnect                    : initiator can resume if refs persist
 #
-# KEY IDEAS
-#   - RoleState is per (self_id, role, peer_id). It stores live state, local/peer nonces,
-#     local/peer references, retry counters, and last known peer address.
-#   - NonceEvent is a per-peer log of sent/received nonces during an active exchange.
-#     It is cleared when both sides confirm final references.
-#   - The send driver runs periodically. It emits outbound messages based on RoleState.
-#   - The upload/download pair negotiates which states are permissible per role+peer.
+# WIRE MESSAGES
+#   Handshake intents: register, confirm, request, respond, conclude, finish, close, reconnect
+#   Negotiation payload (inside content["message"]):
+#     Outbound (seller → buyer)   : {"type":"selling", "status": <seller_state>, "price": <float>, "TXID": <uuid?>}
+#     Inbound  (buyer  → seller)  : {"type":"buying",  "status": <buyer_state> , "price": <float>, "TXID": <uuid?>}
+#
+# PERSISTENCE
+#   RoleState(self_id, role="initiator", peer_id): state, nonces, references, counts, peer_address
+#   NonceEvent(self_id, role, peer_id, flow ∈ {"sent","received"}, nonce): replay diagnostics (cleared on finish)
+#   TradeState(peer_id): agreement (seller decision), pricing fields, transaction_id
+#   History(agent_id, peer_id, txid, outcome): accept/refuse confirmations
+#
+# STATE ADVERTISING (peer-scoped)
+#   - While in init_exchange_0, upload advertises {"seller:<peer>": <agreement_or_default>}
+#   - Otherwise it advertises {"initiator:<peer>": <handshake_state>}
+#   - download() applies role-specific preferences and may proactively merge initiator to init_exchange_1.
+#
+# CONCURRENCY MODEL
+#   - tick_background_sender: periodic maintenance (register, reconnect, close retries).
+#   - queued_sender        : event-driven after receives (request cycles, conclude), avoiding nonce races.
 #
 # INVARIANTS
-#   1) Every respond/request must echo the last counterpart nonce as `your_nonce`.
-#   2) finalize requires both sides to present refs consistently:
-#        - Initiator sends conclude(my_ref).
-#        - Responder sends finish(your_ref=peer_reference, my_ref=local_reference).
-#        - Initiator sends close(your_ref=peer_reference, my_ref=local_reference) until retries count is exceeded.
-#   3) On reconnect, initiator must present the responder's last local_reference as `your_ref`.
+#   1) Echo: every request/respond carries your_nonce == receiver’s last local_nonce.
+#   2) Replay: inbound my_nonce previously seen with flow="received" is ignored.
+#   3) Finalize:
+#        initiator: conclude(my_ref)
+#        responder: finish(your_ref=peer_reference, my_ref=local_reference)
+#        initiator: close(your_ref=peer_reference, my_ref=local_reference) until retry limit
+#   4) Reconnect: initiator must present responder’s last local_reference as your_ref.
+#   5) Seller overlay does not bypass handshake invariants; decoration_generator enforces them first.
 #
 # TUNABLES
-#   - EXCHANGE_LIMIT: number of ping-pong rounds before cutting to finalize.
-#   - INIT_FINAL_LIMIT   : number of finalize retries before cutting back to ready.
+#   EXCHANGE_LIMIT   : initiator cuts ping-pong after this many cycles.
+#   INIT_FINAL_LIMIT : initiator stops close loop (refs preserved for reconnect).
 # =============================================================================
+
 
 
 """ ============================ IMPORTS & TYPES ============================ """
@@ -170,6 +201,10 @@ async def ensure_role_state(self_id: str, role: str, peer_id: str, default_state
     }
 
 async def start_trade_with(peer_id):
+    """
+    Initialize or refresh TradeState for this peer after a successful confirm.
+    Sets bounds, current_offer, and transaction_id; logs initial parameters.
+    """
     await create_or_reset_state(db, peer_id)
     peer_row = await get_state(db, peer_id)
     if peer_row["transaction_id"] is None:
@@ -182,6 +217,10 @@ async def start_trade_with(peer_id):
             )
 
 async def end_trade_with(peer_id):
+    """
+    Emit per-peer negotiation statistics (success rate, last TXID) and clear
+    agreement/transaction_id so a new trade can start cleanly later.
+    """
     stats = await show_statistics(db, peer_id)
 
     agent_id = stats["agent_id"]
@@ -201,6 +240,19 @@ async def end_trade_with(peer_id):
 
 def decoration_generator(route: str):
     def hs_decorator(fn: Callable[[dict], Optional[Event]]):
+        """
+        Handshake-first guard for seller routes driven by buyer 'respond' messages.
+
+        Enforces before negotiation logic:
+        - intent == "respond" and addressed to us
+        - presence of your_nonce and my_nonce
+        - echo check (your_nonce == our last local_nonce)
+        - replay drop (inbound my_nonce unseen for flow="received")
+        - side effects: store peer_nonce, clear local_nonce, log NonceEvent(received)
+
+        After invariants, delegates to the decorated function to update TradeState/History
+        and decide the fork/merge transition for the seller track.
+        """
         async def decorated_fn(payload: dict) -> Optional[Event]:
             
             # Handshake logic
@@ -237,16 +289,15 @@ def decoration_generator(route: str):
 @client.upload_states()
 async def upload(payload: dict) -> dict[str, str]:
     """
-    Called periodically by the client runtime.
+    Peer-scoped advertisement for BOTH tracks.
 
-    Input:
-      payload may include 'from' at the top level or inside payload['content'].
+    If no peer is known, return {}.
+    Otherwise return exactly one key:
+      • {"seller:<peer>": <agreement_or_default>}  when initiator is in init_exchange_0
+      • {"initiator:<peer>": <handshake_state>}    for all other initiator states
 
-    Behavior:
-      - If we don't know the peer (no 'from'), return {} to avoid advertising global keys.
-      - Otherwise, respond with peer-scoped keys, e.g.:
-          {"initiator:<peer>": <state>, "seller:<peer>": <state>}
-      - Each value is the current RoleState.state for that peer or a role-default.
+    This lets the counterpart fork/merge the seller overlay while the initiator
+    continues controlling the handshake progression.
     """
     peer_id = None
     if isinstance(payload, dict):
@@ -278,16 +329,18 @@ async def upload(payload: dict) -> dict[str, str]:
 @client.download_states()
 async def download(possible_states: dict[Optional[str], list[Node]]) -> None:
     """
-    The runtime tells us what states are currently permissible *per role and peer*.
-    We pick one (by our preference order) and store it in RoleState.state.
+    Apply allowed states per peer for BOTH tracks with role-specific preferences.
 
-    Contract:
-      - Keys are peer-scoped like "initiator:<peer_id>" or "seller:<peer_id>".
-      - We ignore global role-only keys (None or no ':').
+    Keys:
+      "initiator:<peer_id>" or "seller:<peer_id>" (ignore global role keys).
 
-    Preference order:
-      - Initiator:   init_ready > init_finalize_close > init_finalize_propose > init_exchange_1 > init_exchange_0
-      - Seller   :   init_refuse_too > init_refuse > init_accept_too > init_accept > init_interested > init_exchange_0
+    Preference:
+      Initiator: init_ready > init_finalize_close > init_finalize_propose > init_exchange_1 > init_exchange_0
+      Seller   : init_refuse_too > init_refuse > init_accept_too > init_accept > init_interested > init_exchange_0
+
+    Effects:
+      - For initiator: persist the chosen handshake state in RoleState.state.
+      - For seller  : persist TradeState.agreement; if init_exchange_1 is allowed on the seller side, proactively merge initiator to init_exchange_1.
     """
     ordered_states = {
         "initiator": ["init_ready", "init_finalize_close", "init_finalize_propose", "init_exchange_1", "init_exchange_0"],
@@ -369,8 +422,10 @@ async def signature(payload: Any) -> Optional[dict]:
 async def handle_confirm(payload: dict) -> Optional[Event]:
     """
     HELLO (initiator side).
-      - Expect responder's confirm with my_nonce.
-      - Store peer_nonce and proceed to exchange.
+      - Expect confirm(my_nonce) addressed to us.
+      - Store peer_nonce; reset local_nonce and references; zero exchange_count.
+      - Log NonceEvent(flow="received").
+      - Start seller track for this peer: seed TradeState and a fresh transaction_id.
     """
     addr = payload["remote_addr"]
     content = payload["content"]
@@ -403,10 +458,10 @@ async def handle_confirm(payload: dict) -> Optional[Event]:
 @client.receive(route="init_exchange_1 --> init_finalize_propose")
 async def handle_respond(payload: dict) -> Optional[Event]:
     """
-    Exchange loop (initiator side).
-      - Expect respond with your_nonce/my_nonce.
-      - your_nonce must equal our last local_nonce.
-      - If exchange_count > EXCHANGE_LIMIT, cut to finalize_propose.
+    Exchange loop (initiator track) while seller track may be merging.
+      - Validate respond with echo and replay checks.
+      - On success: accept peer my_nonce, clear local_nonce, log NonceEvent(received).
+      - If exchange_count > EXCHANGE_LIMIT: cut to init_finalize_propose; else remain in exchange.
     """
     addr = payload["remote_addr"]
     content = payload["content"]
@@ -444,9 +499,9 @@ async def handle_respond(payload: dict) -> Optional[Event]:
 @client.receive(route="init_finalize_propose --> init_finalize_close")
 async def handle_finish(payload: dict) -> Optional[Event]:
     """
-    Finalize (initiator side).
-      - Expect finish carrying your_ref == our local_reference and my_ref (responder's).
-      - On success: persist peer_reference, clear nonce log, proceed to close loop.
+    Finalize (initiator).
+      - Expect finish(your_ref, my_ref) with your_ref == our local_reference.
+      - On success: persist peer_reference, clear NonceEvent for this peer, and proceed to close loop. Also end seller trade (emit stats, clear TX metadata).
     """
     addr = payload["remote_addr"]
     content = payload["content"]
@@ -482,8 +537,9 @@ async def handle_finish(payload: dict) -> Optional[Event]:
 @client.receive(route="init_finalize_close --> init_ready")
 async def finish_to_idle(payload: dict) -> Optional[Event]:
     """
-    Close loop guard (initiator side).
-      - If finalize retries exceeded INIT_FINAL_LIMIT, cut to ready but retain refs for reconnect.
+    Close loop guard (initiator).
+      - If retries exceed INIT_FINAL_LIMIT, return to init_ready.
+      - Keep local_reference/peer_reference to allow reconnect.
     """
     content = payload["content"]
     peer_id = content["from"]
@@ -506,8 +562,12 @@ async def finish_to_idle(payload: dict) -> Optional[Event]:
     return Stay(Trigger.ok)
 
 
-""" ========== RECEIVE HANDLERS — SELLER NEGOTIATION (FORK/MERGE) ========== """
-
+""" ========== RECEIVE — SELLER FORK/MERGE (updates TradeState/History) ========= """
+# - Each handler is wrapped by decoration_generator(route), so handshake invariants
+#   (addressing, intent, nonce echo, replay drop) are enforced before any trading logic runs.
+# - Forks from init_exchange_0 into: init_interested / init_accept / init_refuse.
+# - Merges into handshake’s init_exchange_1 when the buyer confirms: *_too routes or direct merges.
+# - Handlers update TradeState.agreement/current_offer and append to History on confirmations.
 
 @client.receive(route="init_exchange_0 --> init_interested")
 @decoration_generator(route="init_exchange_0 --> init_interested")
@@ -713,13 +773,12 @@ async def rx_refuse_to_merge(payload: dict) -> Optional[Event]:
 @client.send(route="sending", multi=True) 
 async def tick_background_sender() -> list[dict]:
     """
-    Periodic outbound driver.
-      - Iterates all known peers for initiator handshake track.
-      - Emits messages that depend solely on RoleState for that (role, peer).
-      - Adds a broadcast 'register' each tick for discovery.
+    Background sender (handshake maintenance).
+      - From init_ready: attempt reconnect when peer_reference exists.
+      - From init_finalize_close: send close with retry counting.
+      - Always broadcast register for discovery.
 
-    Timing:
-      - Sleeps ~1s each tick to simulate paced traffic.
+    Timing: sleeps ~1s to pace traffic.
     """
     client.logger.info("[send tick]")
     await asyncio.sleep(1)
@@ -778,13 +837,19 @@ async def tick_background_sender() -> list[dict]:
 @client.send(route="/all --> /all", multi=True, on_triggers = {Trigger.ok, Trigger.error})
 async def queued_sender() -> list[dict]:
     """
-    Periodic outbound driver.
-      - Iterates all known peers for initiator handshake track.
-      - Emits messages that depend solely on RoleState for that (role, peer).
-      - Adds a broadcast 'register' each tick for discovery.
+    Event-driven sender for BOTH tracks (runs on receiver triggers {ok, error}).
 
-    Timing:
-      - Sleeps ~1s each tick to simulate paced traffic.
+      Handshake (initiator):
+        - In init_exchange_0/1: mint my_nonce, bump exchange_count, log flow="sent",
+          and send request(your_nonce=peer_nonce, my_nonce=...).
+        - In init_finalize_propose: send conclude(my_ref) and bump finalize_retry_count.
+
+      Seller (overlay):
+        - Each request carries content["message"] derived from TradeState:
+            {"type":"selling","status": <agreement_or_default>,"price": <current_offer>,"TXID": <transaction_id>}
+          Status is:
+            • "offer" (default) or "init_interested" while in init_exchange_0
+            • "init_accept" / "init_refuse" or their *_too variants when merging via init_exchange_1
     """
     client.logger.info("[queued send tick]")
     await asyncio.sleep(1)
