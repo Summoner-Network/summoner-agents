@@ -1,17 +1,18 @@
-# build_sdk_on_windows.ps1 — PowerShell translation of your Bash manager
+# build_sdk_on_windows.ps1 — PowerShell manager for building/Installing the Summoner SDK
 # Commands: setup [build|test_build] | delete | reset | deps | test_server | clean
 # ==============================================================================
 # How to use this script
 # ==============================================================================
-# > First, you may need to use the following command to allow the script to run:
-# Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+# > First, you may need to allow the script to run:
+#   Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 #
-# > Then, you can run the script as follows:
-# .\build_sdk_on_windows.ps1 setup
-# .\build_sdk_on_windows.ps1 setup test_build
-# .\build_sdk_on_windows.ps1 deps
-# .\build_sdk_on_windows.ps1 test_server
+# > Then run:
+#   .\build_sdk_on_windows.ps1 setup
+#   .\build_sdk_on_windows.ps1 setup test_build
+#   .\build_sdk_on_windows.ps1 deps
+#   .\build_sdk_on_windows.ps1 test_server
 # ==============================================================================
+
 [CmdletBinding()]
 param(
   [Parameter(Position=0)]
@@ -39,11 +40,6 @@ $BUILD_FILE_TEST  = Join-Path $ROOT 'test_build.txt'
 $VENVDIR = Join-Path $ROOT 'venv'
 $DATA = Join-Path $SRC 'desktop_data'
 
-# ANSI colors (Windows Terminal / VS Code / Cursor support these)
-$RED   = "`e[31m"
-$GREEN = "`e[32m"
-$RESET = "`e[0m"
-
 # ─────────────────────────────────────────────────────
 # Helpers
 # ─────────────────────────────────────────────────────
@@ -67,10 +63,10 @@ function Get-PythonSpec {
 
 function Resolve-VenvPaths([string]$VenvDir) {
   $exe = Join-Path $VenvDir 'Scripts\python.exe'
-  $nix = Join-Path $VenvDir 'bin\python'
-  if (Test-Path $exe) { return @{ Py=$exe; Bin=(Join-Path $VenvDir 'Scripts') } }
-  if (Test-Path $nix) { return @{ Py=$nix; Bin=(Join-Path $VenvDir 'bin') } }
-  return @{ Py=$null; Bin=$null }
+  $pip = Join-Path $VenvDir 'Scripts\pip.exe'
+  $scripts = Join-Path $VenvDir 'Scripts'
+  if (Test-Path $exe) { return @{ Py=$exe; Pip=$pip; Bin=$scripts } }
+  return @{ Py=$null; Pip=$null; Bin=$null }
 }
 
 function Ensure-Git {
@@ -80,52 +76,49 @@ function Ensure-Git {
 }
 
 # Rewrites: "from tooling.X" / "from summoner.X"  → "from X"
+# Prints FULL before/after lines with colors via Write-Host.
 function Rewrite-Imports([string]$pkg, [string]$dir) {
-  Write-Host ("    🔎 Rewriting imports in {0}" -f $dir)
+  Write-Host ("    Rewriting imports in {0}" -f $dir)
   $files = Get-ChildItem -Path $dir -Filter *.py -File -Recurse -ErrorAction SilentlyContinue
   foreach ($file in $files) {
-    Write-Host ("    📄 Processing: {0}" -f $file.FullName)
+    Write-Host ("    Processing: {0}" -f $file.FullName)
 
-    $content = Get-Content -Path $file.FullName -Raw -Encoding UTF8
+    $lines = Get-Content -LiteralPath $file.FullName -Encoding UTF8
+    if ($null -eq $lines) { $lines = @() }
 
-    # Before — show lines that match the tooling/summoner import pattern
-    Write-Host "      ↪ Before:"
-    $beforeMatches = [regex]::Matches($content, '^[ \t]*#?[ \t]*from[ \t]+(tooling|summoner)\.[A-Za-z0-9_]+', 'Multiline')
-    if ($beforeMatches.Count -gt 0) {
-      $beforeMatches | ForEach-Object {
-        Write-Host ("        {0}{1}{2}" -f $RED, $_.Value, $RESET)
+    $changed = $false
+    Write-Host "      -> Before:" -ForegroundColor Yellow
+    $foundAny = $false
+
+    foreach ($line in $lines) {
+      $willChange = ($line -match '^[ \t]*#?[ \t]*from[ \t]+tooling\.[A-Za-z0-9_]+') -or
+                    ($line -match '^[ \t]*#?[ \t]*from[ \t]+summoner\.[A-Za-z0-9_]+')
+      if ($willChange) {
+        $foundAny = $true
+        Write-Host ("        {0}" -f $line) -ForegroundColor Red
       }
-    } else {
+    }
+    if (-not $foundAny) {
       Write-Host "        (no matches)"
     }
 
-    $original = $content
-    $content = [regex]::Replace($content, '(^[ \t]*#?[ \t]*from[ \t]+)tooling\.([A-Za-z0-9_]+)', '$1$2', 'Multiline')
-    $content = [regex]::Replace($content, '(^[ \t]*#?[ \t]*from[ \t]+)summoner\.([A-Za-z0-9_]+)', '$1$2', 'Multiline')
+    $newLines = @()
+    foreach ($line in $lines) {
+      $new = $line
+      $new = $new -replace '(^[ \t]*#?[ \t]*from[ \t]+)tooling\.([A-Za-z0-9_]+)', '$1$2'
+      $new = $new -replace '(^[ \t]*#?[ \t]*from[ \t]+)summoner\.([A-Za-z0-9_]+)', '$1$2'
+      if ($new -ne $line) { $changed = $true }
+      $newLines += $new
+    }
 
-    # After — display changed lines (best effort)
-    Write-Host "      ↪ After:"
-    if ($content -ne $original) {
-      $afterLines = New-Object System.Collections.Generic.List[string]
-      $origLines  = $original -split "(`r`n|`n)"
-      $newLines   = $content  -split "(`r`n|`n)"
-      $count = [Math]::Min($origLines.Count, $newLines.Count)
-      for ($i=0; $i -lt $count; $i++) {
-        if ($origLines[$i] -ne $newLines[$i]) {
-          if ($newLines[$i] -match '^[ \t]*#?[ \t]*from[ \t]+[A-Za-z0-9_]+') {
-            $afterLines.Add($newLines[$i])
-          }
+    Write-Host "      -> After:" -ForegroundColor Yellow
+    if ($changed) {
+      for ($i=0; $i -lt $lines.Count; $i++) {
+        if ($newLines[$i] -ne $lines[$i]) {
+          Write-Host ("        {0}" -f $newLines[$i]) -ForegroundColor Green
         }
       }
-      if ($afterLines.Count -eq 0) {
-        # fallback: show any top-level "from <name>" lines
-        [regex]::Matches($content, '^[ \t]*#?[ \t]*from[ \t]+[A-Za-z0-9_]+', 'Multiline') |
-          Select-Object -First 6 |
-          ForEach-Object { Write-Host ("        {0}{1}{2}" -f $GREEN, $_.Value, $RESET) }
-      } else {
-        $afterLines | ForEach-Object { Write-Host ("        {0}{1}{2}" -f $GREEN, $_, $RESET) }
-      }
-      Set-Content -Path $file.FullName -Value $content -Encoding UTF8
+      Set-Content -LiteralPath $file.FullName -Value $newLines -Encoding UTF8
     } else {
       Write-Host "        (no visible changes)"
     }
@@ -134,7 +127,7 @@ function Rewrite-Imports([string]$pkg, [string]$dir) {
 
 function Clone-Native([string]$url) {
   $name = [IO.Path]::GetFileNameWithoutExtension($url)
-  Write-Host ("📥 Cloning native repo: {0}" -f $name)
+  Write-Host ("Cloning native repo: {0}" -f $name)
   $dest = Join-Path $ROOT ("native_build/{0}" -f $name)
   git clone --depth 1 $url $dest
 }
@@ -142,4 +135,232 @@ function Clone-Native([string]$url) {
 # Merge repo's tooling/<pkg> into $SRC/summoner/<pkg>
 function Merge-Tooling([string]$repoUrl, [string[]]$features) {
   $name = [IO.Path]::GetFileNameWithoutExtension($repoUrl)
-  $srcdir = Join-Path $ROOT ("native_build/{0}/tooling"_
+  $srcdir = Join-Path $ROOT ("native_build/{0}/tooling" -f $name)
+  if (-not (Test-Path $srcdir)) {
+    Write-Host "No tooling/ directory in repo; skipping"
+    return
+  }
+
+  $destRoot = Join-Path $SRC 'summoner'
+  New-Item -ItemType Directory -Force -Path $destRoot | Out-Null
+
+  Write-Host ("  Processing tooling in {0}" -f $name)
+  if (-not $features -or $features.Count -eq 0) {
+    Get-ChildItem -Path $srcdir -Directory | ForEach-Object {
+      $pkg = $_.Name
+      $dest = Join-Path $destRoot $pkg
+      Write-Host ("    Adding package: {0}" -f $pkg)
+      Copy-Item -Path $_.FullName -Destination $dest -Recurse -Force
+      Rewrite-Imports -pkg $pkg -dir $dest
+    }
+  } else {
+    foreach ($pkg in $features) {
+      $pkgPath = Join-Path $srcdir $pkg
+      if (Test-Path $pkgPath) {
+        $dest = Join-Path $destRoot $pkg
+        Write-Host ("    Adding package: {0}" -f $pkg)
+        Copy-Item -Path $pkgPath -Destination $dest -Recurse -Force
+        Rewrite-Imports -pkg $pkg -dir $dest
+      } else {
+        Write-Host ("    Missing {0}/tooling/{1}; skipping" -f $name, $pkg)
+      }
+    }
+  }
+}
+
+function Print-Usage {
+  Die "Usage: .\build_sdk_on_windows.ps1 {setup|delete|reset|deps|test_server|clean} [build|test_build]"
+}
+
+# ─────────────────────────────────────────────────────
+# Core Workflows
+# ─────────────────────────────────────────────────────
+
+function Install-PythonSDK {
+  # Non-editable install of the Python package from $SRC (pip install .)
+  if (-not (Test-Path $VENVDIR)) { Die "Run setup first" }
+  $vp = Resolve-VenvPaths $VENVDIR
+  if (-not $vp.Py) { Die ("Could not locate venv python inside {0}" -f $VENVDIR) }
+
+  Push-Location $SRC
+  try {
+    Write-Host "  Installing/Updating build tools in venv"
+    & $vp.Py -m pip install --upgrade pip setuptools wheel maturin
+
+    Write-Host "  Uninstalling any existing 'summoner' (ignore errors)"
+    try { & $vp.Py -m pip uninstall -y summoner | Out-Null } catch {}
+
+    Write-Host "  Installing 'summoner' (non-editable) from source"
+    & $vp.Py -m pip install --no-build-isolation .
+
+    Write-Host "  Verifying install"
+    & $vp.Py -c "import sys; print('OK python:', sys.executable); import summoner as s; print('OK import summoner; version:', getattr(s,'__version__','n/a'))"
+  } finally {
+    Pop-Location
+  }
+}
+
+function Bootstrap {
+  Write-Host "Bootstrapping environment..."
+
+  Ensure-Git
+  $pySpec = Get-PythonSpec
+
+  # 1) Clone core into $SRC (matching original Bash semantics)
+  if (-not (Test-Path $SRC)) {
+    Write-Host ("  Cloning Summoner core -> {0}" -f $SRC)
+    git clone --depth 1 --branch $CORE_BRANCH $CORE_REPO $SRC
+  }
+
+  # 2) Validate build list
+  $BUILD_LIST = if ($Variant -eq 'test_build') { $BUILD_FILE_TEST } else { $BUILD_FILE_BUILD }
+  Write-Host ("  Using build list: {0}" -f $BUILD_LIST)
+  if (-not (Test-Path $BUILD_LIST)) { Die ("Missing build list: {0}" -f $BUILD_LIST) }
+
+  # show sanitized list
+  Write-Host ""
+  Write-Host "  Sanitized build list:"
+  Get-Content $BUILD_LIST -Raw |
+    ForEach-Object { $_ -split "(`r`n|`n)" } |
+    ForEach-Object { $_.Trim() } |
+    Where-Object { $_ -and ($_ -notmatch '^[ \t]*#') } |
+    ForEach-Object { Write-Host ("    {0}" -f $_) }
+  Write-Host ""
+
+  # 3+4) Parse BUILD_LIST, clone & merge tooling
+  Write-Host "  Parsing build list and merging tooling..."
+  $nativeRoot = Join-Path $ROOT 'native_build'
+  if (Test-Path $nativeRoot) { Remove-Item $nativeRoot -Recurse -Force }
+  New-Item -ItemType Directory -Force -Path $nativeRoot | Out-Null
+  New-Item -ItemType Directory -Force -Path (Join-Path $SRC 'summoner') | Out-Null
+
+  $currentUrl = $null
+  $currentFeatures = New-Object System.Collections.Generic.List[string]
+
+  $lines = Get-Content $BUILD_LIST -Raw | ForEach-Object { $_ -split "(`r`n|`n)" }
+  foreach ($rawLine in $lines) {
+    if ($null -eq $rawLine) { continue }
+    $line = $rawLine.Trim()
+    if (-not $line) { continue }
+    if ($line -match '^[ \t]*#') { continue }
+
+    if ($line -match '\.git:$') {
+      if ($currentUrl) {
+        Clone-Native $currentUrl
+        Merge-Tooling $currentUrl ($currentFeatures.ToArray())
+      }
+      $currentUrl = $line.TrimEnd(':')
+      $currentFeatures.Clear() | Out-Null
+    }
+    elseif ($line -match '\.git$') {
+      if ($currentUrl) {
+        Clone-Native $currentUrl
+        Merge-Tooling $currentUrl ($currentFeatures.ToArray())
+      }
+      $currentUrl = $line
+      $currentFeatures.Clear() | Out-Null
+    }
+    else {
+      $currentFeatures.Add($line) | Out-Null
+    }
+  }
+
+  if ($currentUrl) {
+    Clone-Native $currentUrl
+    Merge-Tooling $currentUrl ($currentFeatures.ToArray())
+  }
+
+  # 5) Create venv
+  if (-not (Test-Path $VENVDIR)) {
+    Write-Host ("  Creating virtualenv -> {0}" -f $VENVDIR)
+    & $pySpec.Program @($pySpec.Args) -m venv $VENVDIR
+  }
+
+  $vp = Resolve-VenvPaths $VENVDIR
+  if (-not $vp.Py) { Die ("Could not locate venv python inside {0}" -f $VENVDIR) }
+
+  # 6) Install build tools (pip/setuptools/maturin) — kept here for clarity
+  Write-Host "  Installing build requirements"
+  & $vp.Py -m pip install --upgrade pip setuptools wheel maturin
+
+  # 7) Write .env
+  Write-Host "  Writing .env"
+@"
+DATABASE_URL=postgres://user:pass@localhost:5432/mydb
+SECRET_KEY=supersecret
+"@ | Set-Content -Path (Join-Path $SRC '.env') -Encoding utf8
+
+  # 8) Install Python SDK (non-editable) directly — NO bash scripts
+  Install-PythonSDK
+
+  Write-Host "Setup complete."
+}
+
+function Delete-Env {
+  Write-Host "Deleting environment..."
+  if (Test-Path $SRC) { Remove-Item $SRC -Recurse -Force }
+  if (Test-Path $VENVDIR) { Remove-Item $VENVDIR -Recurse -Force }
+  if (Test-Path (Join-Path $ROOT 'native_build')) { Remove-Item (Join-Path $ROOT 'native_build') -Recurse -Force }
+  if (Test-Path (Join-Path $ROOT 'logs')) { Remove-Item (Join-Path $ROOT 'logs') -Recurse -Force }
+  Get-ChildItem $ROOT -Filter 'test_*.py'   -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+  Get-ChildItem $ROOT -Filter 'test_*.json' -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+  Write-Host "Deletion complete."
+}
+
+function Reset-Env {
+  Write-Host "Resetting environment..."
+  Delete-Env
+  Bootstrap
+  Write-Host "Reset complete."
+}
+
+function Deps {
+  Write-Host "Reinstalling dependencies (Python SDK non-editable)..."
+  if (-not (Test-Path $VENVDIR)) { Die "Run setup first" }
+  Install-PythonSDK
+  Write-Host "Dependencies reinstalled."
+}
+
+function Test-Server {
+  Write-Host "Running test_server..."
+  if (-not (Test-Path $VENVDIR)) { Die "Run setup first" }
+  $vp = Resolve-VenvPaths $VENVDIR
+  if (-not $vp.Py) { Die ("venv missing: {0}" -f $VENVDIR) }
+
+  if (-not (Test-Path $DATA)) { Die ("Data dir missing: {0}" -f $DATA) }
+  Copy-Item (Join-Path $DATA 'default_config.json') (Join-Path $ROOT 'test_server_config.json') -Force
+
+  $testPy = Join-Path $ROOT 'test_server.py'
+@'
+from summoner.server import SummonerServer
+from summoner.your_package import hello_summoner
+
+if __name__ == "__main__":
+    hello_summoner()
+    SummonerServer(name="test_Server").run(config_path="test_server_config.json")
+'@ | Set-Content -Path $testPy -Encoding utf8
+
+  & $vp.Py $testPy
+}
+
+function Clean {
+  Write-Host "Cleaning generated files..."
+  if (Test-Path (Join-Path $ROOT 'native_build')) { Remove-Item (Join-Path $ROOT 'native_build') -Recurse -Force }
+  if (Test-Path (Join-Path $ROOT 'logs')) { Get-ChildItem (Join-Path $ROOT 'logs') -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue }
+  Get-ChildItem $ROOT -Filter 'test_*.py'   -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+  Get-ChildItem $ROOT -Filter 'test_*.json' -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+  Write-Host "Clean complete."
+}
+
+# ─────────────────────────────────────────────────────
+# Dispatch
+# ─────────────────────────────────────────────────────
+switch ($Action) {
+  'setup'       { Bootstrap }
+  'delete'      { Delete-Env }
+  'reset'       { Reset-Env }
+  'deps'        { Deps }
+  'test_server' { Test-Server }
+  'clean'       { Clean }
+  default       { Print-Usage }
+}
