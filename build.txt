@@ -1,4 +1,2 @@
-https://github.com/Summoner-Network/summoner-smart-tools.git:
-smart_tools
 https://github.com/Summoner-Network/summoner-agentclass.git:
 aurora
