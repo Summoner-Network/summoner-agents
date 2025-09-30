@@ -41,7 +41,7 @@
 
 ### Initial Installation
 
-To install the Summoner SDK:
+To install the Summoner SDK (see the full [installation guide](https://github.com/Summoner-Network/summoner-docs/blob/main/guide_sdk/getting_started/installation.md)):
 
 ```bash
 git clone https://github.com/Summoner-Network/summoner-agents.git
