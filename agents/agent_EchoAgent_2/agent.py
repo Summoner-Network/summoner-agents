@@ -1,6 +1,7 @@
 from summoner.client import SummonerClient
 from summoner.protocol import Direction
 from typing import Any, Union, Optional
+from pathlib import Path
 import argparse, json
 import asyncio
 
@@ -19,9 +20,20 @@ async def setup():
 class MyAgent(SummonerClient):
     def __init__(self, name: Optional[str] = None):
         super().__init__(name=name)
-        # Get permnanent JSON id from file
-        id_dict: dict = json.load(open("agents/agent_EchoAgent_2/id.json","r"))
+
+        # Resolve id.json next to this Python file (fallback: current working dir)
+        try:
+            base_dir = Path(__file__).resolve().parent
+        except NameError:
+            base_dir = Path.cwd()
+
+        id_path = base_dir / "id.json"
+
+        with id_path.open("r", encoding="utf-8") as f:
+            id_dict: dict = json.load(f)
+
         self.my_id = id_dict.get("uuid")
+
 
 agent = MyAgent(name="EchoAgent_1")
 

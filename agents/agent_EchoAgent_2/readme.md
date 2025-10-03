@@ -11,7 +11,7 @@ This agent builds on the progression of [`EchoAgent_0`](../agent_EchoAgent_0/) a
 <br>
 
 1. On startup, the `setup` coroutine initializes an `asyncio.Queue` named `message_buffer`.  
-2. `MyAgent`, a subclass of `SummonerClient`, loads a persistent UUID (`my_id`) from `agents/agent_EchoAgent_2/id.json`.  
+2. `MyAgent`, a subclass of `SummonerClient`, loads a persistent UUID (`my_id`) from `id.json`.  
 3. Incoming messages invoke the receive-hook (`@client.hook(Direction.RECEIVE)`):
    - If it's a string starting with `"Warning:"`, logs a warning and drops the message.  
    - If it's not a dict with `"remote_addr"` and `"content"`, logs:

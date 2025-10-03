@@ -1,5 +1,5 @@
 # build_sdk_on_windows.ps1 — PowerShell manager for building/Installing the Summoner SDK
-# Commands: setup [build|test_build] | delete | reset | deps | test_server | clean
+# Commands: setup [build|test_build] | delete | reset | deps | test_server | clean | use_venv
 # ==============================================================================
 # How to use this script
 # ==============================================================================
@@ -11,12 +11,13 @@
 #   .\build_sdk_on_windows.ps1 setup test_build
 #   .\build_sdk_on_windows.ps1 deps
 #   .\build_sdk_on_windows.ps1 test_server
+#   . .\build_sdk_on_windows.ps1 use_venv   # dot-source to activate the repo venv in THIS session (optional)
 # ==============================================================================
 
 [CmdletBinding()]
 param(
   [Parameter(Position=0)]
-  [ValidateSet('setup','delete','reset','deps','test_server','clean')]
+  [ValidateSet('setup','delete','reset','deps','test_server','clean','use_venv')]
   [string]$Action = 'setup',
 
   # only used for: setup
@@ -73,6 +74,73 @@ function Ensure-Git {
   if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     Die "'git' not found on PATH."
   }
+}
+
+# Activate the repo venv in the current PowerShell process.
+# Minimal helper: prefer to dot-source Activate.ps1 if present, otherwise set VIRTUAL_ENV and PATH.
+function Activate-Venv {
+  param([string]$VenvDir)
+
+  $vp = Resolve-VenvPaths $VenvDir
+  if (-not $vp.Py) { Die ("venv not found at {0}. Run setup first." -f $VenvDir) }
+
+  $activatePS = Join-Path $VenvDir 'Scripts\Activate.ps1'
+  if (Test-Path $activatePS) {
+    try {
+      . $activatePS
+    } catch {
+      Write-Warning ("Activation script failed: {0}" -f $_.Exception.Message)
+      # fallback to manual env setup below
+    }
+  }
+
+  # Ensure environment variables and PATH are set so python/pip resolve to venv
+  Remove-Item Function:\python -ErrorAction SilentlyContinue
+  Remove-Item Function:\pip   -ErrorAction SilentlyContinue
+
+  $env:VIRTUAL_ENV = (Resolve-Path $VenvDir).ProviderPath
+  $env:Path = "$($vp.Bin);$env:Path"
+
+  # Verification
+  # verification via temp script to avoid quoting/parsing issues
+function Activate-Venv {
+  param([string]$VenvDir)
+
+  $vp = Resolve-VenvPaths $VenvDir
+  if (-not $vp.Py) { Die ("venv not found at {0}. Run setup first." -f $VenvDir) }
+
+  $activatePS = Join-Path $VenvDir 'Scripts\Activate.ps1'
+  if (Test-Path $activatePS) {
+    try {
+      . $activatePS
+    } catch {
+      Write-Warning ("Activation script failed: {0}" -f $_.Exception.Message)
+      # fallback to manual env setup below
+    }
+  }
+
+  # Ensure environment variables and PATH are set so python/pip resolve to venv
+  Remove-Item Function:\python -ErrorAction SilentlyContinue
+  Remove-Item Function:\pip   -ErrorAction SilentlyContinue
+
+  $env:VIRTUAL_ENV = (Resolve-Path $VenvDir).ProviderPath
+  $env:Path = "$($vp.Bin);$env:Path"
+
+  # Verification
+  $verifyPy = @'
+import sys, os
+print("python executable:", sys.executable)
+print("sys.prefix:", os.path.abspath(sys.prefix))
+'@
+  $tmpVerify = [IO.Path]::Combine($env:TEMP, "verify_python_prefix.py")
+  $verifyPy | Set-Content -Path $tmpVerify -Encoding UTF8
+  & $vp.Py $tmpVerify
+  Remove-Item $tmpVerify -ErrorAction SilentlyContinue
+
+  Write-Host ("Activated venv at: {0}" -f $VenvDir)
+}
+
+  Write-Host ("Activated venv at: {0}" -f $VenvDir)
 }
 
 # Rewrites: "from tooling.X" / "from summoner.X"  → "from X"
@@ -169,7 +237,7 @@ function Merge-Tooling([string]$repoUrl, [string[]]$features) {
 }
 
 function Print-Usage {
-  Die "Usage: .\build_sdk_on_windows.ps1 {setup|delete|reset|deps|test_server|clean} [build|test_build]"
+  Die "Usage: .\build_sdk_on_windows.ps1 {setup|delete|reset|deps|test_server|clean|use_venv} [build|test_build]"
 }
 
 # ─────────────────────────────────────────────────────
@@ -294,6 +362,14 @@ SECRET_KEY=supersecret
   Install-PythonSDK
 
   Write-Host "Setup complete."
+
+  # Minimal: activate venv in current session so user can immediately use it.
+  try {
+    Activate-Venv -VenvDir $VENVDIR
+  } catch {
+    Write-Warning ("Failed to auto-activate venv after setup: {0}" -f $_.Exception.Message)
+    Write-Host "You can activate manually with: . $VENVDIR\Scripts\Activate.ps1  (dot-source into current shell)"
+  }
 }
 
 function Delete-Env {
@@ -311,6 +387,15 @@ function Reset-Env {
   Write-Host "Resetting environment..."
   Delete-Env
   Bootstrap
+
+  # Minimal: activate venv in current session after reset
+  try {
+    Activate-Venv -VenvDir $VENVDIR
+  } catch {
+    Write-Warning ("Failed to auto-activate venv after reset: {0}" -f $_.Exception.Message)
+    Write-Host "You can activate manually with: . $VENVDIR\Scripts\Activate.ps1  (dot-source into current shell)"
+  }
+
   Write-Host "Reset complete."
 }
 
@@ -362,5 +447,6 @@ switch ($Action) {
   'deps'        { Deps }
   'test_server' { Test-Server }
   'clean'       { Clean }
+  'use_venv'    { Activate-Venv -VenvDir $VENVDIR }
   default       { Print-Usage }
 }
