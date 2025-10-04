@@ -143,8 +143,9 @@ print("sys.prefix:", os.path.abspath(sys.prefix))
   Write-Host ("Activated venv at: {0}" -f $VenvDir)
 }
 
-# Rewrites: "from tooling.X" / "from summoner.X"  → "from X"
-# Prints FULL before/after lines with colors via Write-Host.
+# Rewrites ONLY: "from tooling.X"  → "from summoner.X"
+# Leaves any existing "summoner.*" imports untouched.
+# Shows before/after lines for visibility.
 function Rewrite-Imports([string]$pkg, [string]$dir) {
   Write-Host ("    Rewriting imports in {0}" -f $dir)
   $files = Get-ChildItem -Path $dir -Filter *.py -File -Recurse -ErrorAction SilentlyContinue
@@ -157,11 +158,8 @@ function Rewrite-Imports([string]$pkg, [string]$dir) {
     $changed = $false
     Write-Host "      -> Before:" -ForegroundColor Yellow
     $foundAny = $false
-
     foreach ($line in $lines) {
-      $willChange = ($line -match '^[ \t]*#?[ \t]*from[ \t]+tooling\.[A-Za-z0-9_]+') -or
-                    ($line -match '^[ \t]*#?[ \t]*from[ \t]+summoner\.[A-Za-z0-9_]+')
-      if ($willChange) {
+      if ($line -match '^[ \t]*#?[ \t]*from[ \t]+tooling\.[A-Za-z0-9_]+') {
         $foundAny = $true
         Write-Host ("        {0}" -f $line) -ForegroundColor Red
       }
@@ -173,8 +171,8 @@ function Rewrite-Imports([string]$pkg, [string]$dir) {
     $newLines = @()
     foreach ($line in $lines) {
       $new = $line
-      $new = $new -replace '(^[ \t]*#?[ \t]*from[ \t]+)tooling\.([A-Za-z0-9_]+)', '$1$2'
-      $new = $new -replace '(^[ \t]*#?[ \t]*from[ \t]+)summoner\.([A-Za-z0-9_]+)', '$1$2'
+      # tooling.*  →  summoner.*   (do NOT touch existing summoner.*)
+      $new = $new -replace '(^[ \t]*#?[ \t]*from[ \t]+)tooling\.([A-Za-z0-9_]+)', '$1summoner.$2'
       if ($new -ne $line) { $changed = $true }
       $newLines += $new
     }
