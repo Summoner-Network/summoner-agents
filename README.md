@@ -293,7 +293,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 <br>
 <br>
 <p align="center">
-<img width="620px" src="assets/mov2gif/gifs/demo_travel_rounded.gif" />
+<img width="620px" src="assets/mov2gif/gifs/demo_travel.gif" />
 </p>
 </summary>
 <br>
@@ -362,7 +362,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 <br>
 <br>
 <p align="center">
-<img width="520px" src="assets/mov2gif/gifs/demo_exam_rounded.gif" />
+<img width="520px" src="assets/mov2gif/gifs/demo_exam.gif" />
 </p>
 
 </summary>
@@ -505,7 +505,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 <br>
 <br>
 <p align="center">
-<img width="520px" src="assets/mov2gif/gifs/demo_merchants_rounded.gif" />
+<img width="520px" src="assets/mov2gif/gifs/demo_merchants.gif" />
 </p>
 
 </summary>
