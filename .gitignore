@@ -1,6 +1,5 @@
 # Remy's
-.DS_Store
-*/.DS_Store
+*.DS_Store
 save/
 *.old
 native_build
@@ -11,7 +10,8 @@ id_agent_*.json
 *.db
 *.db-shm
 *.db-wal
-mov2gif
+*.mov
+*_palette.png
 private_*
 agent_todo.txt
 build_sdk_dev.sh
