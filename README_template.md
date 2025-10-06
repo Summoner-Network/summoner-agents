@@ -14,7 +14,7 @@ This repository provides a **GitHub template** that includes `build_sdk.sh`, a o
 To create your own project using this template:
 
 <p align="center">
-  <img width="450px" src="img/use_template.png" alt="Use this template button screenshot" />
+  <img width="450px" src="assets/img/use_template.png" alt="Use this template button screenshot" />
 </p>
 
 1. Click the **“Use this template”** button at the top of the [GitHub repository page](https://github.com/Summoner-Network/summoner-sdk).

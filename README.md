@@ -1,26 +1,16 @@
 # Summoner Agent Library
 
 <p align="center">
-<img width="250px" src="img/merchants_rounded.png" />
+<img width="300px" src="assets/img/summoners_negotiating_rounded.png" />
 </p>
 
 ## Table of Contents
 
 * [SDK setup](#sdk-setup)
 
-    * [Initial Installation](#initial-installation)
-    * [Reinstalling the Summoner SDK](#reinstalling-the-summoner-sdk)
-
-* [Agent Format and Desktop App Compatibility](#agent-format-and-desktop-app-compatibility)
-
-    * [Repository Structure](#repository-structure)
-    * [Required Structure for Agent Folders](#required-structure-for-agent-folders)
+* [Desktop App Compatibility](#desktop-app-compatibility)
 
 * [Running an Agent](#running-an-agent)  
-
-    * [Activate the Virtual Environment](#activate-the-virtual-environment)  
-    * [Launch the Summoner Server](#launch-the-summoner-server)  
-    * [Run the Agent](#run-the-agent)  
 
 * [Agent Collection](#agent-collection)
 
@@ -35,60 +25,11 @@
 
 
 ## SDK Setup
-<details>
-<summary><b>(Click to expand)</b> This section outlines how to install the Summoner SDK and how to reset it if the repository has been updated. More information on how to build the SDK and manage its folders is explained in the <a href="README_template.md">template's README</a> from which this repository was cloned.</summary>
+
+To install the SDK, follow the installation pathways available on the [Summoner-Network GitHub organization page](https://github.com/Summoner-Network). If the profile README is not visible, you can instead consult the fallback instructions in the [`.github` repository](https://github.com/Summoner-Network/.github).
 
 
-### Initial Installation
-
-To install the Summoner SDK (see the full [installation guide](https://github.com/Summoner-Network/summoner-docs/blob/main/guide_sdk/getting_started/installation.md)):
-
-```bash
-git clone https://github.com/Summoner-Network/summoner-agents.git
-cd summoner-agents
-source build_sdk.sh setup
-```
-
-This will:
-
-* Create a Python virtual environment in `./venv`
-* Install the `summoner` SDK and its dependencies
-
-> 📝 **Note:**
-> If you open a new terminal later, remember to activate the environment:
->
-> ```bash
-> source venv/bin/activate
-> ```
-
-### Reinstalling the Summoner SDK
-
-If the SDK core codebase or any of its modules have been updated, you can reset and reinstall everything with one command:
-
-```bash
-# From your project root:
-bash build_sdk.sh reset
-
-# Or, if you typically source the script:
-source build_sdk.sh reset
-```
-
-This will:
-
-1. Remove the existing virtual environment
-2. Recreate it and install the latest SDK version
-3. Rebuild any native components or dependencies
-
-> 💡 **Tip:**
-> If you're using a shell other than bash (e.g., zsh or fish), make sure to **source** the script:
->
-> ```bash
-> source build_sdk.sh reset
-> ```
-
-</details>
-
-## Agent Format and Desktop App Compatibility
+## Desktop App Compatibility
 
 <details>
 <summary><b>(Click to expand)</b> This repository contains a collection of agent examples designed to run within the Summoner framework. These agents are organized in a structured and standardized format to ensure compatibility with the Summoner desktop application.</summary>
@@ -348,7 +289,13 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 ### Chat Agents
 
 <details>
-<summary><b>(Click to expand)</b> Agents of <b>level 1-3</b> that implement chat-style user interfaces, remote commands, and automaton routing for interactive control.</summary>
+<summary><b>(Click to expand)</b> Agents of <b>level 1-3</b> that implement chat-style user interfaces, remote commands, and automaton routing for interactive control.
+<br>
+<br>
+<p align="center">
+<img width="480px" src="assets/gifs/travel_demo.gif" />
+</p>
+</summary>
 <br>
 
 <div style="display: flex; justify-content: center;">
@@ -411,7 +358,14 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 ### Feedback Agents
 
 <details>
-<summary><b>(Click to expand)</b> Agents of <b>level 1-3</b> for structured feedback: question/answer flows, delayed responses, and reporting mechanisms.</summary>
+<summary><b>(Click to expand)</b> Agents of <b>level 1-3</b> for structured feedback: question/answer flows, delayed responses, and reporting mechanisms.
+<br>
+<br>
+<p align="center">
+<img width="480px" src="assets/gifs/demo_exam.gif" />
+</p>
+
+</summary>
 <br>
 
 <div style="display: flex; justify-content: center;">
@@ -547,7 +501,14 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 ### Security and Handshake Agents
 
 <details>
-<summary><b>(Click to expand)</b> Agents of <b>level 1, 4, 5 and 6</b> covering backpressure tests, validation hooks, cryptographic DID handshakes, and decision-making in negotiation flows.</summary>
+<summary><b>(Click to expand)</b> Agents of <b>level 1, 4, 5 and 6</b> covering backpressure tests, validation hooks, cryptographic DID handshakes, and decision-making in negotiation flows.
+<br>
+<br>
+<p align="center">
+<img width="480px" src="assets/gifs/merchants_demo.gif" />
+</p>
+
+</summary>
 <br>
 
 <div style="display: flex; justify-content: center;">
