@@ -175,6 +175,12 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 
 ### Legend
 
+<details>
+<summary>
+Click to show the legend.
+</summary>
+<br>
+
 | Column          | Description                                                               |
 | --------------- | ------------------------------------------------------------------------- |
 | **Agent Name**  | Name or identifier of the agent.                                          |
@@ -190,6 +196,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 | **Temp.**       | ✅ if the agent is designed to serve as a reusable template.               |
 | **Comp.**       | ✅ if the agent is composable within a larger multi-agent system.          |
 
+</details>
 
 ### Core Messaging Agents
 
