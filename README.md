@@ -289,13 +289,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 ### Chat Agents
 
 <details>
-<summary><b>(Click to expand)</b> Agents of <b>level 1-3</b> that implement chat-style user interfaces, remote commands, and automaton routing for interactive control.
-<br>
-<br>
-<p align="center">
-<img width="550px" src="assets/mov2gif/gifs/demo_travel_border.gif" />
-</p>
-</summary>
+<summary><b>(Click to expand)</b> Agents of <b>level 1-3</b> that implement chat-style user interfaces, remote commands, and automaton routing for interactive control.</summary>
 <br>
 
 <div style="display: flex; justify-content: center;">
@@ -354,18 +348,16 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 </div>
 
 </details>
+<br>
+<p align="center">
+<img width="550px" src="assets/mov2gif/gifs/demo_travel_border.gif" />
+</p>
+<br>
 
 ### Feedback Agents
 
 <details>
-<summary><b>(Click to expand)</b> Agents of <b>level 1-3</b> for structured feedback: question/answer flows, delayed responses, and reporting mechanisms.
-<br>
-<br>
-<p align="center">
-<img width="600px" src="assets/mov2gif/gifs/demo_exam_border.gif" />
-</p>
-
-</summary>
+<summary><b>(Click to expand)</b> Agents of <b>level 1-3</b> for structured feedback: question/answer flows, delayed responses, and reporting mechanisms.</summary>
 <br>
 
 <div style="display: flex; justify-content: center;">
@@ -448,7 +440,11 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 </div>
 
 </details>
-
+<br>
+<p align="center">
+<img width="600px" src="assets/mov2gif/gifs/demo_exam_border.gif" />
+</p>
+<br>
 
 ### Connector Agents
 
@@ -501,14 +497,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 ### Security and Handshake Agents
 
 <details>
-<summary><b>(Click to expand)</b> Agents of <b>level 1, 4, 5 and 6</b> covering backpressure tests, validation hooks, cryptographic DID handshakes, and decision-making in negotiation flows.
-<br>
-<br>
-<p align="center">
-<img width="600px" src="assets/mov2gif/gifs/demo_merchants_border.gif" />
-</p>
-
-</summary>
+<summary><b>(Click to expand)</b> Agents of <b>level 1, 4, 5 and 6</b> covering backpressure tests, validation hooks, cryptographic DID handshakes, and decision-making in negotiation flows.</summary>
 <br>
 
 <div style="display: flex; justify-content: center;">
@@ -591,8 +580,11 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 </div>
 
 </details>
-
-
+<br>
+<p align="center">
+<img width="600px" src="assets/mov2gif/gifs/demo_merchants_border.gif" />
+</p>
+<br>
 
 <a id="api-agents"></a>
 
