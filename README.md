@@ -352,7 +352,6 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 <p align="center">
 <img width="550px" src="assets/mov2gif/gifs/demo_travel_border.gif" />
 </p>
-<br>
 
 ### Feedback Agents
 
@@ -444,7 +443,6 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 <p align="center">
 <img width="600px" src="assets/mov2gif/gifs/demo_exam_border.gif" />
 </p>
-<br>
 
 ### Connector Agents
 
@@ -584,7 +582,6 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 <p align="center">
 <img width="600px" src="assets/mov2gif/gifs/demo_merchants_border.gif" />
 </p>
-<br>
 
 <a id="api-agents"></a>
 
