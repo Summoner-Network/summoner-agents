@@ -362,7 +362,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 <br>
 <br>
 <p align="center">
-<img width="680px" src="assets/mov2gif/gifs/demo_exam_framed.gif" />
+<img width="680px" src="assets/mov2gif/gifs/demo_exam_crt.gif" />
 </p>
 
 </summary>
