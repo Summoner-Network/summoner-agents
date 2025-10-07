@@ -26,7 +26,7 @@
 
 ## SDK Setup
 
-To install the SDK, follow the installation pathways available on the [Summoner-Network GitHub organization page](https://github.com/Summoner-Network). If the profile README is not visible, you can instead consult the fallback instructions in the [`.github` repository](https://github.com/Summoner-Network/.github).
+To install the SDK, follow the installation pathways available on the [Summoner-Network GitHub organization page](https://github.com/Summoner-Network). If the profile README is not visible, you can instead consult the fallback instructions in the [`.github`](https://github.com/Summoner-Network/.github) repository.
 
 
 ## Desktop App Compatibility
