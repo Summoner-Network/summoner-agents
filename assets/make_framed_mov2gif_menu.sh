@@ -4,8 +4,8 @@ set -euo pipefail
 # ---------- config ----------
 FPS=25
 WIDTH=800                 # final width INCLUDING border
-BORDER=5                 # border width in pixels
-BORDER_COLOR="gray"       # e.g., "gray", "#888888", "gray@1"
+BORDER=6                 # border width in pixels
+BORDER_COLOR="7393B3"       # e.g., "gray", "#888888", "gray@1"
 DITHER="bayer"            # good size/quality tradeoff
 BAYER_SCALE=5             # tweak 3–7 to trade size vs banding
 USE_GIFSICLE=0            # set to 1 if you want a final size pass (needs gifsicle)
