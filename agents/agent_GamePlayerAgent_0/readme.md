@@ -1,4 +1,4 @@
-## `GamePlayerAgent_0`
+# `GamePlayerAgent_0`
 
 A minimal client that polls the keyboard, sends input ticks at 20 Hz, and renders the server’s `world_state` in a fixed window.
 

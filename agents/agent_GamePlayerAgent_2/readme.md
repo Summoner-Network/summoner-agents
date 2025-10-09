@@ -1,4 +1,4 @@
-## `GamePlayerAgent_2`
+# `GamePlayerAgent_2`
 
 A client with seeded pixel-art grass and an LRU tile cache for performance. The seed is persisted for reproducible visuals. Same networking pattern as `GamePlayerAgent_1`.
 

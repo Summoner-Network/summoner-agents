@@ -1,4 +1,4 @@
-## `GamePlayerAgent_1`
+# `GamePlayerAgent_1`
 
 A resizable client with camera follow, checkerboard grass tiles, optional avatar, and persistent identity. Same networking pattern as `GamePlayerAgent_0`.
 

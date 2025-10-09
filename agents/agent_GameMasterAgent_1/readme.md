@@ -1,4 +1,4 @@
-## `GameMasterAgent_1`
+# `GameMasterAgent_1`
 
 An authoritative simulator for a larger world with clustered spawning near center using a golden-angle ring. It consumes player ticks and broadcasts `world_state` at a regular cadence.
 

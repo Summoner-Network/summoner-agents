@@ -1,4 +1,4 @@
-## `GameMasterAgent_0`
+# `GameMasterAgent_0`
 
 An authoritative simulator for a shared 2D sandbox. It consumes player input ticks and periodically broadcasts a compact `world_state`. The server owns truth for positions.
 
