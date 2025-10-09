@@ -530,9 +530,9 @@ Click to show the legend.
       Authoritative simulator for a 2D world. Consumes player ticks via <code>@receive</code>, broadcasts <code>world_state</code> via <code>@send</code>. Uses <code>@hook</code> to normalize envelopes.
     </td>
     <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
-    <td><code>core</code></td>
+    <td><code>core</code> <code>DID</code></td>
     <td><img src="https://img.shields.io/badge/Simulate-%20?color=66023C" alt="Simulate"></td>
-    <td>✅</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+    <td>🟡</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✗</td>
   </tr>
   <tr>
     <td><code><strong><a href="agents/agent_GameMasterAgent_1/">GameMasterAgent_1</a></strong></code></td>
@@ -540,9 +540,9 @@ Click to show the legend.
       Large-map simulator with clustered golden-angle spawning. Consumes player ticks via <code>@receive</code>, broadcasts <code>world_state</code> via <code>@send</code>. Uses <code>@hook</code> to normalize envelopes.
     </td>
     <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
-    <td><code>core</code></td>
+    <td><code>core</code> <code>DID</code></td>
     <td><img src="https://img.shields.io/badge/Simulate-%20?color=66023C" alt="Simulate"></td>
-    <td>✅</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+    <td>🟡</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✗</td>
   </tr>
   <tr>
     <td><code><strong><a href="agents/agent_GamePlayerAgent_0/">GamePlayerAgent_0</a></strong></code></td>
@@ -550,9 +550,9 @@ Click to show the legend.
       Minimal client UI. Polls keyboard into a <code>keys</code> dict, emits ticks at 20 Hz with <code>@send</code>, and renders <code>world_state</code> received via <code>@receive</code>. Uses <code>@hook</code> to normalize and stamp <code>pid</code>.
     </td>
     <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
-    <td><code>core</code></td>
+    <td><code>core</code> <code>DID</code></td>
     <td><img src="https://img.shields.io/badge/Render-%20?color=4B3F72" alt="Render"></td>
-    <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td>
+    <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td><td>✗</td>
   </tr>
   <tr>
     <td><code><strong><a href="agents/agent_GamePlayerAgent_1/">GamePlayerAgent_1</a></strong></code></td>
@@ -560,9 +560,9 @@ Click to show the legend.
       Same messaging pattern as with <code>GamePlayerAgent_0</code>. Resizable client with camera follow, checkerboard grass, optional avatar. Adds persistent ID via <code>--id</code> and configurable client logger.
     </td>
     <td><img src="https://img.shields.io/badge/LVL_4-%20?color=DF7919" alt=""></td>
-    <td><code>core</code></td>
+    <td><code>core</code> <code>DID</code></td>
     <td><img src="https://img.shields.io/badge/Render-%20?color=4B3F72" alt="Render"></td>
-    <td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+    <td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✗</td>
   </tr>
   <tr>
     <td><code><strong><a href="agents/agent_GamePlayerAgent_2/">GamePlayerAgent_2</a></strong></code></td>
@@ -570,9 +570,9 @@ Click to show the legend.
       Same messaging pattern as with <code>GamePlayerAgent_1</code>. Client with seeded pixel-art grass and an LRU tile cache for performance. Uses persistent ID and <code>--seed</code> for deterministic visuals.
     </td>
     <td><img src="https://img.shields.io/badge/LVL_4-%20?color=DF7919" alt=""></td>
-    <td><code>core</code></td>
+    <td><code>core</code> <code>DID</code></td>
     <td><img src="https://img.shields.io/badge/Render-%20?color=4B3F72" alt="Render"></td>
-    <td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+    <td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✗</td>
   </tr>
 
   </tbody>
