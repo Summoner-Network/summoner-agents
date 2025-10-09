@@ -499,6 +499,93 @@ Click to show the legend.
 </details>
 
 
+### MMO-game agents
+
+<details>
+<summary><b>(Click to expand)</b> Agents of <b>level 3–4</b> that implement a shared 2D sandbox: game masters simulate and broadcast world state while players send keyboard input and render a local view using <code>@receive</code>, <code>@send</code>, and <code>@hook</code>.</summary>
+<br>
+
+<div style="display: flex; justify-content: center;">
+<table style="border-collapse: collapse; width: 95%; text-align: center;">
+  <thead>
+  <tr>
+    <th style="width: 10%; text-align: center;">Agent Name</th>
+    <th style="width: 33%; text-align: center;">Description</th>
+    <th style="width: 12%; text-align: center;">Level</th>
+    <th style="width: 12%; text-align: center;">Features</th>
+    <th style="width: 12%; text-align: center;">Applications</th>
+    <th style="width: 3%; text-align: center;">DB</th>
+    <th style="width: 3%; text-align: center;">Queue</th>
+    <th style="width: 3%; text-align: center;">Flows</th>
+    <th style="width: 3%; text-align: center;">Logs</th>
+    <th style="width: 3%; text-align: center;">Hooks</th>
+    <th style="width: 3%; text-align: center;">Temp.</th>
+    <th style="width: 3%; text-align: center;">Comp.</th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr>
+    <td><code><strong><a href="agents/agent_GameMasterAgent_0/">GameMasterAgent_0</a></strong></code></td>
+    <td style="font-size: 0.8em;">
+      Authoritative simulator for a 2D world. Consumes player ticks via <code>@receive</code>, broadcasts <code>world_state</code> via <code>@send</code>. Uses <code>@hook</code> to normalize envelopes.
+    </td>
+    <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
+    <td><code>core</code></td>
+    <td><img src="https://img.shields.io/badge/Simulate-%20?color=66023C" alt="Simulate"></td>
+    <td>✅</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+  </tr>
+  <tr>
+    <td><code><strong><a href="agents/agent_GameMasterAgent_1/">GameMasterAgent_1</a></strong></code></td>
+    <td style="font-size: 0.8em;">
+      Large-map simulator with clustered golden-angle spawning. Consumes player ticks via <code>@receive</code>, broadcasts <code>world_state</code> via <code>@send</code>. Uses <code>@hook</code> to normalize envelopes.
+    </td>
+    <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
+    <td><code>core</code></td>
+    <td><img src="https://img.shields.io/badge/Simulate-%20?color=66023C" alt="Simulate"></td>
+    <td>✅</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+  </tr>
+  <tr>
+    <td><code><strong><a href="agents/agent_GamePlayerAgent_0/">GamePlayerAgent_0</a></strong></code></td>
+    <td style="font-size: 0.8em;">
+      Minimal client UI. Polls keyboard into a <code>keys</code> dict, emits ticks at 20 Hz with <code>@send</code>, and renders <code>world_state</code> received via <code>@receive</code>. Uses <code>@hook</code> to normalize and stamp <code>pid</code>.
+    </td>
+    <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
+    <td><code>core</code></td>
+    <td><img src="https://img.shields.io/badge/Render-%20?color=4B3F72" alt="Render"></td>
+    <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td>
+  </tr>
+  <tr>
+    <td><code><strong><a href="agents/agent_GamePlayerAgent_1/">GamePlayerAgent_1</a></strong></code></td>
+    <td style="font-size: 0.8em;">
+      Same messaging pattern as with <code>GamePlayerAgent_0</code>. Resizable client with camera follow, checkerboard grass, optional avatar. Adds persistent ID via <code>--id</code> and configurable client logger.
+    </td>
+    <td><img src="https://img.shields.io/badge/LVL_4-%20?color=DF7919" alt=""></td>
+    <td><code>core</code></td>
+    <td><img src="https://img.shields.io/badge/Render-%20?color=4B3F72" alt="Render"></td>
+    <td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+  </tr>
+  <tr>
+    <td><code><strong><a href="agents/agent_GamePlayerAgent_2/">GamePlayerAgent_2</a></strong></code></td>
+    <td style="font-size: 0.8em;">
+      Same messaging pattern as with <code>GamePlayerAgent_1</code>. Client with seeded pixel-art grass and an LRU tile cache for performance. Uses persistent ID and <code>--seed</code> for deterministic visuals.
+    </td>
+    <td><img src="https://img.shields.io/badge/LVL_4-%20?color=DF7919" alt=""></td>
+    <td><code>core</code></td>
+    <td><img src="https://img.shields.io/badge/Render-%20?color=4B3F72" alt="Render"></td>
+    <td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+  </tr>
+
+  </tbody>
+</table>
+</div>
+
+</details>
+
+<p align="center">
+<img width="600px" src="assets/mov2gif/gifs/demo_mmo_2_framed.gif" />
+</p>
+
+
 ### Security and Handshake Agents
 
 <details>

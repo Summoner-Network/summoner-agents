@@ -15,6 +15,7 @@ id_agent_*.json
 private_*
 agent_todo.txt
 build_sdk_dev.sh
+*.id
 
 
 # Byte-compiled / optimized / DLL files
