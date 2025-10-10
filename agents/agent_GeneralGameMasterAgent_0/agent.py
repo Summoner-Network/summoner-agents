@@ -4,7 +4,7 @@ from summoner.client import SummonerClient
 from typing import Any
 import argparse, asyncio
 
-client = SummonerClient(name="ReportAgent_2")
+client = SummonerClient(name="GeneralGameMasterAgent_0")
 
 # Asyncio queue initialized in setup()
 message_buffer = None
