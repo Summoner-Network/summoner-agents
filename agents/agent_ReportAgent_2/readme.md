@@ -59,21 +59,21 @@ python server.py
 Then, run the report agent:
 
 ```bash
-python agents/agent_ReportAgent_0/agent.py
+python agents/agent_ReportAgent_2/agent.py
 ```
 
 ## Simulation Scenarios
 
 ### Scenario 1: One chat sender, one frame-based reporter
 
-This scenario shows how `ReportAgent_0` batches messages from a chat client into frame-based JSON payloads.
+This scenario shows how `ReportAgent_2` batches messages from a chat client into frame-based JSON payloads.
 
 ```bash
 # Terminal 1 (server)
 python server.py
 
-# Terminal 2 (ReportAgent_0)
-python agents/agent_ReportAgent_0/agent.py
+# Terminal 2 (ReportAgent_2)
+python agents/agent_ReportAgent_2/agent.py
 
 # Terminal 3 (ChatAgent_0)
 python agents/agent_ChatAgent_0/agent.py
@@ -122,7 +122,7 @@ Here, two `ChatAgent_0` instances send messages that are batched by `ReportAgent
 python server.py
 
 # Terminal 2 (ReportAgent_0)
-python agents/agent_ReportAgent_0/agent.py
+python agents/agent_ReportAgent_2/agent.py
 
 # Terminal 3 (ChatAgent_0)  # "bob"
 python agents/agent_ChatAgent_0/agent.py
@@ -137,7 +137,7 @@ python agents/agent_ChatAgent_0/agent.py
 2.  In **Terminal 4**, Alice immediately types `Hi Bob!` and presses Enter.
 
 **Expected Output (in both Terminal 3 and 4)**
-If the messages from Bob and Alice arrive at the server close enough together to be processed by `ReportAgent_0` in the same frame, both chat clients will receive a single JSON payload containing both messages.
+If the messages from Bob and Alice arrive at the server close enough together to be processed by `ReportAgent_2` in the same frame, both chat clients will receive a single JSON payload containing both messages.
 
 ```text
 [Received] {"frameNumber": 210, "deltaEvents": ["Hi Alice!", "Hi Bob!"], "deltaTiming": 16694321}
