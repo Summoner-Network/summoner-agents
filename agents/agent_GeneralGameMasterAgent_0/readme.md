@@ -8,6 +8,17 @@ A **frame-based** reporter that aggregates incoming messages on a per-frame basi
 > [\!NOTE]
 > This agent targets 60 FPS while there are no messages being sent, but emits frames as frequently as possible when there are messages being sent.
 
+# Using this to build multiplayer games
+The GeneralGameMasterAgent_0 is designed as a foundational piece for building deterministic, lockstep multiplayer games. The core philosophy is to treat the game master as the central authority for the timing and ordering of events.
+
+To build a game with this agent, your client-side game logic must adhere to two key principles:
+
+- **Deterministic Simulation:** Your game engine must be strictly deterministic. This means that for a given initial state and an identical sequence of deltaEvents, every player's game simulation must produce the exact same outcome. All game logic should be driven only by the events in the queue, not by local timers, unsynchronized random seeds, or external inputs that haven't been passed through the server.
+
+- **Logical Clock (Delta Timing):** Your game should not advance based on the local system's clock (wall time). Instead, it should use a logical clock that advances using the deltaTiming value from each frame payload. On each update, you advance your game's internal time by deltaTiming (converted to seconds, e.g., deltaTiming / 1e9). This ensures that all players' simulations run at the same effective speed, preventing desynchronization issues that arise from differences in hardware performance.
+
+By following this model, the GeneralGameMasterAgent_0 acts as the "heartbeat" of your game, ensuring every player processes the same events in the same order and at the same pace.
+
 ## Behavior
 
 <details>
