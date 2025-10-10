@@ -1,6 +1,6 @@
 # Multiplayer Game Agent
 
-This agent is a fully-featured, secure, peer-to-peer multiplayer game client built with Pygame. It demonstrates a complete gameplay loop, including a lobby, active gameplay, and a game-over state, all synchronized through a `ReportAgent`.
+This agent is a fully-featured, secure, peer-to-peer multiplayer game client built with Pygame. It demonstrates a complete gameplay loop, including a lobby, active gameplay, and a game-over state, all synchronized through a `GeneralGameMasterAgent`.
 
 ---
 
