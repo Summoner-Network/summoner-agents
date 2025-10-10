@@ -91,13 +91,13 @@ python agents/agent_ChatAgent_0/agent.py
 > You are a bold one.
 ```
 
-**Terminal 2 (ReportAgent\_0)**
+**Terminal 2 (ReportAgent\_2)**
 This terminal shows the agent receiving and buffering the messages in real-time.
 
 ```text
-python agents/agent_ReportAgent_0/agent.py
+python agents/agent_ReportAgent_2/agent.py
 [DEBUG] Loaded config from: configs/client_config.json
-2025-10-07 17:03:15.088 - ReportAgent_0 - INFO - Connected to server @(host=127.0.0.1, port=8888)
+2025-10-07 17:03:15.088 - ReportAgent_2 - INFO - Connected to server @(host=127.0.0.1, port=8888)
 [Received] Hello there
 [Received] General Kenobi
 [Received] You are a bold one.
