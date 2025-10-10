@@ -1,4 +1,4 @@
-# `ReporterAgent_2`
+# `GeneralGameMasterAgent_0`
 
 A **frame-based** reporter that aggregates incoming messages on a per-frame basis. It runs at a fixed FPS (Frames Per Second), collecting all messages received during a frame and emitting them in a **single JSON payload**. This demonstrates a continuous receive-buffer → frame-based-send pattern using an internal `asyncio.Queue`.
 
@@ -59,21 +59,21 @@ python server.py
 Then, run the report agent:
 
 ```bash
-python agents/agent_ReportAgent_2/agent.py
+python agents/agent_GeneralGameMasterAgent_0/agent.py
 ```
 
 ## Simulation Scenarios
 
 ### Scenario 1: One chat sender, one frame-based reporter
 
-This scenario shows how `ReportAgent_2` batches messages from a chat client into frame-based JSON payloads.
+This scenario shows how `GeneralGameMasterAgent_0` batches messages from a chat client into frame-based JSON payloads.
 
 ```bash
 # Terminal 1 (server)
 python server.py
 
-# Terminal 2 (ReportAgent_2)
-python agents/agent_ReportAgent_2/agent.py
+# Terminal 2 (GeneralGameMasterAgent_0)
+python agents/agent_GeneralGameMasterAgent_0/agent.py
 
 # Terminal 3 (ChatAgent_0)
 python agents/agent_ChatAgent_0/agent.py
@@ -91,13 +91,13 @@ python agents/agent_ChatAgent_0/agent.py
 > You are a bold one.
 ```
 
-**Terminal 2 (ReportAgent\_2)**
+**Terminal 2 (GeneralGameMasterAgent\_0)**
 This terminal shows the agent receiving and buffering the messages in real-time.
 
 ```text
-python agents/agent_ReportAgent_2/agent.py
+python agents/agent_GeneralGameMasterAgent_0/agent.py
 [DEBUG] Loaded config from: configs/client_config.json
-2025-10-07 17:03:15.088 - ReportAgent_2 - INFO - Connected to server @(host=127.0.0.1, port=8888)
+2025-10-07 17:03:15.088 - GeneralGameMasterAgent_0 - INFO - Connected to server @(host=127.0.0.1, port=8888)
 [Received] Hello there
 [Received] General Kenobi
 [Received] You are a bold one.
@@ -115,14 +115,14 @@ The chat client will receive multiple JSON payloads from the reporter. Because t
 
 ### Scenario 2: Two chat senders, one frame-based reporter
 
-Here, two `ChatAgent_0` instances send messages that are batched by `ReportAgent_0` based on the frame they were received in.
+Here, two `ChatAgent_0` instances send messages that are batched by `GeneralGameMasterAgent_0` based on the frame they were received in.
 
 ```bash
 # Terminal 1 (server)
 python server.py
 
-# Terminal 2 (ReportAgent_0)
-python agents/agent_ReportAgent_2/agent.py
+# Terminal 2 (GeneralGameMasterAgent_0)
+python agents/agent_GeneralGameMasterAgent_0/agent.py
 
 # Terminal 3 (ChatAgent_0)  # "bob"
 python agents/agent_ChatAgent_0/agent.py
@@ -137,7 +137,7 @@ python agents/agent_ChatAgent_0/agent.py
 2.  In **Terminal 4**, Alice immediately types `Hi Bob!` and presses Enter.
 
 **Expected Output (in both Terminal 3 and 4)**
-If the messages from Bob and Alice arrive at the server close enough together to be processed by `ReportAgent_2` in the same frame, both chat clients will receive a single JSON payload containing both messages.
+If the messages from Bob and Alice arrive at the server close enough together to be processed by `GeneralGameMasterAgent_0` in the same frame, both chat clients will receive a single JSON payload containing both messages.
 
 ```text
 [Received] {"frameNumber": 210, "deltaEvents": ["Hi Alice!", "Hi Bob!"], "deltaTiming": 16694321}
