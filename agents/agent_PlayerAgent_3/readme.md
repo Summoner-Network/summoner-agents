@@ -63,7 +63,7 @@ Open a terminal and run the following commands:
 
 ```bash
 # Create an identity for player "alice"
-python agents/agent_PlayerAgent_2/login.py --name alice
+python agents/agent_PlayerAgent_3/login.py --name alice
 
 # Create an identity for player "bob"
 python agents/agent/login.py --name bob
@@ -73,10 +73,10 @@ python agents/agent/login.py --name bob
 
 ```bash
 # In a new terminal (Terminal 3), start a client for "alice"
-python agents/agent_PlayerAgent_2/agent.py --name alice
+python agents/agent_PlayerAgent_3/agent.py --name alice
 
 # In a new terminal (Terminal 4), start a client for "bob"
-python agents/agent_PlayerAgent_2/agent.py --name bob
+python agents/agent_PlayerAgent_3/agent.py --name bob
 ```
 
 Two Pygame windows will appear. You will see both players in the lobby in each window.
