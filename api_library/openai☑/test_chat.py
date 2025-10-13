@@ -53,11 +53,13 @@ async def chat_agent(
                                 model=model_name,
                                 max_completion_tokens=max_chat_output_tokens,
                                 )
-    pprint(response.usage.to_dict())
-    prompt_used  = response.usage.prompt_tokens
-    comp_used    = response.usage.completion_tokens
-    act_cost     = actual_chat_request_cost(model_name, prompt_used, comp_used)
-    print(f"[chat] Actual cost:    ${act_cost:.6f}")
+        pprint(response.usage.to_dict())
+        prompt_used  = response.usage.prompt_tokens
+        comp_used    = response.usage.completion_tokens
+        act_cost     = actual_chat_request_cost(model_name, prompt_used, comp_used)
+        print(f"[chat] Actual cost:    ${act_cost:.6f}")
+    else:
+        print("Tokens exceeded -- requests was not sent.")
     
     return response
 
