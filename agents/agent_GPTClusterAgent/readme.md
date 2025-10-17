@@ -5,6 +5,21 @@ A guarded **embedding-and-clustering** agent that takes an iterable of texts, co
 > [!NOTE]
 > The overall structure is inspired by and built from [`EchoAgent_2`](../agent_EchoAgent_2/), adapted for embedding and clustering.
 
+> [!IMPORTANT]
+> **OpenAI credentials required.** Both agents call `load_dotenv()` and expect an environment variable named `OPENAI_API_KEY`. Put a `.env` file at the **project root** (or set the variable in your shell/CI) so it’s available at runtime:
+>
+> * **.env:**
+> ```OPENAI_API_KEY=sk-...your_key...```
+>
+> * **macOS/Linux terminal:**
+> ```export OPENAI_API_KEY="sk-...your_key..."```
+>
+> * **Windows (PowerShell) terminal:**
+> ```$env:OPENAI_API_KEY="sk-...your_key..."```
+>
+> If the key is missing, the agent will raise: `RuntimeError("OPENAI_API_KEY missing in environment.")`.
+
+
 ## Behavior
 
 <details>
