@@ -1,0 +1,13 @@
+{
+  "embedding_model": "text-embedding-3-small",
+  "max_embedding_input_tokens": 500,
+  "embed_cost_limit_usd": 0.0008,
+  "debug": true,
+  "sleep_seconds": 0.1,
+  "clustering": {
+    "algo": "kmeans",
+    "k": 3,
+    "max_iter": 20,
+    "seed": 0
+  }
+}

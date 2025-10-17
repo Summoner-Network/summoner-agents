@@ -18,7 +18,7 @@ async def validate(msg: Any) -> Optional[dict]:
     if not (isinstance(msg, dict) and "remote_addr" in msg and "content" in msg):
         client.logger.info("[hook:recv] missing address/content")
         return # None outputs are not passed to @receive handlers
-    client.logger.info(f"[hook:recv] {msg["remote_addr"]} passed validation")
+    client.logger.info(f"[hook:recv] {msg['remote_addr']} passed validation")
     return msg
 
 @client.receive(route="")

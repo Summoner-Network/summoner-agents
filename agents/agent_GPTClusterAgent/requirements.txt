@@ -1,0 +1,6 @@
+openai
+tiktoken
+python-dotenv
+urllib3
+pydantic
+scikit-learn>=1.2

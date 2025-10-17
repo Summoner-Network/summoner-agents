@@ -20,8 +20,8 @@
     * [Feedback Agents](#feedback-agents)
     * [Connector Agents (to MCP, LangChain, CrewAI, etc.)](#connector-agents)
     * [Security and Handshake Agents](#security-and-handshake-agents)
-    * [API Agents 🚧 (panned)](#api-agents)
-    * [Code Exchange Agents 🚧 (planned)](#code-exchange-agents)
+    * [API Agents 🚧 (in progress)](#api-agents)
+    * [DNA-Induced Agents 🚧 (planned)](#dna-induced-agents)
 
 
 ## SDK Setup
@@ -761,49 +761,45 @@ Click to show the legend.
         <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
     </tr>
     <tr>
-        <td><code><strong>GPTSummary</strong></code></td>
-        <td style="font-size: 0.8em;">...</td>
-        <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
-         <td><code>core</code></td>
-        <td><img src="https://img.shields.io/badge/LLM-%20?color=18b9cc" alt=""></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
-    </tr>
-    <tr>
-        <td><code><strong>GPTPArsing</strong></code></td>
-        <td style="font-size: 0.8em;">...</td>
-        <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
-         <td><code>core</code></td>
-        <td><img src="https://img.shields.io/badge/LLM-%20?color=18b9cc" alt=""></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
-    </tr>
-    <tr>
-        <td><code><strong>GPTCluster</strong></code></td>
-        <td style="font-size: 0.8em;">...</td>
+        <td><code><strong><a href="agents/agent_GPTRespondAgent/">GPTRespondAgent</a></strong></code></td>
+        <td style="font-size: 0.8em;">Guarded GPT responder: builds (personality + format) prompt and returns JSON; uses queue, hooks, and cost/token guards.</td>
         <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
-         <td><code>core</code></td>
-        <td><img src="https://img.shields.io/badge/LLM-%20?color=18b9cc" alt=""></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
+        <td><code>core</code> <code>agent</code> <code>DID</code> <code>guardrails</code></td>
+        <td><img src="https://img.shields.io/badge/Respond-%20?color=0b8f9a" alt="Respond"></td>
+        <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
     </tr>
     <tr>
-        <td><code><strong>GPTSearch</strong></code></td>
-        <td style="font-size: 0.8em;">...</td>
+        <td><code><strong><a href="agents/agent_GPTClusterAgent/">GPTClusterAgent</a></strong></code></td>
+        <td style="font-size: 0.8em;">Embeds texts with budget guards, then clusters via configurable algorithms (K-Means default; Agglomerative/DBSCAN optional).</td>
         <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
-         <td><code>core</code></td>
-        <td><img src="https://img.shields.io/badge/LLM-%20?color=18b9cc" alt=""></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
+        <td><code>core</code> <code>embeddings</code> <code>clustering</code> <code>agent</code></td>
+        <td><img src="https://img.shields.io/badge/Cluster-%20?color=3a6ea5" alt="Cluster"></td>
+        <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
     </tr>
+    <tr>
+        <td><code><strong><a href="agents/agent_InputAgent/">InputAgent</a></strong></code></td>
+        <td style="font-size: 0.8em;">Minimal bridge: emits raw strings or parsed JSON; supports single- or multi-line input.</td>
+        <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
+        <td><code>core</code></td>
+        <td><img src="https://img.shields.io/badge/Interaction-%20?color=452461" alt="Interaction"></td>
+        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td>
+        </tr>
     </tbody>
 </table>
 </div>
 
 </details>
 
-<a id="code-exchange-agents"></a>
+<p align="center">
+<img width="600px" src="assets/mov2gif/gifs/demo_gptagent_framed.gif" />
+</p>
 
-### Code Exchange Agents 🚧
+<a id="dna-induced-agents"></a>
+
+### DNA-Induced Agents 🚧
 
 <details>
-<summary><b>(Click to expand)</b> Agents of <b>level 3</b> showcasing smart-tool exchange and shareable logic for collaborative extension.</summary>
+<summary><b>(Click to expand)</b> Agents of <b>level 3</b> showcasing the use of agentic DNA to merge or clone agent code.</summary>
 <br>
 
 <div style="display: flex; justify-content: center;">
@@ -826,11 +822,11 @@ Click to show the legend.
     </thead>
     <tbody>
     <tr>
-        <td><code><strong>SmartTool</strong></code></td>
+        <td><code><strong>MergeAgent</strong></code></td>
         <td style="font-size: 0.8em;">...</td>
         <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
-        <td><code>smart-tools</code></td>
-        <td><img src="https://img.shields.io/badge/Smart_tools-%20?color=d67863" alt=""></td>
+        <td><code>core</code></td>
+        <td><img src="https://img.shields.io/badge/patching-%20?color=d67863" alt=""></td>
         <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
     </tr>
     </tbody>

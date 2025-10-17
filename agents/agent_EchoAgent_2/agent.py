@@ -35,7 +35,7 @@ class MyAgent(SummonerClient):
         self.my_id = id_dict.get("uuid")
 
 
-agent = MyAgent(name="EchoAgent_1")
+agent = MyAgent(name="EchoAgent_2")
 
 # ---[ Hooks ]---
 @agent.hook(direction=Direction.RECEIVE)
@@ -48,7 +48,7 @@ async def validate(msg: Any) -> Optional[dict]:
         agent.logger.info("[hook:recv] missing address/content")
         return # None outputs are not passed to @receive handlers
     
-    agent.logger.info(f"[hook:recv] {msg["remote_addr"]} passed validation")
+    agent.logger.info(f"[hook:recv] {msg['remote_addr']} passed validation")
     return msg
 
 @agent.hook(direction=Direction.SEND)
@@ -84,4 +84,4 @@ if __name__ == "__main__":
 
     agent.loop.run_until_complete(setup())
 
-    agent.run(host = "127.0.0.1", port = 8888, config_path=args.config_path or "configs/agent_config.json")
+    agent.run(host = "127.0.0.1", port = 8888, config_path=args.config_path or "configs/client_config.json")

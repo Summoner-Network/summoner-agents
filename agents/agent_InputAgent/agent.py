@@ -2,7 +2,7 @@ from summoner.client import SummonerClient
 from multi_ainput import multi_ainput
 from aioconsole import ainput, aprint
 from typing import Any
-import argparse
+import argparse, json
 
 # ---- CLI: prompt mode toggle -----------------------------------------------
 # We parse the "prompt mode" early so it is available before the client starts.
@@ -12,7 +12,7 @@ prompt_parser = argparse.ArgumentParser()
 prompt_parser.add_argument("--multiline", required=False, type=int, choices=[0, 1], default=0, help="Use multi-line input mode with backslash continuation (1 = enabled, 0 = disabled). Default: 0.")
 prompt_args, _ = prompt_parser.parse_known_args()
 
-client = SummonerClient(name="ChatAgent_0")
+client = SummonerClient(name="InputAgent")
 
 @client.receive(route="")
 async def receiver_handler(msg: Any) -> None:
@@ -35,8 +35,13 @@ async def send_handler() -> str:
         # Single-line compose.
         content: str = await ainput("> ")
 
-    # The returned string is sent as-is to the server.
-    return content
+    # Parse as JSON if possible; otherwise, return the raw string
+    output = None
+    try:
+        output = json.loads(content.replace("\n", ""))
+    except:
+        output = content
+    return output
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run a Summoner client with a specified config.")
