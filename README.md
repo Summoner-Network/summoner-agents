@@ -772,7 +772,7 @@ Click to show the legend.
         <td><code><strong><a href="agents/agent_GPTClusterAgent/">GPTClusterAgent</a></strong></code></td>
         <td style="font-size: 0.8em;">Embeds texts with budget guards, then clusters via configurable algorithms (K-Means default; Agglomerative/DBSCAN optional).</td>
         <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
-        <td><code>core</code> <code>embeddings</code> <code>clustering</code> <code>agent</code></td>
+        <td><code>core</code> <code>agent</code> <code>DID</code> <code>analytics</code>  <code>guardrails</code></td>
         <td><img src="https://img.shields.io/badge/Cluster-%20?color=3a6ea5" alt="Cluster"></td>
         <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
     </tr>
