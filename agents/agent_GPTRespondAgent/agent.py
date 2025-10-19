@@ -7,6 +7,7 @@ from typing import Any, Union, Optional, Type, Literal
 from pathlib import Path
 import argparse, json, asyncio, os
 
+from aioconsole import aprint
 from dotenv import load_dotenv
 import openai
 from openai import AsyncOpenAI
@@ -124,8 +125,8 @@ class MyAgent(SummonerClient):
 
         prompt_tokens = count_chat_tokens(messages, model_name)
         if debug:
-            print(f"\033[96mPrompt tokens: {prompt_tokens} > {self.max_chat_input_tokens}? {prompt_tokens > self.max_chat_input_tokens}\033[0m")
-            print(f"\033[92mInput: {messages}\033[0m")
+            print(f"\033[96mPrompt tokens: {prompt_tokens} > {self.max_chat_input_tokens} ? {prompt_tokens > self.max_chat_input_tokens}\033[0m")
+            await aprint(f"\033[92mInput: {messages}\033[0m")
 
         est_cost = estimate_chat_request_cost(model_name, prompt_tokens, self.max_chat_output_tokens)
         if debug:

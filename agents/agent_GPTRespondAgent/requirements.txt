@@ -3,3 +3,4 @@ tiktoken
 python-dotenv
 urllib3
 pydantic
+aioconsole

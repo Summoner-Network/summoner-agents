@@ -123,10 +123,7 @@ class MyAgent(SummonerClient):
         # Diagnostics + budgeting (keep your print style)
         text_tokens = count_embedding_tokens(texts, self.embedding_model)
         if self.debug:
-            print(
-                f"\033[96mEmbedding tokens: {text_tokens} > {self.max_embedding_tokens} ? "
-                f"{text_tokens > self.max_embedding_tokens}\033[0m"
-            )
+            print(f"\033[96mEmbedding tokens: {text_tokens} > {self.max_embedding_tokens} ? {text_tokens > self.max_embedding_tokens}\033[0m")
 
         est_cost = estimate_embedding_request_cost(self.embedding_model, text_tokens)
         if self.debug:
@@ -159,8 +156,6 @@ class MyAgent(SummonerClient):
         if usage:
             act_cost = actual_embedding_request_cost(self.embedding_model, usage.total_tokens)
             if self.debug:
-                from pprint import pprint as _pprint
-                _pprint(usage.to_dict())
                 print(f"\033[95m[embed] Actual cost: ${act_cost:.10f}\033[0m")
         else:
             if self.debug:
