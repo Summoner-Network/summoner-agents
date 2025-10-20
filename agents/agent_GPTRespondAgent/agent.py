@@ -125,12 +125,12 @@ class MyAgent(SummonerClient):
 
         prompt_tokens = count_chat_tokens(messages, model_name)
         if debug:
-            print(f"\033[96mPrompt tokens: {prompt_tokens} > {self.max_chat_input_tokens} ? {prompt_tokens > self.max_chat_input_tokens}\033[0m")
+            await aprint(f"\033[96mPrompt tokens: {prompt_tokens} > {self.max_chat_input_tokens} ? {prompt_tokens > self.max_chat_input_tokens}\033[0m")
             await aprint(f"\033[92mInput: {messages}\033[0m")
 
         est_cost = estimate_chat_request_cost(model_name, prompt_tokens, self.max_chat_output_tokens)
         if debug:
-            print(f"\033[95m[chat] Estimated cost (for {self.max_chat_output_tokens} output tokens): ${est_cost:.6f}\033[0m")
+            await aprint(f"\033[95m[chat] Estimated cost (for {self.max_chat_output_tokens} output tokens): ${est_cost:.6f}\033[0m")
 
         output: Any = None
         act_cost: Optional[float] = None
@@ -138,13 +138,13 @@ class MyAgent(SummonerClient):
         # Guard 1: token ceiling
         if prompt_tokens >= self.max_chat_input_tokens:
             if debug:
-                print("\033[93mTokens exceeded — unable to send the request.\033[0m")
+                await aprint("\033[93mTokens exceeded — unable to send the request.\033[0m")
             return {"output": output, "cost": act_cost}
 
         # Guard 2: cost ceiling
         if cost_limit is not None and est_cost > cost_limit:
             if debug:
-                print(f"\033[93m[chat] Skipping request: estimated cost ${est_cost:.6f} exceeds cost_limit ${cost_limit:.6f}.\033[0m")
+                await aprint(f"\033[93m[chat] Skipping request: estimated cost ${est_cost:.6f} exceeds cost_limit ${cost_limit:.6f}.\033[0m")
             return {"output": output, "cost": act_cost}
 
         # Proceed with the call
@@ -158,10 +158,10 @@ class MyAgent(SummonerClient):
             if usage:
                 act_cost = actual_chat_request_cost(model_name, usage.prompt_tokens, usage.completion_tokens)
                 if debug:
-                    print(f"\033[95m[chat] Actual cost: ${act_cost:.6f}\033[0m")
+                    await aprint(f"\033[95m[chat] Actual cost: ${act_cost:.6f}\033[0m")
             else:
                 if debug:
-                    print("\033[93m[chat] Note: usage not available. Skipping cost.\033[0m")
+                    await aprint("\033[93m[chat] Note: usage not available. Skipping cost.\033[0m")
             output = response.choices[0].message.content
 
         elif output_parsing == "json":
@@ -175,10 +175,10 @@ class MyAgent(SummonerClient):
             if usage:
                 act_cost = actual_chat_request_cost(model_name, usage.prompt_tokens, usage.completion_tokens)
                 if debug:
-                    print(f"\033[95m[chat] Actual cost: ${act_cost:.6f}\033[0m")
+                    await aprint(f"\033[95m[chat] Actual cost: ${act_cost:.6f}\033[0m")
             else:
                 if debug:
-                    print("\033[93m[chat] Note: usage not available. Skipping cost.\033[0m")
+                    await aprint("\033[93m[chat] Note: usage not available. Skipping cost.\033[0m")
             try:
                 output = json.loads(response.choices[0].message.content)
             except Exception:
@@ -197,10 +197,10 @@ class MyAgent(SummonerClient):
             if usage:
                 act_cost = actual_chat_request_cost(model_name, usage.prompt_tokens, usage.completion_tokens)
                 if debug:
-                    print(f"\033[95m[chat] Actual cost: ${act_cost:.6f}\033[0m")
+                    await aprint(f"\033[95m[chat] Actual cost: ${act_cost:.6f}\033[0m")
             else:
                 if debug:
-                    print("\033[93m[chat] Note: usage not available for structured response. Skipping cost.\033[0m")
+                    await aprint("\033[93m[chat] Note: usage not available for structured response. Skipping cost.\033[0m")
             output = response.output[0].content[0].parsed
 
         else:

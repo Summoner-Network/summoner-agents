@@ -7,6 +7,7 @@ from typing import Any, Union, Optional
 from pathlib import Path
 import argparse, json, asyncio, os
 
+from aioconsole import aprint
 from dotenv import load_dotenv
 import openai
 from openai import AsyncOpenAI
@@ -123,22 +124,22 @@ class MyAgent(SummonerClient):
         # Diagnostics + budgeting (keep your print style)
         text_tokens = count_embedding_tokens(texts, self.embedding_model)
         if self.debug:
-            print(f"\033[96mEmbedding tokens: {text_tokens} > {self.max_embedding_tokens} ? {text_tokens > self.max_embedding_tokens}\033[0m")
+            await aprint(f"\033[96mEmbedding tokens: {text_tokens} > {self.max_embedding_tokens} ? {text_tokens > self.max_embedding_tokens}\033[0m")
 
         est_cost = estimate_embedding_request_cost(self.embedding_model, text_tokens)
         if self.debug:
-            print(f"\033[95m[embed] Estimated cost: ${est_cost:.10f}\033[0m")
+            await aprint(f"\033[95m[embed] Estimated cost: ${est_cost:.10f}\033[0m")
 
         # Guard 1: token ceiling (simple stop)
         if text_tokens > self.max_embedding_tokens:
             if self.debug:
-                print("\033[93m[embed] Tokens exceeded — unable to send the request.\033[0m")
+                await aprint("\033[93m[embed] Tokens exceeded — unable to send the request.\033[0m")
             return {"output": None, "cost": None}
 
         # Guard 2: cost ceiling (compare estimated cost to limit)
         if self.embed_cost_limit_usd is not None and est_cost > self.embed_cost_limit_usd:
             if self.debug:
-                print(
+                await aprint(
                     f"\033[93m[embed] Skipping request: estimated cost ${est_cost:.10f} "
                     f"exceeds cost_limit ${self.embed_cost_limit_usd:.10f}.\033[0m"
                 )
@@ -156,10 +157,10 @@ class MyAgent(SummonerClient):
         if usage:
             act_cost = actual_embedding_request_cost(self.embedding_model, usage.total_tokens)
             if self.debug:
-                print(f"\033[95m[embed] Actual cost: ${act_cost:.10f}\033[0m")
+                await aprint(f"\033[95m[embed] Actual cost: ${act_cost:.10f}\033[0m")
         else:
             if self.debug:
-                print("\033[93m[embed] Note: usage not available. Skipping cost.\033[0m")
+                await aprint("\033[93m[embed] Note: usage not available. Skipping cost.\033[0m")
 
         return {"output": [rec.embedding for rec in response.data], "cost": act_cost}
 
