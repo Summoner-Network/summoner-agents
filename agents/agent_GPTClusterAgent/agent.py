@@ -341,6 +341,9 @@ async def send_handler() -> Union[dict, str]:
         "result": result,
     }
 
+    if "from" in payload:
+        output["to"] = payload["from"]
+
     agent.logger.info(f"[cluster] model={agent.embedding_model} id={agent.my_id} texts={len(texts)}")
     await asyncio.sleep(agent.sleep_seconds)
 
