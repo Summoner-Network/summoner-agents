@@ -74,7 +74,7 @@ async def sim_loop():
 
 client = SummonerClient(name="GameMasterAgent_1")
 
-@client.hook(Direction.RECEIVE, priority=(0,))
+@client.hook(Direction.RECEIVE)
 async def rx_normalize(payload):
     if isinstance(payload, dict) and "content" in payload and isinstance(payload["content"], dict):
         inner = payload["content"]

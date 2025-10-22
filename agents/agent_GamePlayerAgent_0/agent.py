@@ -26,14 +26,14 @@ SNAP: Dict[str, Any] = {"type": "world_state", "bounds": {"w": MAP_W, "h": MAP_H
 LOCK = threading.Lock()
 RUNNING = True
 
-@client.hook(Direction.RECEIVE, priority=(0,))
+@client.hook(Direction.RECEIVE)
 async def rx_normalize(payload):
     if isinstance(payload, dict) and "content" in payload and isinstance(payload["content"], dict):
         inner = payload["content"]
         return inner.get("_payload", inner)
     return payload
 
-@client.hook(Direction.SEND, priority=(0,))
+@client.hook(Direction.SEND)
 async def tx_stamp_pid(payload):
     if isinstance(payload, dict) and "pid" not in payload:
         payload["pid"] = PID

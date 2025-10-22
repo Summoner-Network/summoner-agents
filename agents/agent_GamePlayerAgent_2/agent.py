@@ -134,14 +134,14 @@ def load_or_create_world_seed(seed_arg: Optional[str]) -> str:
     return seed
 
 # ===== Hooks =====
-@client.hook(Direction.RECEIVE, priority=(0,))
+@client.hook(Direction.RECEIVE)
 async def rx_normalize(payload):
     if isinstance(payload, dict) and "content" in payload and isinstance(payload["content"], dict):
         inner = payload["content"]
         return inner.get("_payload", inner)
     return payload
 
-@client.hook(Direction.SEND, priority=(0,))
+@client.hook(Direction.SEND)
 async def tx_stamp_pid(payload):
     if isinstance(payload, dict) and "pid" not in payload:
         payload["pid"] = PID
