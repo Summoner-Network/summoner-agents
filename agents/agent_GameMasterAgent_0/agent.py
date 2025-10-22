@@ -1,4 +1,3 @@
-# GameMaster.py
 import asyncio, time, math, random
 from typing import Dict, Any
 from summoner.client import SummonerClient

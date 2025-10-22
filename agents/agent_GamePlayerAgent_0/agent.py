@@ -1,4 +1,3 @@
-# Player.py
 import os, sys, time, threading, asyncio, random
 import pygame
 from typing import Any, Dict

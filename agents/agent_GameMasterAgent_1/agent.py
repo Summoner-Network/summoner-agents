@@ -1,6 +1,5 @@
-# GameMaster.py
 import asyncio, time, math, random
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from summoner.client import SummonerClient
 from summoner.protocol.process import Direction
 import argparse
@@ -46,10 +45,14 @@ def apply_inputs(dt_ms: float):
         if dx and dy:
             inv = 1 / math.sqrt(2.0)
             dx *= inv; dy *= inv
+        # Interpret PLAYER_SPEED as "pixels per nominal step" (SIM_STEP_MS).
+        # Scale by actual dt_ms so movement remains constant across step rates.
+        step_scale = (dt_ms / SIM_STEP_MS) if dt_ms else 1.0
         p.vx = dx * PLAYER_SPEED
         p.vy = dy * PLAYER_SPEED
-        p.x = clamp(p.x + p.vx, PLAYER_RADIUS, MAP_W - PLAYER_RADIUS)
-        p.y = clamp(p.y + p.vy, PLAYER_RADIUS, MAP_H - PLAYER_RADIUS)
+        p.x = clamp(p.x + p.vx * step_scale, PLAYER_RADIUS, MAP_W - PLAYER_RADIUS)
+        p.y = clamp(p.y + p.vy * step_scale, PLAYER_RADIUS, MAP_H - PLAYER_RADIUS)
+
 
 def world_state() -> Dict[str, Any]:
     return {
@@ -75,14 +78,14 @@ async def sim_loop():
 client = SummonerClient(name="GameMasterAgent_1")
 
 @client.hook(Direction.RECEIVE)
-async def rx_normalize(payload):
+async def rx_normalize(payload: Any) -> Optional[dict]:
     if isinstance(payload, dict) and "content" in payload and isinstance(payload["content"], dict):
         inner = payload["content"]
         return inner.get("_payload", inner)
     return payload
 
 @client.receive("gm/tick")
-async def on_tick(msg: dict):
+async def on_tick(msg: dict) -> None:
     if not isinstance(msg, dict) or msg.get("type") != "tick":
         return None
     pid = msg.get("pid")
@@ -102,7 +105,7 @@ async def on_tick(msg: dict):
     return None
 
 @client.send("gm/reply")
-async def send_world():
+async def send_world() -> dict:
     await asyncio.sleep(BROADCAST_EVERY_MS / 1000.0)
     return world_state()
 
