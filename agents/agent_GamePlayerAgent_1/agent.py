@@ -114,14 +114,14 @@ def load_or_create_identity(id_arg: Optional[str]) -> str:
 
 # ===== Hooks =====
 @client.hook(Direction.RECEIVE)
-async def rx_normalize(payload):
+async def rx_normalize(payload: Any) -> Optional[dict]:
     if isinstance(payload, dict) and "content" in payload and isinstance(payload["content"], dict):
         inner = payload["content"]
         return inner.get("_payload", inner)
     return payload
 
 @client.hook(Direction.SEND)
-async def tx_stamp_pid(payload):
+async def tx_stamp_pid(payload: Any) -> Optional[dict]:
     # hooks capture global PID (set in main before client.run())
     if isinstance(payload, dict) and "pid" not in payload:
         payload["pid"] = PID
@@ -129,7 +129,7 @@ async def tx_stamp_pid(payload):
 
 # ===== Routes =====
 @client.receive("gm/reply")
-async def on_world(msg: dict):
+async def on_world(msg: dict) -> None:
     if not isinstance(msg, dict) or msg.get("type") != "world_state":
         return None
     with LOCK:
@@ -140,7 +140,7 @@ async def on_world(msg: dict):
     return None
 
 @client.send("gm/tick")
-async def tick():
+async def tick() -> dict:
     await asyncio.sleep(0.05)  # 20 Hz
     with LOCK:
         keys = dict(INPUT)

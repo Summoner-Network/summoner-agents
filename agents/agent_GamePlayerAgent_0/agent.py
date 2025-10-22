@@ -1,6 +1,6 @@
 import os, sys, time, threading, asyncio, random
 import pygame
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from summoner.client import SummonerClient
 from summoner.protocol.process import Direction
 from summoner.client import SummonerClient
@@ -26,20 +26,20 @@ LOCK = threading.Lock()
 RUNNING = True
 
 @client.hook(Direction.RECEIVE)
-async def rx_normalize(payload):
+async def rx_normalize(payload: Any) -> Optional[dict]:
     if isinstance(payload, dict) and "content" in payload and isinstance(payload["content"], dict):
         inner = payload["content"]
         return inner.get("_payload", inner)
     return payload
 
 @client.hook(Direction.SEND)
-async def tx_stamp_pid(payload):
+async def tx_stamp_pid(payload: Any) -> Optional[dict]:
     if isinstance(payload, dict) and "pid" not in payload:
         payload["pid"] = PID
     return payload
 
 @client.receive("gm/reply")
-async def on_world(msg: dict):
+async def on_world(msg: dict) -> None:
     if not isinstance(msg, dict) or msg.get("type") != "world_state":
         return None
     with LOCK:
@@ -50,7 +50,7 @@ async def on_world(msg: dict):
     return None
 
 @client.send("gm/tick")
-async def tick():
+async def tick() -> dict:
     await asyncio.sleep(0.05)  # 20 Hz
     with LOCK:
         keys = dict(INPUT)

@@ -1,5 +1,5 @@
 import asyncio, time, math, random
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from summoner.client import SummonerClient
 from summoner.protocol.process import Direction
 import argparse
@@ -64,14 +64,14 @@ client = SummonerClient(name="GameMasterAgent_0")
 
 # Normalize server envelopes → bare dict
 @client.hook(Direction.RECEIVE)
-async def rx_normalize(payload):
+async def rx_normalize(payload: Any) -> Optional[dict]:
     if isinstance(payload, dict) and "content" in payload and isinstance(payload["content"], dict):
         inner = payload["content"]
         return inner.get("_payload", inner)
     return payload
 
 @client.receive("gm/tick")
-async def on_tick(msg: dict):
+async def on_tick(msg: dict) -> None:
     if not isinstance(msg, dict) or msg.get("type") != "tick":
         return None
     pid = msg.get("pid")
@@ -90,7 +90,7 @@ async def on_tick(msg: dict):
     return None
 
 @client.send("gm/reply")
-async def send_world():
+async def send_world() -> dict:
     # 20 Hz broadcast cadence; receiver ticks can be higher
     await asyncio.sleep(BROADCAST_EVERY_MS / 1000.0)
     return world_state()
