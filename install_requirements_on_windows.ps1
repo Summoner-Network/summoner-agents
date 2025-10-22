@@ -58,9 +58,12 @@ $files = @()
 $files += Get-ChildItem -Path 'agents' -Recurse -Filter 'requirements.txt' -File -ErrorAction SilentlyContinue
 $files += Get-ChildItem -Path 'api_library' -Recurse -Filter 'requirements.txt' -File -ErrorAction SilentlyContinue
 
+# Remove any nulls and dedupe
+$files = $files | Where-Object { $_ } | Sort-Object FullName -Unique
+
 if (-not $files -or $files.Count -eq 0) {
-  Write-Host 'No requirements.txt files found under agents/* or api_library/*' -ForegroundColor Yellow
-  exit 0
+  Write-Host -ForegroundColor Yellow "No requirements.txt files found under agents/* or api_library/*"
+  return
 }
 
 foreach ($f in $files) {

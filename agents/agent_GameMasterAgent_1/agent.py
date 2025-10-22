@@ -12,7 +12,7 @@ PLAYER_SPEED = 4.0
 SIM_STEP_MS = 16.6667
 BROADCAST_EVERY_MS = 50.0
 
-# --- NEW: spawn settings ---
+# --- spawn settings ---
 SPAWN_CX, SPAWN_CY = MAP_W / 2, MAP_H / 2
 SPAWN_RING_R = 140.0     # players start within ~140 px of each other
 SPAWN_JITTER = 18.0      # small randomization to avoid exact overlap
@@ -30,7 +30,7 @@ class Player:
     __slots__ = ("pid", "x", "y", "vx", "vy", "keys")
     def __init__(self, pid: str, idx: int):
         self.pid = pid
-        # --- NEW: place new players around a small ring near center ---
+        # --- place new players around a small ring near center ---
         if idx == 0:
             base_x, base_y = SPAWN_CX, SPAWN_CY
         else:
