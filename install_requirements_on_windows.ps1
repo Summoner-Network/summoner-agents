@@ -73,7 +73,7 @@ if (Test-Path -LiteralPath $rootReq) {
 }
 
 if (-not $files -or $files.Count -eq 0) {
-  Write-Host -ForegroundColor Yellow "No requirements.txt files found under agents/*, api_library/*, or next to this script."
+  Write-Host -ForegroundColor Yellow "No requirements.txt files found under agents\*, api_library\*, or next to this script."
   return
 }
 
