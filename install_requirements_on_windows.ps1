@@ -10,12 +10,12 @@
 # ==============================================================================
 
 Set-StrictMode -Version Latest
-$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = "Stop"
 
 function Print-Section([string]$ColorName, [string]$Title) {
-  Write-Host '==============' -ForegroundColor $ColorName
+  Write-Host "==============" -ForegroundColor $ColorName
   Write-Host $Title           -ForegroundColor $ColorName
-  Write-Host '--------------' -ForegroundColor $ColorName
+  Write-Host "--------------" -ForegroundColor $ColorName
 }
 
 function Get-PipCmd {
@@ -26,8 +26,8 @@ function Get-PipCmd {
 }
 
 function Invoke-PipInstall([string]$ReqFile, [string]$DisplayPath) {
-  Print-Section 'Cyan'   "📦 Installing from: $DisplayPath"
-  Print-Section 'Yellow' '📋 REQUIREMENTS'
+  Print-Section "Cyan"   "📦 Installing from: $DisplayPath"
+  Print-Section "Yellow" "📋 REQUIREMENTS"
   Get-Content -LiteralPath $ReqFile | ForEach-Object { Write-Host $_ }
   Write-Host ''
 
@@ -50,19 +50,30 @@ function Invoke-PipInstall([string]$ReqFile, [string]$DisplayPath) {
   }
 
   Write-Host "✅ Successfully installed from $DisplayPath" -ForegroundColor Green
-  Write-Host ''
+  Write-Host ""
 }
 
-# Collect requirement files: agents\*\requirements.txt and api_library\*\requirements.txt
+# Collect requirement files: .\requirements.txt agents\*\requirements.txt and api_library\*\requirements.txt
 $files = @()
-$files += Get-ChildItem -Path 'agents' -Recurse -Filter 'requirements.txt' -File -ErrorAction SilentlyContinue
-$files += Get-ChildItem -Path 'api_library' -Recurse -Filter 'requirements.txt' -File -ErrorAction SilentlyContinue
 
-# Remove any nulls and dedupe
-$files = $files | Where-Object { $_ } | Sort-Object FullName -Unique
+if (Test-Path -LiteralPath (Join-Path $PSScriptRoot "agents")) {
+  $files += Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot "agents") -Recurse -Filter "requirements.txt" -ErrorAction SilentlyContinue |
+            Where-Object { -not $_.PSIsContainer }
+}
+
+if (Test-Path -LiteralPath (Join-Path $PSScriptRoot "api_library")) {
+  $files += Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot "api_library") -Recurse -Filter "requirements.txt" -ErrorAction SilentlyContinue |
+            Where-Object { -not $_.PSIsContainer }
+}
+
+# Root requirements.txt next to the script
+$rootReq = Join-Path $PSScriptRoot "requirements.txt"
+if (Test-Path -LiteralPath $rootReq) {
+  $files += Get-Item -LiteralPath $rootReq
+}
 
 if (-not $files -or $files.Count -eq 0) {
-  Write-Host -ForegroundColor Yellow "No requirements.txt files found under agents/* or api_library/*"
+  Write-Host -ForegroundColor Yellow "No requirements.txt files found under agents/*, api_library/*, or next to this script."
   return
 }
 

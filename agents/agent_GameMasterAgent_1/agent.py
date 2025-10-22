@@ -17,15 +17,6 @@ SPAWN_CX, SPAWN_CY = MAP_W / 2, MAP_H / 2
 SPAWN_RING_R = 140.0     # players start within ~140 px of each other
 SPAWN_JITTER = 18.0      # small randomization to avoid exact overlap
 
-client = SummonerClient(name="GameMasterAgent_1")
-
-@client.hook(Direction.RECEIVE, priority=(0,))
-async def rx_normalize(payload):
-    if isinstance(payload, dict) and "content" in payload and isinstance(payload["content"], dict):
-        inner = payload["content"]
-        return inner.get("_payload", inner)
-    return payload
-
 class Player:
     __slots__ = ("pid", "x", "y", "vx", "vy", "keys")
     def __init__(self, pid: str, idx: int):
@@ -68,28 +59,6 @@ def world_state() -> Dict[str, Any]:
         "players": [{"pid": p.pid, "x": p.x, "y": p.y} for p in players.values()],
     }
 
-@client.receive("gm/tick")
-async def on_tick(msg: dict):
-    if not isinstance(msg, dict) or msg.get("type") != "tick":
-        return None
-    pid = msg.get("pid")
-    if not pid:
-        return None
-    p = players.get(pid)
-    if p is None:
-        p = Player(pid, idx=len(players))
-        players[pid] = p
-        client.logger.info(f"[GM] join {pid} at ({p.x:.1f},{p.y:.1f})")
-    keys = msg.get("keys") or {}
-    p.keys["w"] = bool(keys.get("w")); p.keys["a"] = bool(keys.get("a"))
-    p.keys["s"] = bool(keys.get("s")); p.keys["d"] = bool(keys.get("d"))
-    return None
-
-@client.send("gm/reply")
-async def send_world():
-    await asyncio.sleep(BROADCAST_EVERY_MS / 1000.0)
-    return world_state()
-
 async def sim_loop():
     acc = 0.0
     last_ms = time.perf_counter() * 1000.0
@@ -103,6 +72,39 @@ async def sim_loop():
             acc -= SIM_STEP_MS
         await asyncio.sleep(0.001)
 
+client = SummonerClient(name="GameMasterAgent_1")
+
+@client.hook(Direction.RECEIVE, priority=(0,))
+async def rx_normalize(payload):
+    if isinstance(payload, dict) and "content" in payload and isinstance(payload["content"], dict):
+        inner = payload["content"]
+        return inner.get("_payload", inner)
+    return payload
+
+@client.receive("gm/tick")
+async def on_tick(msg: dict):
+    if not isinstance(msg, dict) or msg.get("type") != "tick":
+        return None
+    pid = msg.get("pid")
+    if not pid:
+        return None
+
+    p = players.get(pid)
+    if p is None:
+        p = Player(pid, idx=len(players))
+        players[pid] = p
+        client.logger.info(f"[GM] join {pid} at ({p.x:.1f},{p.y:.1f})")
+
+    keys = msg.get("keys") or {}
+    p.keys["w"] = bool(keys.get("w")); p.keys["a"] = bool(keys.get("a"))
+    p.keys["s"] = bool(keys.get("s")); p.keys["d"] = bool(keys.get("d"))
+
+    return None
+
+@client.send("gm/reply")
+async def send_world():
+    await asyncio.sleep(BROADCAST_EVERY_MS / 1000.0)
+    return world_state()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run a Summoner client with a specified config.")
@@ -111,6 +113,4 @@ if __name__ == "__main__":
 
     client.loop.create_task(sim_loop())
 
-    client.run(host = "127.0.0.1", port = 8888, config_path=args.config_path or "configs/client_config.json")
-
-
+    client.run(host="127.0.0.1", port=8888, config_path=args.config_path or "configs/client_config.json")

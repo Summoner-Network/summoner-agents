@@ -13,16 +13,6 @@ PLAYER_SPEED = 4.0         # px per step (pre-diagonal normalization)
 SIM_STEP_MS = 16.6667      # ~60 Hz
 BROADCAST_EVERY_MS = 50.0  # 20 Hz
 
-client = SummonerClient(name="GameMasterAgent_0")
-
-# Normalize server envelopes → bare dict
-@client.hook(Direction.RECEIVE, priority=(0,))
-async def rx_normalize(payload):
-    if isinstance(payload, dict) and "content" in payload and isinstance(payload["content"], dict):
-        inner = payload["content"]
-        return inner.get("_payload", inner)
-    return payload
-
 # In-memory world
 class Player:
     __slots__ = ("pid", "x", "y", "vx", "vy", "keys")
@@ -58,6 +48,29 @@ def world_state() -> Dict[str, Any]:
         "players": [{"pid": p.pid, "x": p.x, "y": p.y} for p in players.values()],
     }
 
+async def sim_loop():
+    acc = 0.0
+    last_ms = time.perf_counter() * 1000.0
+    while True:
+        now_ms = time.perf_counter() * 1000.0
+        dt = now_ms - last_ms
+        last_ms = now_ms
+        acc += dt
+        while acc >= SIM_STEP_MS:
+            apply_inputs(SIM_STEP_MS)
+            acc -= SIM_STEP_MS
+        await asyncio.sleep(0.001)
+
+client = SummonerClient(name="GameMasterAgent_0")
+
+# Normalize server envelopes → bare dict
+@client.hook(Direction.RECEIVE, priority=(0,))
+async def rx_normalize(payload):
+    if isinstance(payload, dict) and "content" in payload and isinstance(payload["content"], dict):
+        inner = payload["content"]
+        return inner.get("_payload", inner)
+    return payload
+
 @client.receive("gm/tick")
 async def on_tick(msg: dict):
     if not isinstance(msg, dict) or msg.get("type") != "tick":
@@ -83,19 +96,6 @@ async def send_world():
     await asyncio.sleep(BROADCAST_EVERY_MS / 1000.0)
     return world_state()
 
-async def sim_loop():
-    acc = 0.0
-    last_ms = time.perf_counter() * 1000.0
-    while True:
-        now_ms = time.perf_counter() * 1000.0
-        dt = now_ms - last_ms
-        last_ms = now_ms
-        acc += dt
-        while acc >= SIM_STEP_MS:
-            apply_inputs(SIM_STEP_MS)
-            acc -= SIM_STEP_MS
-        await asyncio.sleep(0.001)
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run a Summoner client with a specified config.")
     parser.add_argument('--config', dest='config_path', required=False, help='The relative path to the config file (JSON) for the client (e.g., --config configs/client_config.json)')
@@ -103,4 +103,4 @@ if __name__ == "__main__":
 
     client.loop.create_task(sim_loop())
 
-    client.run(host = "127.0.0.1", port = 8888, config_path=args.config_path or "configs/client_config.json")
+    client.run(host="127.0.0.1", port=8888, config_path=args.config_path or "configs/client_config.json")
