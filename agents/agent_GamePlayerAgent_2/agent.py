@@ -187,7 +187,6 @@ def draw_grass_seeded(screen: pygame.Surface, seed: str, cam_x: float, cam_y: fl
             pygame.draw.rect(screen, cA, (x + half, y + half, half, half))
 
 # --- Seeded grass with per-tile cache (opaque RGB) ---
-
 class TileCache:
     """
     LRU cache of TILE×TILE pre-rendered grass tiles.
@@ -396,8 +395,7 @@ client = SummonerClient(name=f"GamePlayerAgent_2")
 @client.hook(Direction.RECEIVE)
 async def rx_normalize(payload: Any) -> Optional[dict]:
     if isinstance(payload, dict) and "content" in payload and isinstance(payload["content"], dict):
-        inner = payload["content"]
-        return inner.get("_payload", inner)
+        return payload["content"]
     return payload
 
 @client.hook(Direction.SEND)
