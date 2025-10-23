@@ -66,8 +66,7 @@ client = SummonerClient(name="GameMasterAgent_0")
 @client.hook(Direction.RECEIVE)
 async def rx_normalize(payload: Any) -> Optional[dict]:
     if isinstance(payload, dict) and "content" in payload and isinstance(payload["content"], dict):
-        inner = payload["content"]
-        return inner.get("_payload", inner)
+        return payload["content"]
     return payload
 
 @client.receive("gm/tick")
