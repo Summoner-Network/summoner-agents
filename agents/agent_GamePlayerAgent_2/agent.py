@@ -27,7 +27,6 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 
 # ===== Global (filled in main) =====
 PID = None  # set by identity loader
-client = SummonerClient(name=f"GamePlayerAgent_2")
 
 INPUT = {"w": False, "a": False, "s": False, "d": False}
 SNAP: Dict[str, Any] = {
@@ -131,39 +130,6 @@ def load_or_create_world_seed(seed_arg: Optional[str]) -> str:
     with open(SEED_FILE, "w", encoding="utf-8") as f:
         f.write(seed + "\n")
     return seed
-
-# ===== Hooks =====
-@client.hook(Direction.RECEIVE)
-async def rx_normalize(payload: Any) -> Optional[dict]:
-    if isinstance(payload, dict) and "content" in payload and isinstance(payload["content"], dict):
-        inner = payload["content"]
-        return inner.get("_payload", inner)
-    return payload
-
-@client.hook(Direction.SEND)
-async def tx_stamp_pid(payload: Any) -> Optional[dict]:
-    if isinstance(payload, dict) and "pid" not in payload:
-        payload["pid"] = PID
-    return payload
-
-# ===== Routes =====
-@client.receive("gm/reply")
-async def on_world(msg: dict) -> None:
-    if not isinstance(msg, dict) or msg.get("type") != "world_state":
-        return None
-    with LOCK:
-        SNAP = globals()["SNAP"]
-        SNAP["ts"] = msg.get("ts")
-        if "bounds" in msg:  SNAP["bounds"] = msg["bounds"]
-        if "players" in msg: SNAP["players"] = msg["players"]
-    return None
-
-@client.send("gm/tick")
-async def tick() -> dict:
-    await asyncio.sleep(0.05)  # 20 Hz
-    with LOCK:
-        keys = dict(INPUT)
-    return {"type": "tick", "ts": time.time(), "keys": keys}
 
 # ===== Seeded opaque grass (no alpha / no blending) =====
 
@@ -422,7 +388,46 @@ def ui_loop(avatar_path: Optional[str], world_seed: str):
 
     pygame.quit()
 
-# ===== Summoner runner (background thread) =====
+
+# ===== Summoner agent code =====
+client = SummonerClient(name=f"GamePlayerAgent_2")
+
+# ----- Hooks -----
+@client.hook(Direction.RECEIVE)
+async def rx_normalize(payload: Any) -> Optional[dict]:
+    if isinstance(payload, dict) and "content" in payload and isinstance(payload["content"], dict):
+        inner = payload["content"]
+        return inner.get("_payload", inner)
+    return payload
+
+@client.hook(Direction.SEND)
+async def tx_stamp_pid(payload: Any) -> Optional[dict]:
+    if isinstance(payload, dict) and "pid" not in payload:
+        payload["pid"] = PID
+    return payload
+
+
+# ----- Routes -----
+@client.receive("gm/reply")
+async def on_world(msg: dict) -> None:
+    if not isinstance(msg, dict) or msg.get("type") != "world_state":
+        return None
+    with LOCK:
+        SNAP = globals()["SNAP"]
+        SNAP["ts"] = msg.get("ts")
+        if "bounds" in msg:  SNAP["bounds"] = msg["bounds"]
+        if "players" in msg: SNAP["players"] = msg["players"]
+    return None
+
+@client.send("gm/tick")
+async def tick() -> dict:
+    await asyncio.sleep(0.05)  # 20 Hz
+    with LOCK:
+        keys = dict(INPUT)
+    return {"type": "tick", "ts": time.time(), "keys": keys}
+
+
+# ----- Summoner runner (background thread) -----
 def run_client(host: Optional[str], port: Optional[int], config_path: Optional[str], config_dict: Dict[str, Any]):
     # Avoid installing signal handlers in a non-main thread
     if hasattr(client, "set_termination_signals"):

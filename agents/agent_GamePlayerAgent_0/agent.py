@@ -18,50 +18,11 @@ OTHER = (0, 120, 180)
 HUD = (230, 230, 230)
 
 PID = f"p{random.randint(100000, 999999)}"
-client = SummonerClient(name=f"GamePlayerAgent_0")
 
 INPUT = {"w": False, "a": False, "s": False, "d": False}
 SNAP: Dict[str, Any] = {"type": "world_state", "bounds": {"w": MAP_W, "h": MAP_H, "pr": PLAYER_RADIUS}, "players": [], "ts": None}
 LOCK = threading.Lock()
 RUNNING = True
-
-@client.hook(Direction.RECEIVE)
-async def rx_normalize(payload: Any) -> Optional[dict]:
-    if isinstance(payload, dict) and "content" in payload and isinstance(payload["content"], dict):
-        inner = payload["content"]
-        return inner.get("_payload", inner)
-    return payload
-
-@client.hook(Direction.SEND)
-async def tx_stamp_pid(payload: Any) -> Optional[dict]:
-    if isinstance(payload, dict) and "pid" not in payload:
-        payload["pid"] = PID
-    return payload
-
-@client.receive("gm/reply")
-async def on_world(msg: dict) -> None:
-    if not isinstance(msg, dict) or msg.get("type") != "world_state":
-        return None
-    with LOCK:
-        SNAP = globals()["SNAP"]
-        SNAP["ts"] = msg.get("ts")
-        SNAP["bounds"] = msg.get("bounds", SNAP.get("bounds"))
-        SNAP["players"] = msg.get("players", [])
-    return None
-
-@client.send("gm/tick")
-async def tick() -> dict:
-    await asyncio.sleep(0.05)  # 20 Hz
-    with LOCK:
-        keys = dict(INPUT)
-    return {"type": "tick", "ts": time.time(), "keys": keys}
-
-def run_client():
-    # avoid installing signal handlers in non-main thread
-    if hasattr(client, "set_termination_signals"):
-        client.set_termination_signals = lambda *a, **k: None
-    asyncio.set_event_loop(asyncio.new_event_loop())
-    client.run(host="127.0.0.1", port=8888, config_path=None)
 
 def draw_circle(screen, color, x, y, r):
     pygame.draw.circle(screen, color, (int(x), int(y)), int(r))
@@ -104,6 +65,48 @@ def ui_loop():
         clock.tick(FPS)
 
     pygame.quit()
+
+
+# ===== Summoner agent code =====
+client = SummonerClient(name=f"GamePlayerAgent_0")
+
+@client.hook(Direction.RECEIVE)
+async def rx_normalize(payload: Any) -> Optional[dict]:
+    if isinstance(payload, dict) and "content" in payload and isinstance(payload["content"], dict):
+        inner = payload["content"]
+        return inner.get("_payload", inner)
+    return payload
+
+@client.hook(Direction.SEND)
+async def tx_stamp_pid(payload: Any) -> Optional[dict]:
+    if isinstance(payload, dict) and "pid" not in payload:
+        payload["pid"] = PID
+    return payload
+
+@client.receive("gm/reply")
+async def on_world(msg: dict) -> None:
+    if not isinstance(msg, dict) or msg.get("type") != "world_state":
+        return None
+    with LOCK:
+        SNAP = globals()["SNAP"]
+        SNAP["ts"] = msg.get("ts")
+        SNAP["bounds"] = msg.get("bounds", SNAP.get("bounds"))
+        SNAP["players"] = msg.get("players", [])
+    return None
+
+@client.send("gm/tick")
+async def tick() -> dict:
+    await asyncio.sleep(0.05)  # 20 Hz
+    with LOCK:
+        keys = dict(INPUT)
+    return {"type": "tick", "ts": time.time(), "keys": keys}
+
+def run_client():
+    # avoid installing signal handlers in non-main thread
+    if hasattr(client, "set_termination_signals"):
+        client.set_termination_signals = lambda *a, **k: None
+    asyncio.set_event_loop(asyncio.new_event_loop())
+    client.run(host="127.0.0.1", port=8888, config_path=None)
 
 
 if __name__ == "__main__":

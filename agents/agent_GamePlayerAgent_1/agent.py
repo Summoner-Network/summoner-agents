@@ -26,7 +26,6 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 
 # ===== Global (filled in main) =====
 PID = None  # will be set by identity loader
-client = SummonerClient(name=f"GamePlayerAgent_1")
 
 INPUT = {"w": False, "a": False, "s": False, "d": False}
 SNAP: Dict[str, Any] = {"type": "world_state", "bounds": {"w": 10000, "h": 8000, "pr": PLAYER_RADIUS}, "players": [], "ts": None}
@@ -110,41 +109,6 @@ def load_or_create_identity(id_arg: Optional[str]) -> str:
             _write_text(idfile, new_id)
             return new_id
         # extremely unlikely collision; loop again
-
-
-# ===== Hooks =====
-@client.hook(Direction.RECEIVE)
-async def rx_normalize(payload: Any) -> Optional[dict]:
-    if isinstance(payload, dict) and "content" in payload and isinstance(payload["content"], dict):
-        inner = payload["content"]
-        return inner.get("_payload", inner)
-    return payload
-
-@client.hook(Direction.SEND)
-async def tx_stamp_pid(payload: Any) -> Optional[dict]:
-    # hooks capture global PID (set in main before client.run())
-    if isinstance(payload, dict) and "pid" not in payload:
-        payload["pid"] = PID
-    return payload
-
-# ===== Routes =====
-@client.receive("gm/reply")
-async def on_world(msg: dict) -> None:
-    if not isinstance(msg, dict) or msg.get("type") != "world_state":
-        return None
-    with LOCK:
-        SNAP = globals()["SNAP"]
-        SNAP["ts"] = msg.get("ts")
-        if "bounds" in msg:  SNAP["bounds"] = msg["bounds"]
-        if "players" in msg: SNAP["players"] = msg["players"]
-    return None
-
-@client.send("gm/tick")
-async def tick() -> dict:
-    await asyncio.sleep(0.05)  # 20 Hz
-    with LOCK:
-        keys = dict(INPUT)
-    return {"type": "tick", "ts": time.time(), "keys": keys}
 
 # ===== Pygame helpers =====
 def make_grass_tile() -> pygame.Surface:
@@ -260,7 +224,44 @@ def ui_loop(avatar_path: Optional[str]):
 
     pygame.quit()
 
-# ===== Summoner runner (background thread) =====
+# ===== Summoner agent code =====
+client = SummonerClient(name=f"GamePlayerAgent_1")
+
+# ----- Hooks -----
+@client.hook(Direction.RECEIVE)
+async def rx_normalize(payload: Any) -> Optional[dict]:
+    if isinstance(payload, dict) and "content" in payload and isinstance(payload["content"], dict):
+        inner = payload["content"]
+        return inner.get("_payload", inner)
+    return payload
+
+@client.hook(Direction.SEND)
+async def tx_stamp_pid(payload: Any) -> Optional[dict]:
+    # hooks capture global PID (set in main before client.run())
+    if isinstance(payload, dict) and "pid" not in payload:
+        payload["pid"] = PID
+    return payload
+
+# ----- Routes -----
+@client.receive("gm/reply")
+async def on_world(msg: dict) -> None:
+    if not isinstance(msg, dict) or msg.get("type") != "world_state":
+        return None
+    with LOCK:
+        SNAP = globals()["SNAP"]
+        SNAP["ts"] = msg.get("ts")
+        if "bounds" in msg:  SNAP["bounds"] = msg["bounds"]
+        if "players" in msg: SNAP["players"] = msg["players"]
+    return None
+
+@client.send("gm/tick")
+async def tick() -> dict:
+    await asyncio.sleep(0.05)  # 20 Hz
+    with LOCK:
+        keys = dict(INPUT)
+    return {"type": "tick", "ts": time.time(), "keys": keys}
+
+# ----- Summoner runner (background thread) -----
 def run_client(host: Optional[str], port: Optional[int], config_path: Optional[str], config_dict: Dict[str, Any]):
     # Avoid installing signal handlers in a non-main thread
     if hasattr(client, "set_termination_signals"):
