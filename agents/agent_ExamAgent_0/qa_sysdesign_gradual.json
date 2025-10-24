@@ -81,7 +81,7 @@
     }
   },
   {
-    "question": "Caching writes: what’s the safest pattern to keep cache and DB coherent?",
+    "question": "Caching writes: what's the safest pattern to keep cache and DB coherent?",
     "answers": {
       "A": { "val": "Cache first, eventually sync to DB when convenient.", "pts": 0 },
       "B": { "val": "Update DB and rely on TTL expiry only.", "pts": 1 },

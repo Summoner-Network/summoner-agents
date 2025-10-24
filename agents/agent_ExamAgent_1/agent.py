@@ -37,7 +37,7 @@ qset = Questions(source=opts.qa_path, limit=2)
 question_tracker: Optional[int] = None           # index of current question (None until started)
 score = ScoreKeeper()                            # cumulative points per participant + rendering
 answer_buffer: Optional[asyncio.Queue] = None    # holds (addr, idx, pts, ts) per answer received
-variables_lock = asyncio.Lock()                  # guards shared updates across tasks
+variables_lock: Optional[asyncio.Lock] = None    # CHANGED: create in setup() to bind to client loop
 phase: Literal["none", "started"] = "none"       # current flow state (reported via @upload_states)
 
 client = SummonerClient(name="ExamAgent_1")
@@ -124,25 +124,41 @@ def pick_winner(
 
     candidates = list(first_by_addr.values())
 
+    # Hard-filter to current question to avoid late answers from other questions.  # NEW
+    current_only = [t for t in candidates if t[1] == current_idx]                 # NEW
+    if not current_only:                                                          # NEW
+        return ("", current_idx, 0, float("inf"))                                 # NEW
+
     # Apply the same tie-break rules as before.
     candidates_sorted = sorted(
-        candidates,
-        key=lambda t: (0 if t[1] == current_idx else 1, -t[2], t[3])
+        current_only,                                                              # CHANGED
+        key=lambda t: (-t[2], t[3])                                                # points desc, earlier ts
     )
     return candidates_sorted[0]
+
+
+async def _drain(q: asyncio.Queue) -> None:  # NEW: drain helper to clear stale answers
+    try:
+        while True:
+            q.get_nowait()
+            q.task_done()
+    except asyncio.QueueEmpty:
+        pass
 
 
 # ---------------- Setup ----------------
 async def setup() -> None:
     """Prepare shared state before the client starts."""
-    global answer_buffer
-    answer_buffer = asyncio.Queue()
+    global answer_buffer, variables_lock
+    variables_lock = asyncio.Lock()     # CHANGED: bind to client loop
+    answer_buffer = asyncio.Queue()     # CHANGED: bind to client loop
 
 # ---- Upload current state to the flow engine --------------------------------
 # The flow engine calls this to know our current state; that state is matched
 # against @receive(route=...) definitions.
 @client.upload_states()
 async def state_orchestrator(payload: Any) -> str:
+    assert variables_lock is not None   # NEW: sanity
     async with variables_lock:
         return phase
 
@@ -152,6 +168,7 @@ async def state_orchestrator(payload: Any) -> str:
 @client.download_states()
 async def state_processor(possible_states: list[Node]) -> None:
     global phase
+    assert variables_lock is not None   # NEW: sanity
     async with variables_lock:
         if Node("started") in possible_states:
             phase = "started"
@@ -161,7 +178,6 @@ async def state_processor(possible_states: list[Node]) -> None:
 # ---------------- HOOKS ----------------
 @client.hook(direction=Direction.RECEIVE)
 async def validate(msg: Any) -> Optional[dict]:
-    
     content = (msg.get("content") if isinstance(msg, dict) else msg)
     addr    = (msg.get("remote_addr") if isinstance(msg, dict) else "unknown")
 
@@ -192,7 +208,8 @@ async def receive_start_trigger(msg: Any) -> Event:
 @client.receive(route="started")
 async def receive_response(msg: Any) -> Event:
     """While started, accept labels and enqueue scored answers for the active question."""
-    global question_tracker, phase
+    global question_tracker, phase, answer_buffer, variables_lock
+    assert variables_lock is not None and answer_buffer is not None  # NEW: sanity
 
     content = (msg.get("content") if isinstance(msg, dict) else msg)
     addr    = (msg.get("remote_addr") if isinstance(msg, dict) else "unknown")
@@ -221,7 +238,8 @@ async def send_driver() -> str:
     Drive the exam by sending questions, collecting answers,
     grading, updating the scoreboard, and advancing rounds.
     """
-    global question_tracker, phase
+    global question_tracker, phase, answer_buffer, variables_lock
+    assert variables_lock is not None and answer_buffer is not None  # NEW: sanity
 
     # Exam not started: no outbound message
     # Exam just started: send first question
@@ -230,6 +248,7 @@ async def send_driver() -> str:
             return
         if phase == "started" and question_tracker is None:
             question_tracker = 0
+            await _drain(answer_buffer)                    # NEW: clear stale answers before first question
             return qset.render_question(0) + "\n"
 
     # Collect answers during a short window (5s)
@@ -247,10 +266,10 @@ async def send_driver() -> str:
     addr, idx_ans, pts, _ts = pick_winner(batch, idx_snapshot)
 
     # Build result message and update scoreboard (only if it was for the current question)
-    if idx_ans == idx_snapshot:
-        result_message = score.add(addr, pts, idx_ans)  # returns the formatted "Winner: ..." line
+    if addr and pts > 0 and idx_ans == idx_snapshot:       # CHANGED: guard against no-current-answer case
+        result_message = score.add(addr, pts, idx_ans)     # returns the formatted "Winner: ..." line
     else:
-        result_message = f"No participant managed to answer Q#{idx_ans}"
+        result_message = f"No participant managed to answer Q#{idx_snapshot}"  # CHANGED
 
     # Render the scoreboard
     scoreboard = score.render()
@@ -272,6 +291,7 @@ async def send_driver() -> str:
         # We flip back to "none" locally from send(); this is outside the receive/flow graph on purpose.
         async with variables_lock:
             phase = "none"
+        await _drain(answer_buffer)                         # NEW: clear late arrivals at round end
     else:
         next_step_message = qset.render_question(idx_snapshot)
 

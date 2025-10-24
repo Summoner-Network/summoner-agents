@@ -31,8 +31,8 @@ You can also provide your own JSON file in the same format.
    * `phase ∈ {none, start, ongoing}` controls the lifecycle.
    * `question_tracker = None` until `Q#0` is sent.
    * `answer_buffer = asyncio.Queue()` stores `(addr, idx, pts, ts)` tuples.
+   * `variables_lock` and `answer_buffer` are created in `setup()` (on the client's event loop) and guard shared updates / hold answers.
    * `score = ScoreKeeper()` tracks and renders totals.
-   * `variables_lock = asyncio.Lock()` guards shared updates across coroutines.
 
 4. The receive handler triggers a round and queues answers.
 
@@ -43,12 +43,14 @@ You can also provide your own JSON file in the same format.
 5. The send coroutine publishes questions, manages windows, and picks winners.
 
    * If `phase == none`, it sends nothing. If `phase == start`, it sets `phase = ongoing`, initializes `question_tracker = 0`, and sends `Q#0`.
+      * Before sending `Q#0`, the agent clears any stale answers from previous activity to avoid leaking late messages into the new window.
+
    * For each question:
 
-     * It collects answers for 5 seconds beginning at the first answer. If countdown is enabled, the timer prints locally and clears on completion.
-     * It selects a winner with deterministic rules: keep only the first submission per address, prefer answers to the current index, then higher points, then earlier time.
-     * If the winner answered the current index, it updates the scoreboard and prints a result line. Otherwise it notes that no one answered that index.
-     * It advances `question_tracker` modulo the loaded set. After two questions, it prints a reset notice, clears scores, sets `phase = none`, and waits for the next message.
+      * It collects answers for 5 seconds beginning at the first answer. If countdown is enabled, the timer prints locally and clears on completion.
+      * It selects a winner with deterministic rules: keep only the first submission per address, prefer answers to the current index, then higher points, then earlier time.
+      * If the winner answered the current index, it updates the scoreboard and prints a result line. Otherwise it notes that no one answered that index.
+      * It advances `question_tracker` modulo the loaded set. After two questions, it prints a reset notice, clears scores, sets `phase = none`, and waits for the next message.
 
 6. The agent prints structured feedback after each window.
 
@@ -59,6 +61,7 @@ You can also provide your own JSON file in the same format.
 >
 > * Only the first submission per `remote_addr` is counted within a window.
 > * The 5 second window uses a monotonic clock to avoid wall-time jumps.
+> * Late answers from previous questions are ignored when selecting a winner because only answers matching the current question index are eligible.
 > * Included sets: [qa_foundations.json](./qa_foundations.json) and [qa_sysdesign_gradual.json](./qa_sysdesign_gradual.json). Any file with the same structure works with `--qa`.
 
 </details>
@@ -72,7 +75,7 @@ You can also provide your own JSON file in the same format.
 | `SummonerClient(name=...)`       | Creates the client context for the agent.                                        |
 | `@client.receive(route="")`      | Ingests inbound messages, triggers start, and queues candidate answers.          |
 | `@client.send(route="")`         | Publishes questions, collects answers, computes winners, updates the scoreboard. |
-| `client.loop.run_until_complete` | Runs `setup()` to prepare shared queues before starting the client.              |
+| `client.loop.run_until_complete(...)` | Runs `setup()` on the client's event loop to initialize shared structures (e.g., `answer_buffer` and `variables_lock`) before starting the client. |
 | `client.run(...)`                | Connects to the server and drives the event loop.                                |
 
 > [!NOTE]

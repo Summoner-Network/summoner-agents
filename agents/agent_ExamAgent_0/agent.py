@@ -36,7 +36,7 @@ qset = Questions(source=opts.qa_path, limit=2)
 question_tracker: Optional[int] = None           # index of current question (None until start)
 score = ScoreKeeper()                            # cumulative points per participant + rendering
 answer_buffer: Optional[asyncio.Queue] = None    # holds (addr, idx, pts, ts) for each answer received
-variables_lock = asyncio.Lock()                  # ensures updates happen safely across tasks
+variables_lock: Optional[asyncio.Lock] = None    # ensures updates happen safely across tasks  # CHANGED: created in setup()
 phase: Literal["none", "start", "ongoing"] = "none"  # tracks progression through exam phases
 
 client = SummonerClient(name="ExamAgent_0")
@@ -89,7 +89,6 @@ def pick_winner(
     Constraints:
       - Only the FIRST submission per address (IP) is considered per question window; subsequent submissions are ignored.
 
-
     Priority among the remaining candidates:
       1) answers to the current question,
       2) higher points,
@@ -113,19 +112,35 @@ def pick_winner(
 
     candidates = list(first_by_addr.values())
 
+    # Hard-filter to current question if available to avoid late answers from other questions.
+    current_only = [t for t in candidates if t[1] == current_idx]  # NEW
+    if not current_only:                                           # NEW
+        # No valid answers for the current question
+        return ("", current_idx, 0, float("inf"))                  # NEW
+
     # Apply the same tie-break rules as before.
     candidates_sorted = sorted(
-        candidates,
-        key=lambda t: (0 if t[1] == current_idx else 1, -t[2], t[3])
+        current_only,                                              # CHANGED: use current_only
+        key=lambda t: (-t[2], t[3])                                # points desc, earlier ts
     )
     return candidates_sorted[0]
+
+
+async def _drain(q: asyncio.Queue) -> None:  # NEW: drain helper to clear stale answers
+    try:
+        while True:
+            q.get_nowait()
+            q.task_done()
+    except asyncio.QueueEmpty:
+        pass
 
 
 # ---------------- Setup ----------------
 async def setup() -> None:
     """Prepare shared state before the client starts."""
-    global answer_buffer
-    answer_buffer = asyncio.Queue()
+    global answer_buffer, variables_lock
+    variables_lock = asyncio.Lock()           # CHANGED: bind to client loop
+    answer_buffer = asyncio.Queue()           # CHANGED: bind to client loop
 
 # ---------------- RECEIVE ----------------
 @client.receive(route="")
@@ -134,7 +149,8 @@ async def receive_response(msg: Any) -> None:
     Handle responses from participants.
     Valid answers are pushed into the buffer for later grading.
     """
-    global question_tracker, phase
+    global question_tracker, phase, answer_buffer, variables_lock
+    assert answer_buffer is not None and variables_lock is not None  # NEW: sanity
 
     content = (msg.get("content") if isinstance(msg, dict) else msg)
     addr    = (msg.get("remote_addr") if isinstance(msg, dict) else "unknown")
@@ -170,7 +186,8 @@ async def send_driver() -> str:
     Drive the exam by sending questions, collecting answers,
     grading, updating the scoreboard, and advancing rounds.
     """
-    global question_tracker, phase
+    global question_tracker, phase, answer_buffer, variables_lock
+    assert answer_buffer is not None and variables_lock is not None  # NEW: sanity
 
     # Exam not started: no outbound message
     # Exam just started: send first question
@@ -180,6 +197,7 @@ async def send_driver() -> str:
         if phase == "start":
             phase = "ongoing"
             question_tracker = 0
+            await _drain(answer_buffer)  # NEW: clear any stale answers before first question
             return qset.render_question(0) + "\n"
 
     # Collect answers during a short window (5s)
@@ -197,10 +215,10 @@ async def send_driver() -> str:
     addr, idx_ans, pts, _ts = pick_winner(batch, idx_snapshot)
 
     # Build result message and update scoreboard (only if it was for the current question)
-    if idx_ans == idx_snapshot:
+    if addr and pts > 0 and idx_ans == idx_snapshot:  # CHANGED: guard against no-current-answer case
         result_message = score.add(addr, pts, idx_ans)  # returns the formatted "Winner: ..." line
     else:
-        result_message = f"No participant managed to answer Q#{idx_ans}"
+        result_message = f"No participant managed to answer Q#{idx_snapshot}"  # CHANGED
 
     # Render the scoreboard
     scoreboard = score.render()
@@ -221,6 +239,7 @@ async def send_driver() -> str:
         score.clear()
         async with variables_lock:
             phase = "none"
+        await _drain(answer_buffer)  # NEW: clear late arrivals at round end
     else:
         next_step_message = qset.render_question(idx_snapshot)
 

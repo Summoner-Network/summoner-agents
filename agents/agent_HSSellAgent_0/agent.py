@@ -13,7 +13,7 @@
 #       init_exchange_0 → init_interested
 #       init_exchange_0 → init_accept
 #       init_exchange_0 → init_refuse
-#     Merges into handshake’s init_exchange_1 when counterpart confirms:
+#     Merges into handshake's init_exchange_1 when counterpart confirms:
 #       init_interested → init_exchange_1, init_accept_too
 #       init_interested → init_exchange_1, init_refuse_too
 #       init_accept     → init_exchange_1
@@ -48,13 +48,13 @@
 #   - queued_sender        : event-driven after receives (request cycles, conclude), avoiding nonce races.
 #
 # INVARIANTS
-#   1) Echo: every request/respond carries your_nonce == receiver’s last local_nonce.
+#   1) Echo: every request/respond carries your_nonce == receiver's last local_nonce.
 #   2) Replay: inbound my_nonce previously seen with flow="received" is ignored.
 #   3) Finalize:
 #        initiator: conclude(my_ref)
 #        responder: finish(your_ref=peer_reference, my_ref=local_reference)
 #        initiator: close(your_ref=peer_reference, my_ref=local_reference) until retry limit
-#   4) Reconnect: initiator must present responder’s last local_reference as your_ref.
+#   4) Reconnect: initiator must present responder's last local_reference as your_ref.
 #   5) Seller overlay does not bypass handshake invariants; decoration_generator enforces them first.
 #
 # TUNABLES
@@ -566,7 +566,7 @@ async def finish_to_idle(payload: dict) -> Optional[Event]:
 # - Each handler is wrapped by decoration_generator(route), so handshake invariants
 #   (addressing, intent, nonce echo, replay drop) are enforced before any trading logic runs.
 # - Forks from init_exchange_0 into: init_interested / init_accept / init_refuse.
-# - Merges into handshake’s init_exchange_1 when the buyer confirms: *_too routes or direct merges.
+# - Merges into handshake's init_exchange_1 when the buyer confirms: *_too routes or direct merges.
 # - Handlers update TradeState.agreement/current_offer and append to History on confirmations.
 
 @client.receive(route="init_exchange_0 --> init_interested")

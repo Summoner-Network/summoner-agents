@@ -3,7 +3,7 @@
     "question": "In TCP, what is the correct order and purpose of the three-way handshake?",
     "answers": {
       "A": { "val": "ACK -> SYN -> SYN-ACK; the client acknowledges before advertising its ISN.", "pts": 1 },
-      "B": { "val": "SYN -> ACK -> SYN; the server chooses sequence numbers after the client’s ACK.", "pts": 3 },
+      "B": { "val": "SYN -> ACK -> SYN; the server chooses sequence numbers after the client's ACK.", "pts": 3 },
       "C": { "val": "SYN -> SYN-ACK -> ACK; establishes sequence numbers and confirms both directions before data transfer.", "pts": 5 }
     }
   },
@@ -27,7 +27,7 @@
     "question": "Which technique specifically mitigates SYN flood attacks on TCP servers?",
     "answers": {
       "A": { "val": "Using HTTP keep-alive aggressively.", "pts": 1 },
-      "B": { "val": "SYN cookies: encode state in the SYN-ACK’s ISN to avoid per-connection allocation until the final ACK.", "pts": 5 },
+      "B": { "val": "SYN cookies: encode state in the SYN-ACK's ISN to avoid per-connection allocation until the final ACK.", "pts": 5 },
       "C": { "val": "Increasing the listen backlog to extremely large values.", "pts": 3 }
     }
   },
@@ -51,7 +51,7 @@
     "question": "For producer-consumer within one Python process, why choose 'asyncio.Queue' over a plain list?",
     "answers": {
       "A": { "val": "A list is faster for concurrent tasks because it is lock-free.", "pts": 1 },
-      "B": { "val": "It’s awaitable and backpressure-aware: producers await when full, consumers await when empty; safe across tasks.", "pts": 5 },
+      "B": { "val": "It's awaitable and backpressure-aware: producers await when full, consumers await when empty; safe across tasks.", "pts": 5 },
       "C": { "val": "Queue automatically persists to disk between runs.", "pts": 3 }
     }
   },
@@ -106,7 +106,7 @@
   {
     "question": "Summoner basics: what do '@client.send' and '@client.receive' represent?",
     "answers": {
-      "A": { "val": "Only decorators for logging; they don’t define behavior.", "pts": 1 },
+      "A": { "val": "Only decorators for logging; they don't define behavior.", "pts": 1 },
       "B": { "val": "Synchronous hooks that block the server.", "pts": 3 },
       "C": { "val": "Async handlers for outbound and inbound pipelines; the client loop calls them to emit and process messages.", "pts": 5 }
     }
@@ -144,7 +144,7 @@
     }
   },
   {
-    "question": "TCP Nagle’s algorithm vs delayed ACK: what pathological interaction can occur?",
+    "question": "TCP Nagle's algorithm vs delayed ACK: what pathological interaction can occur?",
     "answers": {
       "A": { "val": "They always increase throughput with no downsides.", "pts": 1 },
       "B": { "val": "They only affect UDP.", "pts": 3 },

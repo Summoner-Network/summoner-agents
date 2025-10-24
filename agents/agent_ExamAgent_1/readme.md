@@ -38,9 +38,9 @@ You can also provide your own JSON file in the same format.
 
    * `phase ∈ {none, started}` controls the lifecycle.
    * `question_tracker = None` until `Q#0` is sent.
-   * `answer_buffer = asyncio.Queue()` stores `(addr, idx, pts, ts)` tuples.
+   * `answer_buffer` and `variables_lock` are created in `setup()` (on the client's event loop).
+   * `answer_buffer` stores `(addr, idx, pts, ts)` tuples; `variables_lock` guards shared updates across coroutines.
    * `score = ScoreKeeper()` tracks and renders totals.
-   * `variables_lock = asyncio.Lock()` guards shared updates across coroutines.
    * The flow engine is enabled with `client.flow().activate()`; an arrow style is declared and `ready()` compiles route patterns.
    * `@client.upload_states()` reports the current `phase`; `@client.download_states()` folds allowed next nodes back into `phase`.
 
@@ -58,12 +58,15 @@ You can also provide your own JSON file in the same format.
 6. The send coroutine publishes questions, manages windows, and picks winners.
 
    * If `phase == none`, it sends nothing. If `phase == started` and `question_tracker is None`, it sets `question_tracker = 0` and sends `Q#0`.
+      * Before publishing `Q#0`, the agent clears any stale answers from the buffer to prevent late messages from a previous window affecting the new one.
+
    * For each question:
 
-     * It collects answers for 5 seconds beginning at the first answer. If countdown is enabled, the timer prints locally and clears on completion.
-     * It selects a winner with deterministic rules: keep only the first submission per address, prefer answers to the current index, then higher points, then earlier time.
-     * If the winner answered the current index, it updates the scoreboard and prints a result line. Otherwise it notes that no one answered that index.
-     * It advances `question_tracker` modulo the loaded set. After two questions, it prints a reset notice, clears scores, flips `phase = none`, and waits for the next message.
+      * It collects answers for 5 seconds beginning at the first answer. If countdown is enabled, the timer prints locally and clears on completion.
+      * It selects a winner with deterministic rules: keep only the first submission per address, **only consider answers to the current index**, then break ties by higher points, then earlier time.
+      * If the winner answered the current index, it updates the scoreboard and prints a result line. Otherwise it notes that no one answered that index.
+      * It advances `question_tracker` modulo the loaded set. After two questions, it prints a reset notice, clears scores, flips `phase = none`, and waits for the next message.
+      * On round end, the agent clears the answer buffer so late arrivals can't leak into the next roun
 
 7. The agent prints structured feedback after each window.
 
@@ -74,6 +77,7 @@ You can also provide your own JSON file in the same format.
 >
 > * Only the first submission per `remote_addr` is counted within a window.
 > * The 5 second window uses a monotonic clock to avoid wall-time jumps.
+> * Late answers from previous questions are ignored because only the current question index is eligible when picking a winner.
 > * Included sets: [qa_foundations.json](./qa_foundations.json) and [qa_sysdesign_gradual.json](./qa_sysdesign_gradual.json). Any file with the same structure works with `--qa`.
 
 </details>
@@ -95,7 +99,7 @@ You can also provide your own JSON file in the same format.
 | `@client.receive(route="started")`                                                   | Accepts answer labels during a round; enqueues `(addr, idx, pts, ts)` for the **current** question. If a label arrives before `Q#0` is published, it's ignored gracefully.                                                                   |
 | `Move` / `Stay` (return type `Event`)                                                | Handlers return `Move(Trigger.ok)` to transition (`none → started`) and `Stay(Trigger.ok)` to remain in place while processing answers.                                                                                                      |
 | `@client.send(route="")`                                                             | Publishes questions, opens a 5-second answer window starting at the first answer, applies tie-breaks (first per address → current-question answers → higher points → earlier time), updates the scoreboard, and resets the round after 2 Qs. |
-| `client.loop.run_until_complete(setup())`                                            | Initializes shared structures (e.g., `answer_buffer = asyncio.Queue()`) before starting the client.                                                                                                                                          |
+| `client.loop.run_until_complete(setup())`                                            | Initializes shared structures on the client loop (e.g., `answer_buffer = asyncio.Queue()`, `variables_lock = asyncio.Lock()`). |
 | `client.run(...)`                                                                    | Connects to the server and runs the event loop that drives both receive and send pipelines.                                                                                                                                                  |
 
 > [!NOTE]

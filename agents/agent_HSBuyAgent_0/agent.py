@@ -12,7 +12,7 @@
 #       resp_exchange_0 → resp_interested
 #       resp_exchange_0 → resp_accept
 #       resp_exchange_0 → resp_refuse
-#     Merge into handshake’s resp_exchange_1 when counterpart confirms:
+#     Merge into handshake's resp_exchange_1 when counterpart confirms:
 #       resp_interested → resp_exchange_1, resp_accept_too
 #       resp_interested → resp_exchange_1, resp_refuse_too
 #       resp_accept     → resp_exchange_1
@@ -20,7 +20,7 @@
 #
 #   High-level:
 #     1) Discovery / Hello            : register ↔ confirm
-#     2) Nonce Ping-Pong              : request/respond (length driven by the initiator’s EXCHANGE_LIMIT)
+#     2) Nonce Ping-Pong              : request/respond (length driven by the initiator's EXCHANGE_LIMIT)
 #        • Buyer decisions ride in content["message"] (compact JSON)
 #     3) Finalize (swap references)   : conclude/finish, then the initiator drives close
 #     4) Reconnect                    : initiator can resume if both sides remember refs
@@ -47,13 +47,13 @@
 #   - queued_sender        : event-driven after receives (confirm/respond), avoiding nonce races.
 #
 # INVARIANTS
-#   1) Echo: every request/respond carries your_nonce == receiver’s last local_nonce.
+#   1) Echo: every request/respond carries your_nonce == receiver's last local_nonce.
 #   2) Replay: inbound my_nonce previously seen with flow="received" is ignored.
 #   3) Finalize sequence:
 #        initiator: conclude(my_ref)
 #        responder: finish(your_ref=peer_reference, my_ref=local_reference)
 #        initiator: close(your_ref=peer_reference, my_ref=local_reference)
-#   4) Reconnect: initiator must present responder’s last local_reference as your_ref.
+#   4) Reconnect: initiator must present responder's last local_reference as your_ref.
 #   5) Buyer overlay never bypasses handshake checks; decoration_generator enforces them first.
 #
 # TUNABLES
@@ -639,7 +639,7 @@ async def handle_close(payload: dict) -> Optional[Event]:
 # - Each handler is wrapped by decoration_generator(route), so handshake invariants
 #   (addressing, intent, nonce echo, replay drop) are enforced before any trading logic runs.
 # - Forks from resp_exchange_0 into: resp_interested / resp_accept / resp_refuse.
-# - Merges into handshake’s resp_exchange_1 when the seller confirms: *_too routes or direct merges.
+# - Merges into handshake's resp_exchange_1 when the seller confirms: *_too routes or direct merges.
 # - Handlers update TradeState.agreement/current_offer and append to History on confirmations.
 
 @client.receive(route="resp_exchange_0 --> resp_interested")

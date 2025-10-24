@@ -6,7 +6,7 @@ A guarded **embedding-and-clustering** agent that takes an iterable of texts, co
 > The overall structure is inspired by and built from [`EchoAgent_2`](../agent_EchoAgent_2/), adapted for embedding and clustering.
 
 > [!IMPORTANT]
-> **OpenAI credentials required.** Both agents call `load_dotenv()` and expect an environment variable named `OPENAI_API_KEY`. Put a `.env` file at the **project root** (or set the variable in your shell/CI) so it’s available at runtime:
+> **OpenAI credentials required.** Both agents call `load_dotenv()` and expect an environment variable named `OPENAI_API_KEY`. Put a `.env` file at the **project root** (or set the variable in your shell/CI) so it's available at runtime:
 >
 > * **.env:**
 > ```OPENAI_API_KEY=sk-...your_key...```
@@ -39,8 +39,8 @@ A guarded **embedding-and-clustering** agent that takes an iterable of texts, co
 
 3. Incoming messages invoke the receive-hook (`@client.hook(Direction.RECEIVE)`):
 
-   * If it’s a string starting with `"Warning:"`, logs a warning and drops it.
-   * If it’s not a dict with `"remote_addr"` and `"content"`, logs:
+   * If it's a string starting with `"Warning:"`, logs a warning and drops it.
+   * If it's not a dict with `"remote_addr"` and `"content"`, logs:
 
      ```
      [hook:recv] missing address/content
