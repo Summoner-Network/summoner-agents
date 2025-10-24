@@ -270,7 +270,8 @@ async def send_driver() -> str:
         next_step_message = Style.format("Scoreboard reset — new round begins!", color="magenta", bold=True)
         score.clear()
         # We flip back to "none" locally from send(); this is outside the receive/flow graph on purpose.
-        phase = "none"
+        async with variables_lock:
+            phase = "none"
     else:
         next_step_message = qset.render_question(idx_snapshot)
 

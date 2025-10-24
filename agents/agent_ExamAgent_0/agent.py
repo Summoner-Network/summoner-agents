@@ -219,7 +219,8 @@ async def send_driver() -> str:
     if leave_exam and phase == "ongoing":
         next_step_message = Style.format("Scoreboard reset — new round begins!", color="magenta", bold=True)
         score.clear()
-        phase = "none"
+        async with variables_lock:
+            phase = "none"
     else:
         next_step_message = qset.render_question(idx_snapshot)
 

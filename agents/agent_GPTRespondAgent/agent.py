@@ -126,7 +126,9 @@ class MyAgent(SummonerClient):
         prompt_tokens = count_chat_tokens(messages, model_name)
         if debug:
             await aprint(f"\033[96mPrompt tokens: {prompt_tokens} > {self.max_chat_input_tokens} ? {prompt_tokens > self.max_chat_input_tokens}\033[0m")
-            await aprint(f"\033[92mInput: {messages}\033[0m")
+            messages_str = str(messages)
+            long_messages = len(messages_str) > 2000
+            await aprint(f"\033[92mInput: {messages_str[:2000] + '...' * long_messages}\033[0m")
 
         est_cost = estimate_chat_request_cost(model_name, prompt_tokens, self.max_chat_output_tokens)
         if debug:
