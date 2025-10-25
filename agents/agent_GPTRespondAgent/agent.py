@@ -243,17 +243,17 @@ async def sign(msg: Any) -> Optional[dict]:
 @agent.receive(route="")
 async def receiver_handler(msg: Any) -> None:
     address = msg["remote_addr"]
-    content = json.dumps(msg["content"])
-    await message_buffer.put(content)
+    if msg["content"] in [{}, None]:
+            return
+    await message_buffer.put(msg["content"])
     agent.logger.info(f"Buffered message from:(SocketAddress={address}).")
 
 @agent.send(route="")
 async def send_handler() -> Union[dict, str]:
     content = await message_buffer.get()
-    payload = json.loads(content)
 
     # Compose user prompt directly from config's prompts
-    user_prompt = agent._compose_user_prompt(payload)
+    user_prompt = agent._compose_user_prompt(content)
 
     # Single guarded call; we expect JSON mapping qid->complete_answer
     result = await agent.gpt_call_async(
@@ -270,8 +270,8 @@ async def send_handler() -> Union[dict, str]:
         answers = {}
     output: dict[str, Any] = {"answers": answers}
 
-    if "from" in payload:
-        output["to"] = payload["from"]
+    if "from" in content:
+        output["to"] = content["from"]
 
     agent.logger.info(f"[respond] model={agent.model} id={agent.my_id} cost={result.get('cost')}")
     await asyncio.sleep(agent.sleep_seconds)

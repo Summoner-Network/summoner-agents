@@ -310,17 +310,15 @@ async def sign(msg: Any) -> Optional[dict]:
 @agent.receive(route="")
 async def receiver_handler(msg: Any) -> None:
     address = msg["remote_addr"]
-    content = json.dumps(msg["content"])
-    await message_buffer.put(content)
+    await message_buffer.put(msg["content"])
     agent.logger.info(f"Buffered message from:(SocketAddress={address}).")
 
 @agent.send(route="")
 async def send_handler() -> Union[dict, str]:
     content = await message_buffer.get()
-    payload = json.loads(content)
 
     # Expect: payload like {"texts": [...], "clustering": {"algo":"kmeans","k":3}} OR just {"texts":[...]}
-    texts_in = payload.get("texts")
+    texts_in = content.get("texts")
     if not isinstance(texts_in, (list, tuple)):
         texts_in = []
     texts = [str(x) for x in texts_in]  # normalize to strings
@@ -330,7 +328,7 @@ async def send_handler() -> Union[dict, str]:
     embeddings = embs_res.get("output") or []
 
     # Clustering config (message-level override)
-    cluster_cfg = payload.get("clustering") or {}
+    cluster_cfg = content.get("clustering") or {}
     result = agent._cluster(embeddings, cluster_cfg)
 
     # Build output
@@ -341,8 +339,8 @@ async def send_handler() -> Union[dict, str]:
         "result": result,
     }
 
-    if "from" in payload:
-        output["to"] = payload["from"]
+    if "from" in content:
+        output["to"] = content["from"]
 
     agent.logger.info(f"[cluster] model={agent.embedding_model} id={agent.my_id} texts={len(texts)}")
     await asyncio.sleep(agent.sleep_seconds)
