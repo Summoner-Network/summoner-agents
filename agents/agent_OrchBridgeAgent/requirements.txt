@@ -1,0 +1,8 @@
+crewai
+langchain-openai
+openai>=1.0.0
+tiktoken
+python-dotenv
+urllib3
+pydantic
+aioconsole

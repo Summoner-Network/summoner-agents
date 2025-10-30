@@ -493,8 +493,8 @@ Click to show the legend.
         <td>✅</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✗</td>
     </tr>
     <tr>
-        <td><code><strong><a href="agents/agent_LangChainCrewAIAgent/">LangChainCrewAIAgent</a></strong></code></td>
-        <td style="font-size: 0.8em;">Compatibility bridge: forwards Summoner payloads into <strong>CrewAI</strong> (JSON via <code>Crew</code> + <code>ChatOpenAI</code>) or <strong>LangChain</strong> (text/structured); useful to compose Summoner flows with these orchestrators.</td>
+        <td><code><strong><a href="agents/agent_OrchBridgeAgent/">OrchBridgeAgent</a></strong></code></td>
+        <td style="font-size: 0.8em;">Direct bridge: routes Summoner payloads to <strong>CrewAI</strong> (JSON via <code>Crew</code>+<code>ChatOpenAI</code>) or <strong>LangChain</strong> (text/structured), enabling drop-in composition with external orchestrators.</td>
         <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
         <td><code>core</code> <code>agent</code> <code>DID</code> <code>guardrails</code> <code>LangChain</code> <code>CrewAI</code></td>
         <td>

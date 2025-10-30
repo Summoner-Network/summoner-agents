@@ -266,7 +266,12 @@ async def send_handler() -> Union[dict, str]:
     )
 
     answers = result.get("output")
-    if not isinstance(answers, dict):
+    if isinstance(answers, str):
+        try:
+            answers = json.loads(answers)
+        except:
+            answers = {"unparsed": answers}
+    elif not isinstance(answers, dict):
         answers = {}
     output: dict[str, Any] = {"answers": answers}
 

@@ -1,3 +1,4 @@
+# agent_LangChainCrewAIAgent.py
 import warnings
 warnings.filterwarnings("ignore", message=r".*supports OpenSSL.*LibreSSL.*")
 
@@ -10,19 +11,18 @@ import argparse, json, asyncio, os
 from aioconsole import aprint
 from dotenv import load_dotenv
 
-# CrewAI / LangChain
-from crewai import Agent as CrewAgent, Task as CrewTask, Crew
-from langchain_openai import ChatOpenAI
-
-# Optional: only used for model id sanity check (best-effort)
+# Optional: used only for model id sanity check (best-effort)
 import openai
 
 from safeguards import (
     count_chat_tokens,
     estimate_chat_request_cost,
-    actual_chat_request_cost,   # kept for interface parity; not used with CrewAI
-    get_usage_from_response,    # kept for interface parity; not used with CrewAI
+    actual_chat_request_cost,   # kept for interface parity; not used here
+    get_usage_from_response,    # kept for interface parity; not used here
 )
+
+# The only local import: the tiny bridge
+from framework_bridge import FrameworkBridge
 
 # -------------------- early parse so class can load configs --------------------
 prompt_parser = argparse.ArgumentParser(add_help=False)
@@ -93,32 +93,13 @@ class MyAgent(SummonerClient):
             raise ValueError(f"Invalid model in gpt_config.json: {self.model}. "
                              f"Available: {', '.join(model_ids)}")
 
-        # -------- LangChain LLMs used by CrewAI --------
-        # For strict JSON outputs
-        self.lc_json = ChatOpenAI(
+        # -------- Framework Bridge (CrewAI + LangChain under the hood) --------
+        self.bridge = FrameworkBridge(
             model=self.model,
-            temperature=0,
-            max_tokens=self.max_chat_output_tokens,
-            # Enforce a single JSON object
-            model_kwargs={"response_format": {"type": "json_object"}},
-        )
-        # For plain text (if you ever flip output_parsing="text")
-        self.lc_text = ChatOpenAI(
-            model=self.model,
-            temperature=0,
-            max_tokens=self.max_chat_output_tokens,
+            max_output_tokens=self.max_chat_output_tokens,
         )
 
-        # -------- CrewAI "thin" agent --------
-        self.crew_agent = CrewAgent(
-            role="Responder",
-            goal="Return a strict JSON object answering all questions thoroughly and only as JSON.",
-            backstory="A stateless structured-output responder.",
-            llm=self.lc_json,
-            verbose=False,
-        )
-
-    # ------------- in-class helpers -------------
+    # ------------- helpers -------------
 
     def _load_json(self, path: Path) -> dict:
         if not path.exists():
@@ -131,32 +112,7 @@ class MyAgent(SummonerClient):
         body = json.dumps(payload, ensure_ascii=False)
         return f"{personality}\n{self.format_prompt}\n\nContent:\n{body}\n"
 
-    async def _crew_json(self, prompt: str) -> dict:
-        """
-        Run a minimal Crew with a single task that forwards the prompt and expects JSON.
-        CrewAI is synchronous; run it in a thread executor to keep asyncio happy.
-        """
-        task = CrewTask(
-            description=prompt,
-            agent=self.crew_agent,
-            expected_output="A single valid JSON object. No extra text.",
-        )
-        crew = Crew(agents=[self.crew_agent], tasks=[task], verbose=False)
-
-        loop = asyncio.get_running_loop()
-        result = await loop.run_in_executor(None, crew.kickoff)
-        # Crew may return strings or objects; normalize to dict
-        try:
-            # If result is already a dict-like, json.dumps->json.loads is a safe normalize
-            if isinstance(result, (dict, list)):
-                # ensure dict; if list, wrap
-                return result if isinstance(result, dict) else {"data": result}
-            return json.loads(str(result))
-        except Exception:
-            # Fall back to empty object to satisfy downstream contract
-            return {}
-
-    # -------------------- in-class safeguarded GPT call --------------------
+    # -------------------- safeguarded call --------------------
     async def gpt_call_async(
         self,
         message: str,
@@ -188,7 +144,7 @@ class MyAgent(SummonerClient):
             await aprint(f"\033[95m[chat] Estimated cost (for {self.max_chat_output_tokens} output tokens): ${est_cost:.6f}\033[0m")
 
         output: Any = None
-        act_cost: Optional[float] = None  # Crew/LC don't expose usage here; keep None for parity
+        act_cost: Optional[float] = None  # Bridge/LC/CrewAI don't expose usage; keep None for parity
 
         # Guard 1: token ceiling
         if prompt_tokens >= self.max_chat_input_tokens:
@@ -202,37 +158,26 @@ class MyAgent(SummonerClient):
                 await aprint(f"\033[93m[chat] Skipping request: estimated cost ${est_cost:.6f} exceeds cost_limit ${cost_limit:.6f}.\033[0m")
             return {"output": output, "cost": act_cost}
 
-        # Proceed with the call via CrewAI (JSON), or direct LC for text/structured
+        # Dispatch through the bridge
         if output_parsing == "text":
-            # Direct LC text call
-            resp = await self.lc_text.ainvoke(message)
-            output = resp.content
+            output = await self.bridge.run_text(message)
             return {"output": output, "cost": act_cost}
 
         elif output_parsing == "json":
-            # CrewAI one-task pipeline returning strict JSON
-            output = await self._crew_json(message)
+            output = await self.bridge.run_json(message)
             return {"output": output, "cost": act_cost}
 
         elif output_parsing == "structured":
             if output_type is None:
                 raise ValueError("output_type (schema) is required when output_parsing='structured'.")
-            llm_structured = self.lc_text.with_structured_output(output_type)
-            parsed = await llm_structured.ainvoke(message)
-            # parsed is a pydantic BaseModel or dict-like
-            if hasattr(parsed, "dict"):
-                output = parsed.dict()
-            else:
-                output = parsed
+            output = await self.bridge.run_structured(message, output_type=output_type)
             return {"output": output, "cost": act_cost}
 
         else:
             raise ValueError(f"Unrecognized output_parsing: {output_parsing!r}")
 
-    # ---------------- end class ----------------
-
 # instantiate
-agent = MyAgent(name="LangChainCrewAIAgent")
+agent = MyAgent(name="OrchBridgeAgent")
 
 # -------------------- hooks --------------------
 @agent.hook(direction=Direction.RECEIVE)

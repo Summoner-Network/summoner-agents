@@ -185,7 +185,7 @@ Optional CLI flags:
 
 ## Simulation Scenarios
 
-This scenario shows how `LangChainCrewAIAgent` consumes structured input from `InputAgent` and replies with normalized `{"answers": ...}`. The JSON mode exercises **CrewAI+LangChain**. Text and structured modes exercise **LangChain** directly.
+These scenarios show how `LangChainCrewAIAgent` consumes structured input from `InputAgent` and replies with normalized `{"answers": ...}`. The JSON mode exercises **CrewAI+LangChain**. Text and structured modes exercise **LangChain** directly.
 
 ```bash
 # Terminal 1: server
