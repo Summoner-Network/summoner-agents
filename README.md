@@ -492,6 +492,17 @@ Click to show the legend.
         <td><img src="https://img.shields.io/badge/MCP-%20?color=1122ce" alt=""></td>
         <td>✅</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✗</td>
     </tr>
+    <tr>
+        <td><code><strong><a href="agents/agent_LangChainCrewAIAgent/">LangChainCrewAIAgent</a></strong></code></td>
+        <td style="font-size: 0.8em;">Compatibility bridge: forwards Summoner payloads into <strong>CrewAI</strong> (JSON via Crew+ChatOpenAI) or <strong>LangChain</strong> (text/structured), preserving hooks, queue, and guardrails—useful to compose Summoner flows with external orchestrators.</td>
+        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
+        <td><code>core</code> <code>agent</code> <code>DID</code> <code>guardrails</code> <code>LangChain</code> <code>CrewAI</code></td>
+        <td>
+            <img src="https://img.shields.io/badge/LangChain-%20?color=a51c30" alt="LangChain">
+            <img src="https://img.shields.io/badge/CrewAI-%20?color=00c2d7" alt="CrewAI">
+        </td>
+        <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+        </tr>
     </tbody>
 </table>
 </div>
@@ -769,6 +780,14 @@ Click to show the legend.
         <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
     </tr>
     <tr>
+        <td><code><strong><a href="agents/agent_LangChainCrewAIAgent/">LangChainCrewAIAgent</a></strong></code></td>
+        <td style="font-size: 0.8em;">Guarded GPT responder with <strong>CrewAI</strong>/<strong>LangChain</strong> compatibility: JSON via CrewAI+ChatOpenAI; text/structured via LangChain; keeps queue, hooks, and cost/token guards.</td>
+        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
+        <td><code>core</code> <code>agent</code> <code>DID</code> <code>guardrails</code> <code>LangChain</code> <code>CrewAI</code></td>
+        <td><img src="https://img.shields.io/badge/Respond-%20?color=0b8f9a" alt="Respond"></td>
+        <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
         <td><code><strong><a href="agents/agent_GPTClusterAgent/">GPTClusterAgent</a></strong></code></td>
         <td style="font-size: 0.8em;">Embeds texts with budget guards, then clusters via configurable algorithms (K-Means default; Agglomerative/DBSCAN optional).</td>
         <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
@@ -783,7 +802,7 @@ Click to show the legend.
         <td><code>core</code></td>
         <td><img src="https://img.shields.io/badge/Interaction-%20?color=452461" alt="Interaction"></td>
         <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td>
-        </tr>
+    </tr>
     </tbody>
 </table>
 </div>

@@ -1,9 +1,21 @@
-# `GPTRespondAgent`
+# `LangChainCrewAIAgent`
+
+*Adapted from [GPTRespondAgent](../agent_GPTRespondAgent/).*
 
 A guarded GPT responder that composes a prompt from a **personality** and a **format directive**, then returns answers as JSON. It demonstrates how to subclass `SummonerClient`, use receive/send hooks with a buffer, integrate cost/token guardrails (see [`safeguards.py`](./safeguards.py)), and load prompts from [`gpt_config.json`](./gpt_config.json). The agent also uses an identity tag from [`id.json`](./id.json). This agent is designed to interoperate (and works best) with agents that send structured content (e.g., [`InputAgent`](../agent_InputAgent/)). 
 
+It is **compatible with both CrewAI and LangChain**:
+
+* **JSON mode** uses a minimal **CrewAI** pipeline (one agent, one task) with a **LangChain** `ChatOpenAI` backend configured for `response_format={"type":"json_object"}`.
+* **Text and structured modes** call **LangChain** directly.
+
 > [!NOTE]
-> The overall structure is inspired by and built from [`EchoAgent_2`](../agent_EchoAgent_2/), adapted for GPT-powered responses.
+> **Adaptation and purpose.** This agent is an adaptation of [GPTRespondAgent](../agent_GPTRespondAgent/). It repeats the original design but swaps the model-calling layer to show two paths that work with Summoner:
+>
+> 1. **CrewAI path for JSON**. A small Crew (one agent, one task) runs on top of a LangChain `ChatOpenAI` backend that enforces strict JSON, then returns the result to Summoner.
+> 2. **LangChain paths for text and structured**. Direct calls to `ChatOpenAI` for plain text, or `with_structured_output(...)` for schema-validated responses.
+>
+> The goal is to **demonstrate compatibility** and to show how to **use CrewAI or LangChain with Summoner** while keeping the same networking, hooks, safeguards, prompts, and configs. You can use this file as a reference when you want multi-agent orchestration via CrewAI or direct model access via LangChain without changing the Summoner I/O surface.
 
 > [!IMPORTANT]
 > **OpenAI credentials required.** The agent calls `load_dotenv()` and expects an environment variable named `OPENAI_API_KEY`. Put a `.env` file at the **project root** (or set the variable in your shell/CI) so it is available at runtime:
@@ -36,6 +48,11 @@ A guarded GPT responder that composes a prompt from a **personality** and a **fo
      * `personality_prompt`, `format_prompt`,
      * `sleep_seconds`, `cost_limit_usd`, `debug`,
    * An identity UUID (`my_id`) from `id.json` (or `--id <path>`).
+   * Initializes **LangChain** `ChatOpenAI` in two flavors:
+
+     * `lc_json` with `response_format={"type":"json_object"}` for strict JSON,
+     * `lc_text` for plain text or structured output with a Pydantic schema.
+   * Builds a minimal **CrewAI** `Agent` using `lc_json`. This agent is used only when `output_parsing == "json"`.
 
 3. Incoming messages invoke the receive-hook (`@client.hook(Direction.RECEIVE)`):
 
@@ -79,16 +96,15 @@ A guarded GPT responder that composes a prompt from a **personality** and a **fo
    <JSON-serialized payload>
    ```
 
-   Then it calls the OpenAI API using **token and cost guardrails**:
+   Then it calls the model using **token and cost guardrails**:
 
    * Computes prompt token count and estimated cost using `safeguards`.
    * Aborts if tokens exceed `max_chat_input_tokens` or the estimated cost exceeds `cost_limit_usd`.
-   * Calls the chosen output mode:
+   * Chooses a compatibility path:
 
-     * `"text"` → returns a string,
-     * `"json"` → requests `response_format={"type": "json_object"}` and parses to `dict`,
-     * `"structured"` → uses `responses.parse` with a schema (not used by default).
-   * Extracts **actual usage** and **actual cost** when available.
+     * `"json"` → **CrewAI** single-task pipeline with **LangChain** `ChatOpenAI` backend that enforces strict JSON. The Crew run is synchronous internally and is executed in a thread so the asyncio loop remains responsive.
+     * `"text"` → direct **LangChain** call via `lc_text.ainvoke(...)`, returns a string.
+     * `"structured"` → direct **LangChain** call via `lc_text.with_structured_output(YourPydanticModel).ainvoke(...)`, returns a schema-validated dict.
    * Normalizes the final output to:
 
      ```json
@@ -119,6 +135,7 @@ A guarded GPT responder that composes a prompt from a **personality** and a **fo
 | `client.logger`                       | Logs hook activity, buffering, and send lifecycle events                |
 | `client.loop.run_until_complete(...)` | Runs the `setup` coroutine to initialize the message queue              |
 | `client.run(...)`                     | Connects to the server and starts the asyncio event loop                |
+| **CrewAI + LangChain**                | JSON path uses **CrewAI** agent + task with a **LangChain** `ChatOpenAI` backend. Text and structured paths call **LangChain** directly |
 
 ## How to Run
 
@@ -150,14 +167,14 @@ Prepare `gpt_config.json` and `id.json`. A typical `gpt_config.json` looks like:
 The agent identity is defined in `id.json` and only requires a `"uuid"` key:
 
 ```json
-// agents/agent_GPTRespondAgent/id.json
+// agents/agent_LangChainCrewAIAgent/id.json
 {"uuid": "6fb3fedd-ebca-43b8-b915-fd25a6ecf78a"}
 ```
 
 Start the agent:
 
 ```bash
-python agents/agent_GPTRespondAgent/agent.py
+python agents/agent_LangChainCrewAIAgent/agent.py
 ```
 
 Optional CLI flags:
@@ -168,7 +185,7 @@ Optional CLI flags:
 
 ## Simulation Scenarios
 
-This scenario shows how `GPTRespondAgent` consumes structured input from `InputAgent` and replies with normalized `{"answers": ...}`.
+This scenario shows how `LangChainCrewAIAgent` consumes structured input from `InputAgent` and replies with normalized `{"answers": ...}`. The JSON mode exercises **CrewAI+LangChain**. Text and structured modes exercise **LangChain** directly.
 
 ```bash
 # Terminal 1: server
@@ -177,8 +194,8 @@ python server.py
 # Terminal 2: InputAgent
 python agents/agent_InputAgent/agent.py --multiline 1
 
-# Terminal 3: GPTRespondAgent
-python agents/agent_GPTRespondAgent/agent.py
+# Terminal 3: LangChainCrewAIAgent
+python agents/agent_LangChainCrewAIAgent/agent.py
 ```
 
 **Scenario A — Single instruction (no qid):**
@@ -189,7 +206,7 @@ In Terminal 2 (InputAgent), type:
 > {"instruction":"List two advantages of unit tests."}
 ```
 
-Terminal 3 (`GPTRespondAgent`) logs token/cost diagnostics (when `debug: true`) and returns:
+Terminal 3 (`LangChainCrewAIAgent`) logs token/cost diagnostics (when `debug: true`) and returns:
 
 ```
 [respond] model=gpt-4o-mini id=6fb3fedd-ebca-43b8-b915-fd25a6ecf78a cost=9.57e-05
@@ -237,7 +254,7 @@ Terminal 2 receives:
 
 **Scenario D — Cost/Token guard kicks in (illustrative):**
 
-If the composed prompt exceeds `max_chat_input_tokens` (see [`gpt_config.json`](./gpt_config.json)), `GPTRespondAgent` prints:
+If the composed prompt exceeds `max_chat_input_tokens` (see [`gpt_config.json`](./gpt_config.json)), `LangChainCrewAIAgent` prints:
 
 ```
 Prompt tokens: 4501 > 4000? True
