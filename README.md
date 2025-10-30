@@ -454,7 +454,7 @@ Click to show the legend.
 ### Connector Agents
 
 <details>
-<summary><b>(Click to expand)</b> Agents of <b>level 1</b> enabling composability via connectors to integrate external ecosystems (e.g., MCP, LangChain, CrewAI).</summary>
+<summary><b>(Click to expand)</b> Agents of <b>level 1-2</b> enabling composability via connectors to integrate external ecosystems (e.g., MCP, LangChain, CrewAI).</summary>
 <br>
 
 <div style="display: flex; justify-content: center;">
