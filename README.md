@@ -494,7 +494,7 @@ Click to show the legend.
     </tr>
     <tr>
         <td><code><strong><a href="agents/agent_LangChainCrewAIAgent/">LangChainCrewAIAgent</a></strong></code></td>
-        <td style="font-size: 0.8em;">Compatibility bridge: forwards Summoner payloads into <strong>CrewAI</strong> (JSON via Crew+ChatOpenAI) or <strong>LangChain</strong> (text/structured), preserving hooks, queue, and guardrails—useful to compose Summoner flows with external orchestrators.</td>
+        <td style="font-size: 0.8em;">Compatibility bridge: forwards Summoner payloads into <strong>CrewAI</strong> (JSON via <code>Crew</code> + <code>ChatOpenAI</code>) or <strong>LangChain</strong> (text/structured); useful to compose Summoner flows with these orchestrators.</td>
         <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
         <td><code>core</code> <code>agent</code> <code>DID</code> <code>guardrails</code> <code>LangChain</code> <code>CrewAI</code></td>
         <td>
@@ -773,7 +773,7 @@ Click to show the legend.
     </tr>
     <tr>
         <td><code><strong><a href="agents/agent_GPTRespondAgent/">GPTRespondAgent</a></strong></code></td>
-        <td style="font-size: 0.8em;">Guarded GPT responder: builds (personality + format) prompt and returns JSON; uses queue, hooks, and cost/token guards.</td>
+        <td style="font-size: 0.8em;">Guarded GPT responder: builds (personality + format) prompt and returns JSON; adds token/cost guardrails to control API cost.</td>
         <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
         <td><code>core</code> <code>agent</code> <code>DID</code> <code>guardrails</code></td>
         <td><img src="https://img.shields.io/badge/Respond-%20?color=0b8f9a" alt="Respond"></td>
@@ -781,7 +781,7 @@ Click to show the legend.
     </tr>
     <tr>
         <td><code><strong><a href="agents/agent_LangChainCrewAIAgent/">LangChainCrewAIAgent</a></strong></code></td>
-        <td style="font-size: 0.8em;">Guarded GPT responder with <strong>CrewAI</strong>/<strong>LangChain</strong> compatibility: JSON via CrewAI+ChatOpenAI; text/structured via LangChain; keeps queue, hooks, and cost/token guards.</td>
+        <td style="font-size: 0.8em;">Guarded GPT responder with <strong>CrewAI</strong>/<strong>LangChain</strong> compatibility: JSON via <code>CrewAI</code> + <code>ChatOpenAI</code>, or using text/structured via <code>LangChain</code>; adds token/cost guardrails to control API cost.</td>
         <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
         <td><code>core</code> <code>agent</code> <code>DID</code> <code>guardrails</code> <code>LangChain</code> <code>CrewAI</code></td>
         <td><img src="https://img.shields.io/badge/Respond-%20?color=0b8f9a" alt="Respond"></td>
