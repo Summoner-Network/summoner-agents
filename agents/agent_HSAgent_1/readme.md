@@ -121,7 +121,6 @@ Other states (`conclude/finish/close`) are unchanged.
 | `client.flow()`                                                                     | Retrieves the flow engine that drives route-based orchestration.                                                                                                           |
 | `client.flow().activate()`                                                          | Activates the flow engine so that route strings can be parsed and used to trigger handlers.                                                                                |
 | `client_flow.add_arrow_style(stem="-", brackets=("[","]"), separator=",", tip=">")` | Declares how arrows are drawn and parsed (e.g. parsing `stateA --> stateB`).                                                                                               |
-| `client_flow.ready()`                                                               | Compiles regex patterns for the declared arrow style, enabling runtime parsing of route definitions.                                                                       |
 | `Trigger = client_flow.triggers()` | Retrieves the flow engine's trigger objects (`ok`, `error`, `ignore`) used with `Move(Trigger.ok)`, `Stay(Trigger.ignore)`, etc. |
 
 | `@client.upload_states()`                                                           | Registers the handler that reports the agent's current states to the client, driving the **receive** flow transitions.                                                     |

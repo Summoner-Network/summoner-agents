@@ -128,7 +128,6 @@ client = SummonerClient(name=f"HSAgent_0")
 # We activate a flow diagram to orchestrate the client's routes
 client_flow = client.flow().activate()
 client_flow.add_arrow_style(stem="-", brackets=("[","]"), separator=",", tip=">")
-client_flow.ready()
 
 # Trigger tokens (e.g., ok, ignore, error) used to drive Move/Stay decisions.
 Trigger = client_flow.triggers()

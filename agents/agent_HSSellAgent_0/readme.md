@@ -112,7 +112,6 @@ The agent acts as a **seller** while staying on the **initiator** track for the 
 | `client.flow()`                                                                     | Retrieves the flow engine that drives route-based orchestration.                                                     |
 | `client.flow().activate()`                                                          | Activates the flow engine so that route strings can be parsed and used to trigger handlers.                          |
 | `client_flow.add_arrow_style(stem="-", brackets=("[","]"), separator=",", tip=">")` | Declares how arrows are drawn and parsed, for example parsing `stateA --> stateB`.                                   |
-| `client_flow.ready()`                                                               | Compiles regex patterns for the declared arrow style.                                                                |
 | `Trigger = client_flow.triggers()`                                                  | Loads trigger names used in `Move(Trigger.ok)`, `Stay(Trigger.ignore)`, and `Stay(Trigger.error)`.                   |
 | `@client.upload_states()`                                                           | Advertises peer-scoped allowed states (initiator and seller decision key).                                           |
 | `@client.download_states()`                                                         | Ingests allowed states (per peer) and updates `RoleState.state` and `TradeState.agreement` using a preference order. |

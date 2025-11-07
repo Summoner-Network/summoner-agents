@@ -283,7 +283,6 @@ client = SummonerClient(name=f"HSAgent_1")  # crypto variant
 
 client_flow = client.flow().activate()
 client_flow.add_arrow_style(stem="-", brackets=("[","]"), separator=",", tip=">")
-client_flow.ready()
 
 Trigger = client_flow.triggers()
 

@@ -31,7 +31,7 @@ prompt_parser.add_argument("--id", dest="id_json_path", required=False, help="Pa
 prompt_args, _ = prompt_parser.parse_known_args()
 
 # -------------------- async queue --------------------
-message_buffer = None
+message_buffer: Optional[asyncio.Queue] = None
 
 async def setup():
     """Initialize the internal message buffer used between receive/send handlers."""

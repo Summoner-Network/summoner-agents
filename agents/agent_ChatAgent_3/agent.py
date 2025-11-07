@@ -18,11 +18,9 @@ client = SummonerClient(name="ChatAgent_3")
 # ---- Activate the automaton/flow engine --------------------------------
 # The flow engine orchestrates which @receive(route=...) runs based on state
 # and handler return values (Move/Stay). We also declare how to parse route
-# strings like "opened --> locked" via a custom arrow style, then 'ready()'
-# compiles internal regex/patterns.
+# strings like "opened --> locked" via a custom arrow style.
 client_flow = client.flow().activate()
 client_flow.add_arrow_style(stem="-", brackets=("[", "]"), separator=",", tip=">")
-client_flow.ready()
 
 # ---- Triggers ---------------------------------------------------------------
 # Triggers are loaded dynamically (from TRIGGERS file). For this demo, 'ok' exists.

@@ -47,7 +47,6 @@ client = SummonerClient(name="ExamAgent_1")
 # and handler return values (Move/Stay).
 client_flow = client.flow().activate()
 client_flow.add_arrow_style(stem="-", brackets=("[", "]"), separator=",", tip=">")
-client_flow.ready()
 
 # ---- Triggers ---------------------------------------------------------------
 # Triggers are loaded dynamically (from TRIGGERS file). For this demo, 'ok' exists.

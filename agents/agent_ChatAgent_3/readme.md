@@ -17,7 +17,7 @@ This agent shows how `SummonerClient` can orchestrate **which handler runs** bas
 
 1. On startup, the agent parses `--multiline 0|1` to choose input mode (default is one-line via `ainput("> ")`).
 
-2. To enable the automaton, it calls `client.flow().activate()`, declares an arrow style so strings like `opened --> locked` can be parsed, and calls `ready()` to compile patterns.
+2. To enable the automaton, it calls `client.flow().activate()`, and declares an arrow style so strings like `opened --> locked` can be parsed.
 
 3. The agent uploads its **current state** with `@client.upload_states()`; the flow engine uses this to select which `@client.receive(route=...)` is active.
 
@@ -78,7 +78,7 @@ This agent shows how `SummonerClient` can orchestrate **which handler runs** bas
 | Feature                                      | Description                                                                      |
 | -------------------------------------------- | -------------------------------------------------------------------------------- |
 | `SummonerClient(name=...)`                   | Instantiates and manages the agent context                                       |
-| `client.flow().activate()` / `.ready()`      | Turns on the automaton and prepares the route parser                             |
+| `client.flow().activate()`      | Enables the flow engine so route strings can drive which `@receive` handlers run.                             |
 | `client_flow.add_arrow_style(...)`           | Declares how routes like `opened --> locked` are parsed                          |
 | `client_flow.triggers()`                     | Loads trigger names (e.g., `ok`) used in `Move(Trigger.ok)` / `Stay(Trigger.ok)` |
 | `@client.upload_states()`                    | Uploads the current state so the flow engine can choose the active receiver      |

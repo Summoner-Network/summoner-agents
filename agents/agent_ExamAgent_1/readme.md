@@ -41,7 +41,7 @@ You can also provide your own JSON file in the same format.
    * `answer_buffer` and `variables_lock` are created in `setup()` (on the client's event loop).
    * `answer_buffer` stores `(addr, idx, pts, ts)` tuples; `variables_lock` guards shared updates across coroutines.
    * `score = ScoreKeeper()` tracks and renders totals.
-   * The flow engine is enabled with `client.flow().activate()`; an arrow style is declared and `ready()` compiles route patterns.
+   * The flow engine is enabled with `client.flow().activate()` and an arrow style is declared using `client.flow().add_arrow_style(...)`.
    * `@client.upload_states()` reports the current `phase`; `@client.download_states()` folds allowed next nodes back into `phase`.
 
 4. The receive hook validates inbound payloads before routing.
@@ -90,7 +90,6 @@ You can also provide your own JSON file in the same format.
 | `SummonerClient(name=...)`                                                           | Instantiates the client and sets up logging/context for the agent.                                                                                                                                                                           |
 | `client.flow().activate()`                                                           | Enables the **flow engine** so route strings can drive which `@receive` handlers run.                                                                                                                                                        |
 | `client_flow.add_arrow_style(stem="-", brackets=("[", "]"), separator=",", tip=">")` | Declares how arrows are parsed (e.g., `none --> started`); matches the route strings used in this agent.                                                                                                                                     |
-| `client_flow.ready()`                                                                | Compiles the route patterns; must be called after `add_arrow_style(...)` and before messages start flowing.                                                                                                                                  |
 | `client_flow.triggers()`                                                             | Loads trigger symbols (e.g., `ok`) from the `TRIGGERS` file. Used as `Move(Trigger.ok)` / `Stay(Trigger.ok)` to signal transitions or stick with the current state.                                                                                   |
 | `@client.upload_states()`                                                            | Reports the current local **`phase`** (`"none"` or `"started"`) to the flow engine. This is what the engine matches against the **source** of each route.                                                                                    |
 | `@client.download_states()`                                                          | Receives the **allowed next nodes** aggregated from handlers and folds them back into `phase` (e.g., set to `"started"` when `Node("started")` is present; otherwise `"none"`).                                                              |
