@@ -2,7 +2,7 @@
 
 **Version:** draft-0.1
 
-**Scope:** This document defines the DID concept implemented in `HSAgent_1` as shown by the agent README, `crypto_utils.py`, and `agent.py`. It explains data structures, protocols, invariants, storage, and security properties. It does not assert compatibility with external DID frameworks. A short comparison section at the end maps Summoner terms to common blockchain and W3C-style taxonomies for interoperability only.
+**Scope:** This document defines the DID concept used in `HSAgent_1`. It explains data structures, protocols, invariants, storage, and security properties. It does not assert compatibility with external DID frameworks. A short comparison section at the end maps Summoner terms to common blockchain and W3C-style taxonomies for interoperability only.
 
 
 ## 1. Abstract
