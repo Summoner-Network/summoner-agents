@@ -208,7 +208,7 @@ The sender proves control of `sign_priv` by signing the tuple `nonce|kx_pub|time
 
 **On success.**
 
-* The handshake nonce is recorded as “received” for replay accounting.
+* The handshake nonce is recorded as "received" for replay accounting.
 * A session key is derived as
   `sym_key = HKDF-SHA256( X25519(priv_kx, peer_kx_pub), info="handshake", length=32, salt=None )`.
 * The peer’s signing public key is cached so envelopes can be verified.
@@ -596,24 +596,41 @@ External tooling may treat the tuple `(my_id, sign_pub, kx_pub)` as the minimal 
 ## 11. Future work
 
 **Key rotation with continuity proofs.**
-Define a rotation flow that replaces one or both long-term keys without breaking the application’s notion of “the same agent.” The draft direction is to publish a signed *continuity proof* where the current `sign_priv` signs a statement that names the new public keys (and, optionally, the old ones), a rotation reason, and a timestamp. Peers that already trust the old key can verify the signature and accept the new key material without out-of-band coordination. The specification should cover: how rotations are recorded in the encrypted identity file, how peers cache and expire prior keys, and how to handle recovery if a rotation only partially propagates.
+Define a rotation flow that replaces one or both long-term keys without breaking the application’s notion of "the same agent." The draft direction is to publish a signed *continuity proof* where the current `sign_priv` signs a statement that names the new public keys (and, optionally, the old ones), a rotation reason, and a timestamp. Peers that already trust the old key can verify the signature and accept the new key material without out-of-band coordination. 
+
+> [!NOTE]
+> The specification should cover: how rotations are recorded in the encrypted identity file, how peers cache and expire prior keys, and how to handle recovery if a rotation only partially propagates.
 
 **Optional transcript or channel binding.**
-Introduce an opt-in field that binds the handshake to selected transport parameters—for example, a canonical string that includes the peer addresses observed by each side, or a hash of the first application payload. The goal is to make cross-channel replay harder and to give operators a clear lever when they want stronger linkage to the transport. The draft should spell out what is bound, how it is encoded, and how strict the verifier should be in the presence of NATs, proxies, or load balancers.
+Introduce an opt-in field that binds the handshake to selected transport parameters—for example, a canonical string that includes the peer addresses observed by each side, or a hash of the first application payload. The goal is to make cross-channel replay harder and to give operators a clear lever when they want stronger linkage to the transport. 
+
+> [!NOTE]
+> The draft should spell out what is bound, how it is encoded, and how strict the verifier should be in the presence of NATs, proxies, or load balancers.
 
 **Ephemeral X25519 while keeping long-term signing keys.**
-Add a mode where each cycle uses a short-lived [X25519](https://en.wikipedia.org/wiki/Curve25519) key (ephemeral per cycle) authenticated by the long-term Ed25519 signature. This yields a fresh ECDH input for HKDF every time while preserving recognizability through the signing key. The specification should define how the ephemeral public key is conveyed (most naturally inside the existing `hs`), how peers prove it belongs to the signer, and how lifetimes and reuse are enforced to avoid accidental key recycling.
+Add a mode where each cycle uses a short-lived [X25519](https://en.wikipedia.org/wiki/Curve25519) key (ephemeral per cycle) authenticated by the long-term Ed25519 signature. This yields a fresh ECDH input for HKDF every time while preserving recognizability through the signing key. 
+
+> [!NOTE]
+> The specification should define how the ephemeral public key is conveyed (most naturally inside the existing `hs`), how peers prove it belongs to the signer, and how lifetimes and reuse are enforced to avoid accidental key recycling.
 
 **Reconnect semantics and session resumption.**
-Formalize reconnect behavior using explicit resumption tokens derived from already authenticated material (for example, a function of both references and the validated handshake timestamp). The aim is to let a peer resume quickly after transient failures without redoing a full exchange, while preserving replay resistance and the finalize rules. The draft should cover token lifetime, uniqueness per `(role, peer_id)`, storage considerations, and how resumption interacts with policy choices such as “envelopes required.”
+Formalize reconnect behavior using explicit resumption tokens derived from already authenticated material (for example, a function of both references and the validated handshake timestamp). The aim is to let a peer resume quickly after transient failures without redoing a full exchange, while preserving replay resistance and the finalize rules. 
+
+> [!NOTE]
+> The draft should cover token lifetime, uniqueness per `(role, peer_id)`, storage considerations, and how resumption interacts with policy choices such as "envelopes required."
 
 **Operational policy hooks.**
-Expose configuration switches that tighten posture without altering wire formats. Examples include “require envelopes whenever a session key exists,” “refuse plaintext on reconnect,” and adjustable handshake TTLs. The specification should document expected failure modes and recommended defaults.
+Expose configuration switches that tighten posture without altering wire formats. Examples include "require envelopes whenever a session key exists," "refuse plaintext on reconnect," and adjustable handshake TTLs. 
+
+> [!NOTE]
+> The specification should document expected failure modes and recommended defaults.
 
 **Observability and audits.**
-Specify minimal, structured log fields for security-relevant events (handshake accept/reject reasons, replay decisions, envelope verification outcomes) so operators can audit behavior without logging secrets. Include guidance for redaction and log retention.
+Specify minimal, structured log fields for security-relevant events (handshake accept/reject reasons, replay decisions, envelope verification outcomes) so operators can audit behavior without logging secrets. 
 
-All of the above items are designed to fit within the current model—`(my_id, sign_pub, kx_pub)` plus the signed handshake—without importing external frameworks or changing the core message shapes.
+> [!NOTE]
+> Include guidance for redaction and log retention.
+
 
 <br><br>
 
