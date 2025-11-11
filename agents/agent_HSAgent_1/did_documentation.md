@@ -2,7 +2,7 @@
 
 **Version:** draft-0.3
 
-**Scope:** This document defines the DID concept used in [`HSAgent_1`](readme.md). It explains data structures, protocols, invariants, storage, and security properties. It does not assert compatibility with external DID frameworks. A short comparison section at the end maps **Summoner** terms to common blockchain and W3C-style taxonomies for interoperability only.
+**Scope:** This document defines the DID concept used in [`HSAgent_1`](readme.md). It explains data structures, protocols, invariants, storage, and security properties. It does not assert compatibility with external DID frameworks. A short comparison section at the end maps **Summoner terms** to common blockchain and W3C-style taxonomies for interoperability only.
 
 ## Table of Contents
 
@@ -160,7 +160,7 @@ The ciphertext decrypts to the JSON object:
 
 <!-- A **Summoner** DID is the tuple `(my_id, sign_pub, kx_pub)` held by an agent and saved in an encrypted identity file. There is no on-chain registry in this specification. Resolution is local to the agent runtime and any application namespace that binds `my_id` values to human-readable names. -->
 
-In **Summoner** terms, a DID is the tuple `(my_id, sign_pub, kx_pub)` held by an agent and saved in its encrypted identity file.
+In **Summoner terms**, a DID is the tuple `(my_id, sign_pub, kx_pub)` held by an agent and saved in its encrypted identity file.
 
 * **Local resolution (no registry).** There is no on-chain or global registry in this specification. "Resolving" a DID means loading the agent's identity file, deriving the key material, and exposing the tuple to the runtime (and to any application namespace that binds `my_id` values to human-readable names).
 * **Proof of control.** Control is demonstrated by producing valid [Ed25519](https://ed25519.cr.yp.to/) signatures under `sign_priv` and by successfully completing a handshake that uses `kx_priv` to derive the session key.
