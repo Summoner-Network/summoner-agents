@@ -631,8 +631,8 @@ Specify minimal, structured log fields for security-relevant events (handshake a
 > [!NOTE]
 > Include guidance for redaction and log retention.
 
----
-<br>
+
+<br><br>
 
 <p align="center" style="text-align:center; letter-spacing:0.5em;">
   · · ·
