@@ -1,8 +1,65 @@
 # Summoner Decentralized Identifiers (DID) for Agents
 
-**Version:** draft-0.2
+**Version:** draft-0.3
 
 **Scope:** This document defines the DID concept used in [`HSAgent_1`](readme.md). It explains data structures, protocols, invariants, storage, and security properties. It does not assert compatibility with external DID frameworks. A short comparison section at the end maps Summoner terms to common blockchain and W3C-style taxonomies for interoperability only.
+
+## Table of Contents
+
+* **Front matter**
+
+	* [1. Abstract](#1-abstract)
+	* [2. Terminology](#2-terminology)
+	* [3. Identity model](#3-identity-model)
+
+		* [3.1 Design rationale](#31-design-rationale)
+		* [3.2 Identity file: security and operability](#32-identity-file-security-and-operability)
+		* [3.3 DID statement and persistence scope](#33-did-statement-and-persistence-scope)
+		* [3.4 Alternatives considered](#34-alternatives-considered)
+		* [3.5 Key lifecycle and forward-secrecy considerations](#35-key-lifecycle-and-forward-secrecy-considerations)
+		* [3.6 Operational practices](#36-operational-practices)
+		* [3.7 Known limitations and near-term hardening](#37-known-limitations-and-near-term-hardening)
+	* [4. Handshake protocol](#4-handshake-protocol)
+
+		* [4.1 Message layers](#41-message-layers)
+		* [4.2 Signed handshake `hs`](#42-signed-handshake-hs)
+		* [4.3 Session key lifecycle](#43-session-key-lifecycle)
+		* [4.4 Nonce rules](#44-nonce-rules)
+		* [4.5 Finalize rules](#45-finalize-rules)
+	* [5. Secure envelope `sec`](#5-secure-envelope-sec)
+
+		* [5.1 Seal (sender)](#51-seal-sender)
+		* [5.2 Open (receiver)](#52-open-receiver)
+		* [5.3 When to use envelopes](#53-when-to-use-envelopes)
+	* [6. State machine and storage](#6-state-machine-and-storage)
+
+		* [6.1 Roles and routes](#61-roles-and-routes)
+		* [6.2 Database model](#62-database-model)
+		* [6.3 Replay defense and cleanup](#63-replay-defense-and-cleanup)
+	* [7. Threat model and security properties](#7-threat-model-and-security-properties)
+
+		* [7.1 Goals](#71-goals)
+		* [7.1.1 Assets and trust boundaries](#711-assets-and-trust-boundaries)
+		* [7.1.2 Assumptions](#712-assumptions)
+		* [7.2 Out of scope for this draft](#72-out-of-scope-for-this-draft)
+		* [7.3 At-rest protection](#73-at-rest-protection)
+		* [7.4 In-memory handling](#74-in-memory-handling)
+		* [7.5 Network threat scenarios and mitigations](#75-network-threat-scenarios-and-mitigations)
+		* [7.6 Replay accounting and database considerations](#76-replay-accounting-and-database-considerations)
+		* [7.7 Forward secrecy and key-reuse trade-offs](#77-forward-secrecy-and-key-reuse-trade-offs)
+		* [7.8 Denial-of-service considerations](#78-denial-of-service-considerations)
+		* [7.9 Configuration and operational posture](#79-configuration-and-operational-posture)
+		* [7.10 Residual risks and recommended hardening](#710-residual-risks-and-recommended-hardening)
+	* [8. Multi-peer behavior](#8-multi-peer-behavior)
+	* [9. Practical guidance](#9-practical-guidance)
+	* [10. Compatibility notes and taxonomy mapping](#10-compatibility-notes-and-taxonomy-mapping)
+	* [11. Future work](#11-future-work)
+
+* **Appendix**
+
+    * [12. Appendix A: Reference algorithms and function mapping](#12-appendix-a-reference-algorithms-and-function-mapping)
+    * [13. Appendix B: Example objects](#13-appendix-b-example-objects)
+    * [14. Appendix C: Compliance checklist for implementations](#14-appendix-c-compliance-checklist-for-implementations)
 
 
 ## 1. Abstract
