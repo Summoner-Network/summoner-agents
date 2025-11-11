@@ -30,7 +30,7 @@ The Summoner DID is deliberately minimal: a stable identifier `my_id` and two lo
 
 **Why keep long-term keys if the session key is per-handshake?** Long-term keys provide a durable anchor for recognition across restarts. An agent that restarts with the same identity file can reestablish trust with peers without an out-of-band enrollment step. In distributed settings where processes are short-lived or migrate between hosts, this reduces friction and aligns with the operational model of Summoner's client/server.
 
-`my_id` is intentionally independent of the public keys. The identifier is what applications use to route and label traffic; the keys prove continuity of control over that identifier. This decoupling gives room for future rotations without breaking application-level references to the agent, and conversely enables renaming identifiers without discarding cryptographic history. It also avoids accidental use of a public key as a transport address or database key.
+Our stable agent identifier (`my_id`) is intentionally independent of the public keys. The identifier is what applications use to route and label traffic; the keys prove continuity of control over that identifier. This decoupling gives room for future rotations without breaking application-level references to the agent, and conversely enables renaming identifiers without discarding cryptographic history. It also avoids accidental use of a public key as a transport address or database key.
 
 > [!NOTE]
 > The current demo uses long-term [X25519](https://en.wikipedia.org/wiki/Curve25519) and [Ed25519](https://ed25519.cr.yp.to/). This yields simple continuity semantics but shifts the responsibility for key protection to the host that stores the identity file. The benefits are strong in operability, but the security envelope is only as good as the storage and passphrase practices described below.
@@ -630,9 +630,11 @@ Specify minimal, structured log fields for security-relevant events (handshake a
 
 > [!NOTE]
 > Include guidance for redaction and log retention.
----
----
 
+
+<hr>
+<div style="text-align:center; letter-spacing:0.5em;" aria-hidden="true">· · ·</div>
+<hr>
 <br><br>
 
 # Appendix
