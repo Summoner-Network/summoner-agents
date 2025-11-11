@@ -1,8 +1,8 @@
-# Summoner Decentralized Identifiers (DID) for Agents
+# **Summoner** Decentralized Identifiers (DID) for Agents
 
 **Version:** draft-0.3
 
-**Scope:** This document defines the DID concept used in [`HSAgent_1`](readme.md). It explains data structures, protocols, invariants, storage, and security properties. It does not assert compatibility with external DID frameworks. A short comparison section at the end maps Summoner terms to common blockchain and W3C-style taxonomies for interoperability only.
+**Scope:** This document defines the DID concept used in [`HSAgent_1`](readme.md). It explains data structures, protocols, invariants, storage, and security properties. It does not assert compatibility with external DID frameworks. A short comparison section at the end maps **Summoner** terms to common blockchain and W3C-style taxonomies for interoperability only.
 
 ## Table of Contents
 
@@ -64,7 +64,7 @@
 
 ## 1. Abstract
 
-Summoner agents maintain a long-term identity and establish pairwise authenticated sessions using signed handshake messages. Each session derives a symmetric key for optional message secrecy and integrity. Replay defense and state transitions are enforced using a nonce log and a small database schema. Identity material is saved locally in an encrypted JSON file. This paper specifies the identity format, handshake message, secure envelope, state rules, and threat model.
+**Summoner** agents maintain a long-term identity and establish pairwise authenticated sessions using signed handshake messages. Each session derives a symmetric key for optional message secrecy and integrity. Replay defense and state transitions are enforced using a nonce log and a small database schema. Identity material is saved locally in an encrypted JSON file. This paper specifies the identity format, handshake message, secure envelope, state rules, and threat model.
 
 
 
@@ -83,9 +83,9 @@ Summoner agents maintain a long-term identity and establish pairwise authenticat
 
 ### 3.1 Design rationale
 
-The Summoner DID is deliberately minimal: a stable identifier `my_id` and two long-term key pairs with distinct purposes. The split between signing ([Ed25519](https://ed25519.cr.yp.to/)) and key agreement ([X25519](https://en.wikipedia.org/wiki/Curve25519)) creates clear semantics. Authentication maps to the signing key, while confidentiality for message payloads is obtained from key agreement plus [HKDF](https://en.wikipedia.org/wiki/HKDF). This separation limits key reuse across operations and makes auditing simpler because each cryptographic step has one designated key.
+The **Summoner DID** is deliberately minimal: a stable identifier `my_id` and two long-term key pairs with distinct purposes. The split between signing ([Ed25519](https://ed25519.cr.yp.to/)) and key agreement ([X25519](https://en.wikipedia.org/wiki/Curve25519)) creates clear semantics. Authentication maps to the signing key, while confidentiality for message payloads is obtained from key agreement plus [HKDF](https://en.wikipedia.org/wiki/HKDF). This separation limits key reuse across operations and makes auditing simpler because each cryptographic step has one designated key.
 
-**Why keep long-term keys if the session key is per-handshake?** Long-term keys provide a durable anchor for recognition across restarts. An agent that restarts with the same identity file can reestablish trust with peers without an out-of-band enrollment step. In distributed settings where processes are short-lived or migrate between hosts, this reduces friction and aligns with the operational model of Summoner's client/server.
+**Why keep long-term keys if the session key is per-handshake?** Long-term keys provide a durable anchor for recognition across restarts. An agent that restarts with the same identity file can reestablish trust with peers without an out-of-band enrollment step. In distributed settings where processes are short-lived or migrate between hosts, this reduces friction and aligns with the operational model of **Summoner**'s client/server.
 
 Our stable agent identifier (`my_id`) is intentionally independent of the public keys. The identifier is what applications use to route and label traffic, while the keys prove continuity of control over that identifier. This decoupling gives room for future rotations without breaking application-level references to the agent, and conversely enables renaming identifiers without discarding cryptographic history. It also avoids accidental use of a public key as a transport address or database key.
 
@@ -158,9 +158,9 @@ The ciphertext decrypts to the JSON object:
 
 ### 3.3 DID statement and persistence scope
 
-<!-- A Summoner DID is the tuple `(my_id, sign_pub, kx_pub)` held by an agent and saved in an encrypted identity file. There is no on-chain registry in this specification. Resolution is local to the agent runtime and any application namespace that binds `my_id` values to human-readable names. -->
+<!-- A **Summoner** DID is the tuple `(my_id, sign_pub, kx_pub)` held by an agent and saved in an encrypted identity file. There is no on-chain registry in this specification. Resolution is local to the agent runtime and any application namespace that binds `my_id` values to human-readable names. -->
 
-In Summoner terms, a DID is the tuple `(my_id, sign_pub, kx_pub)` held by an agent and saved in its encrypted identity file.
+In **Summoner** terms, a DID is the tuple `(my_id, sign_pub, kx_pub)` held by an agent and saved in its encrypted identity file.
 
 * **Local resolution (no registry).** There is no on-chain or global registry in this specification. "Resolving" a DID means loading the agent's identity file, deriving the key material, and exposing the tuple to the runtime (and to any application namespace that binds `my_id` values to human-readable names).
 * **Proof of control.** Control is demonstrated by producing valid [Ed25519](https://ed25519.cr.yp.to/) signatures under `sign_priv` and by successfully completing a handshake that uses `kx_priv` to derive the session key.
@@ -174,8 +174,8 @@ In Summoner terms, a DID is the tuple `(my_id, sign_pub, kx_pub)` held by an age
 ### 3.4 Alternatives considered
 
 * **Ephemeral-only keys.** Using ephemeral key pairs per session simplifies rotation and improves forward secrecy. It also complicates recognizability across restarts and frustrates allowlist workflows that expect stable material. The project favors long-term keys to reduce operational overhead. See [§3.5](#35-key-lifecycle-and-forward-secrecy-considerations) for forward-secrecy implications.
-* **Single key pair for both signing and key agreement.** Reduces footprint but couples distinct semantics, increases risk of cross-protocol misuse, and weakens audit clarity. Summoner keeps signing and agreement separate for simplicity, least privilege, and reviewability.
-* **Identifier derived from keys.** Binding `my_id` to a hash of the public keys simplifies verification but couples identity to a specific key set. This makes renaming or rotating a single key harder. Summoner keeps the identifier independent.
+* **Single key pair for both signing and key agreement.** Reduces footprint but couples distinct semantics, increases risk of cross-protocol misuse, and weakens audit clarity. **Summoner** keeps signing and agreement separate for simplicity, least privilege, and reviewability.
+* **Identifier derived from keys.** Binding `my_id` to a hash of the public keys simplifies verification but couples identity to a specific key set. This makes renaming or rotating a single key harder. **Summoner** keeps the identifier independent.
 
 
 
@@ -191,7 +191,7 @@ These are acceptable trade-offs for the stated goal of an orchestration/state de
 * **Ephemeral X25519 per cycle** while keeping the Ed25519 signing key long-term. This preserves recognizability via signatures and yields fresh [ECDH](https://en.wikipedia.org/wiki/Elliptic-curve_Diffie%E2%80%93Hellman) inputs for HKDF each cycle.
 * **Per-cycle HKDF salt** derived from jointly known freshness material that is already validated, such as a function of both sides' nonces and the timestamp inside `hs`. This keeps the long-term X25519 keys but makes the derived key change per cycle.
 
-Either option stays within Summoner semantics and does not require importing external frameworks.
+Either option stays within **Summoner** semantics and does not require importing external frameworks.
 
 ### 3.6 Operational practices
 
@@ -207,7 +207,7 @@ Either option stays within Summoner semantics and does not require importing ext
 * **No documented rotation flow.** While `my_id` is independent from keys, rotation and revocation semantics are out of scope in this draft. Operators cannot yet roll keys without out-of-band coordination.
 * **Repeatable session key between the same pair.** As analyzed in [§3.5](#35-key-lifecycle-and-forward-secrecy-considerations), the current demo does not guarantee fresh derived keys per cycle when both peers keep static [X25519](https://en.wikipedia.org/wiki/Curve25519) keys.
 * **Passphrase handling in the demo.** The demo derives the passphrase from `--name`. This must be replaced in real deployments with a secret manager or OS keychain.
-* **No global registry or discovery.** Resolution is local. This is by design in Summoner, but integrators who need global lookups must build their own mapping layer above `(my_id, sign_pub, kx_pub)`.
+* **No global registry or discovery.** Resolution is local. This is by design in **Summoner**, but integrators who need global lookups must build their own mapping layer above `(my_id, sign_pub, kx_pub)`.
 
 >[!NOTE]
 > Despite these limits, the model is coherent: a compact DID tuple, a single encrypted file as the persistence boundary, and explicit roles for signing and key agreement. The choices optimize for clear reasoning, low operator burden, and compatibility with the handshake and envelope logic defined elsewhere in this document.
@@ -491,7 +491,7 @@ The operating environment is divided into clear protection domains:
 
 * **Filesystem boundary.** Access to the encrypted identity file is controlled by OS permissions. This boundary ensures at-rest confidentiality of private keys.
 * **Database boundary.** The local database houses `NonceEvent` and `RoleState`. Integrity of this store underpins replay resistance and state progression.
-* **Network boundary.** Summoner clients exchange messages across an untrusted network. All input received at this boundary must pass handshake authentication, nonce checks, and (when enabled) envelope verification before it influences state.
+* **Network boundary.** **Summoner** clients exchange messages across an untrusted network. All input received at this boundary must pass handshake authentication, nonce checks, and (when enabled) envelope verification before it influences state.
 
 
 #### 7.1.2 Assumptions
@@ -624,11 +624,11 @@ A single process may talk to many peers. All invariants are enforced per `(self_
 
 ## 10. Compatibility notes and taxonomy mapping
 
-**Scope of comparison.** The following is a terminology bridge for readers familiar with blockchain and W3C-style DID vocabularies. It is descriptive only. Summoner DIDs are defined by this document and do not adopt an external DID method or registry.
+**Scope of comparison.** The following is a terminology bridge for readers familiar with blockchain and W3C-style DID vocabularies. It is descriptive only. **Summoner DIDs** are defined by this document and do not adopt an external DID method or registry.
 
 **Identifier.**
 
-* **Summoner:** `my_id` is a local subject identifier used for routing and labeling.
+* ****Summoner**:** `my_id` is a local subject identifier used for routing and labeling.
 * **W3C DID analogy:** similar to a DID subject identifier, but **not** bound to a DID method string and **not** resolved through a global registry.
 
 **Verification methods.**
@@ -638,7 +638,7 @@ A single process may talk to many peers. All invariants are enforced per `(self_
 
 **Service endpoints.**
 
-* **Summoner:** not defined in this draft. Endpoints are configured out of band by the Summoner client and server.
+* ****Summoner**:** not defined in this draft. Endpoints are configured out of band by the **Summoner** client and server.
 * **DID analogy:** comparable to omitting `service` entries in a DID document.
 
 **Method operations.**
@@ -647,7 +647,7 @@ A single process may talk to many peers. All invariants are enforced per `(self_
 * **Resolve / update / deactivate:** not specified. There is no global resolution or on-chain anchoring in this draft.
 
 **Interoperability posture.**
-External tooling may treat the tuple `(my_id, sign_pub, kx_pub)` as the minimal record when a DID-like document is required for integration. Any such mapping should be clearly labeled as a compatibility layer so that Summoner semantics (local resolution, file-scoped lifecycle, and out-of-band service configuration) remain unchanged.
+External tooling may treat the tuple `(my_id, sign_pub, kx_pub)` as the minimal record when a DID-like document is required for integration. Any such mapping should be clearly labeled as a compatibility layer so that **Summoner** semantics (local resolution, file-scoped lifecycle, and out-of-band service configuration) remain unchanged.
 
 
 ## 11. Future work
