@@ -64,7 +64,7 @@
 
 ## 1. Abstract
 
-**Summoner** agents maintain a long-term identity and establish pairwise authenticated sessions using signed handshake messages. Each session derives a symmetric key for optional message secrecy and integrity. Replay defense and state transitions are enforced using a nonce log and a small database schema. Identity material is saved locally in an encrypted JSON file. This paper specifies the identity format, handshake message, secure envelope, state rules, and threat model.
+**Summoner agents** maintain a long-term identity and establish pairwise authenticated sessions using signed handshake messages. Each session derives a symmetric key for optional message secrecy and integrity. Replay defense and state transitions are enforced using a nonce log and a small database schema. Identity material is saved locally in an encrypted JSON file. This paper specifies the identity format, handshake message, secure envelope, state rules, and threat model.
 
 
 
@@ -85,7 +85,7 @@
 
 The **Summoner DID** is deliberately minimal: a stable identifier `my_id` and two long-term key pairs with distinct purposes. The split between signing ([Ed25519](https://ed25519.cr.yp.to/)) and key agreement ([X25519](https://en.wikipedia.org/wiki/Curve25519)) creates clear semantics. Authentication maps to the signing key, while confidentiality for message payloads is obtained from key agreement plus [HKDF](https://en.wikipedia.org/wiki/HKDF). This separation limits key reuse across operations and makes auditing simpler because each cryptographic step has one designated key.
 
-**Why keep long-term keys if the session key is per-handshake?** Long-term keys provide a durable anchor for recognition across restarts. An agent that restarts with the same identity file can reestablish trust with peers without an out-of-band enrollment step. In distributed settings where processes are short-lived or migrate between hosts, this reduces friction and aligns with the operational model of **Summoner**'s client/server.
+**Why keep long-term keys if the session key is per-handshake?** Long-term keys provide a durable anchor for recognition across restarts. An agent that restarts with the same identity file can reestablish trust with peers without an out-of-band enrollment step. In distributed settings where processes are short-lived or migrate between hosts, this reduces friction and aligns with the operational model of **Summoner's client/server**.
 
 Our stable agent identifier (`my_id`) is intentionally independent of the public keys. The identifier is what applications use to route and label traffic, while the keys prove continuity of control over that identifier. This decoupling gives room for future rotations without breaking application-level references to the agent, and conversely enables renaming identifiers without discarding cryptographic history. It also avoids accidental use of a public key as a transport address or database key.
 
@@ -491,7 +491,7 @@ The operating environment is divided into clear protection domains:
 
 * **Filesystem boundary.** Access to the encrypted identity file is controlled by OS permissions. This boundary ensures at-rest confidentiality of private keys.
 * **Database boundary.** The local database houses `NonceEvent` and `RoleState`. Integrity of this store underpins replay resistance and state progression.
-* **Network boundary.** **Summoner** clients exchange messages across an untrusted network. All input received at this boundary must pass handshake authentication, nonce checks, and (when enabled) envelope verification before it influences state.
+* **Network boundary.** **Summoner clients** exchange messages across an untrusted network. All input received at this boundary must pass handshake authentication, nonce checks, and (when enabled) envelope verification before it influences state.
 
 
 #### 7.1.2 Assumptions
@@ -628,7 +628,7 @@ A single process may talk to many peers. All invariants are enforced per `(self_
 
 **Identifier.**
 
-* ****Summoner**:** `my_id` is a local subject identifier used for routing and labeling.
+* **Summoner:** `my_id` is a local subject identifier used for routing and labeling.
 * **W3C DID analogy:** similar to a DID subject identifier, but **not** bound to a DID method string and **not** resolved through a global registry.
 
 **Verification methods.**
@@ -638,7 +638,7 @@ A single process may talk to many peers. All invariants are enforced per `(self_
 
 **Service endpoints.**
 
-* ****Summoner**:** not defined in this draft. Endpoints are configured out of band by the **Summoner** client and server.
+* **Summoner:** not defined in this draft. Endpoints are configured out of band by the **Summoner** client and server.
 * **DID analogy:** comparable to omitting `service` entries in a DID document.
 
 **Method operations.**
