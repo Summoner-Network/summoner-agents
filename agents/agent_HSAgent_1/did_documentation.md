@@ -30,7 +30,7 @@ The Summoner DID is deliberately minimal: a stable identifier `my_id` and two lo
 
 **Why keep long-term keys if the session key is per-handshake?** Long-term keys provide a durable anchor for recognition across restarts. An agent that restarts with the same identity file can reestablish trust with peers without an out-of-band enrollment step. In distributed settings where processes are short-lived or migrate between hosts, this reduces friction and aligns with the operational model of Summoner's client/server.
 
-Our stable agent identifier (`my_id`) is intentionally independent of the public keys. The identifier is what applications use to route and label traffic; the keys prove continuity of control over that identifier. This decoupling gives room for future rotations without breaking application-level references to the agent, and conversely enables renaming identifiers without discarding cryptographic history. It also avoids accidental use of a public key as a transport address or database key.
+Our stable agent identifier (`my_id`) is intentionally independent of the public keys. The identifier is what applications use to route and label traffic, while the keys prove continuity of control over that identifier. This decoupling gives room for future rotations without breaking application-level references to the agent, and conversely enables renaming identifiers without discarding cryptographic history. It also avoids accidental use of a public key as a transport address or database key.
 
 > [!NOTE]
 > The current demo uses long-term [X25519](https://en.wikipedia.org/wiki/Curve25519) and [Ed25519](https://ed25519.cr.yp.to/). This yields simple continuity semantics but shifts the responsibility for key protection to the host that stores the identity file. The benefits are strong in operability, but the security envelope is only as good as the storage and passphrase practices described below.
@@ -319,7 +319,7 @@ init_ready -> init_exchange -> init_finalize_propose -> init_finalize_close -> i
 ```
 
 * **init_ready.** Idle and waiting.
-* **init_exchange.** Ping–pong using nonces. The initiator sends a request with a fresh `my_nonce`; the responder must echo it back as `your_nonce`.
+* **init_exchange.** Ping–pong using nonces. The initiator sends a request with a fresh `my_nonce` and the responder must echo it back as `your_nonce`.
 * **init_finalize_propose.** The initiator proposes to conclude by sending its reference (`my_ref`).
 * **init_finalize_close.** The initiator closes after the responder returns its reference.
 * **Back to init_ready.** The thread resets, ready for the next cycle with the same peer.
@@ -334,7 +334,7 @@ resp_ready -> resp_confirm -> resp_exchange -> resp_finalize -> resp_ready
 * **resp_confirm.** The responder sends a confirmation with its own `my_nonce`.
 * **resp_exchange.** Ping–pong using nonces while exchanging messages.
 * **resp_finalize.** The responder returns its reference and waits for `close`.
-* **Back to resp_ready.** Cleanup completes; ready for the next cycle.
+* **Back to resp_ready.** Cleanup completes, ready for the next cycle.
 
 **Why this structure matters.** Having a fixed sequence makes it easy to enforce the **echo rule** (your last `my_nonce` must come back as `your_nonce`) and the **finalize rule** (conclude → finish → close must match). These rules prevent out-of-order messages and make replay attempts obvious.
 
@@ -672,7 +672,7 @@ Specify minimal, structured log fields for security-relevant events (handshake a
 * **Inputs:** path; passphrase.
 * **Returns:** `(my_id, kx_priv, sign_priv, kx_pub_b64, sign_pub_b64)`
 * **Side effects:** None beyond memory allocation.
-* **Verify:** Wrong password, salt, nonce, or AAD must fail closed; successful decrypt reproduces the tuple exactly.
+* **Verify:** Wrong password, salt, nonce, or AAD must fail closed. Successful decrypt reproduces the tuple exactly.
 
 </details>
 
