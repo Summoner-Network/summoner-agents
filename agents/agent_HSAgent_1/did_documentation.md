@@ -111,7 +111,7 @@ In Summoner terms, a DID is the tuple `(my_id, sign_pub, kx_pub)` held by an age
 * **Scoping.** The tuple is sufficient for peer recognition and for envelope verification and decryption. No additional metadata is required by the protocol in this draft.
 
 > [!IMPORTANT]
-> decoupling `my_id` from keys enables rotation in principle, but rotation semantics are not defined in this draft. Without a documented rotation flow, operators must treat the identity file as effectively immutable during the lifetime of an agent deployment.
+> Decoupling `my_id` from keys enables rotation in principle, but rotation semantics are not defined in this draft. Without a documented rotation flow, operators must treat the identity file as effectively immutable during the lifetime of an agent deployment.
 
 
 ### 3.4 Alternatives considered
