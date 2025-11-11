@@ -633,7 +633,8 @@ Specify minimal, structured log fields for security-relevant events (handshake a
 
 
 <hr>
-<div style="text-align:center; letter-spacing:0.5em;" aria-hidden="true">· · ·</div>
+<p align="center" style="text-align:center; letter-spacing:0.5em;">
+  · · ·
 <hr>
 <br><br>
 
