@@ -167,8 +167,8 @@ This section describes how two agents authenticate one another at the start of e
 
 **Cryptographic fields (added when security is active).**
 
-* `hs` — a signed handshake blob that advertises public keys and binds a fresh nonce.
-* `sec` — a sealed envelope that, when present, replaces the plaintext `message`.
+* `hs`  —  a signed handshake blob that advertises public keys and binds a fresh nonce.
+* `sec`  —  a sealed envelope that, when present, replaces the plaintext `message`.
 
 These layers are orthogonal: routing continues to work even without crypto fields, while the crypto fields add authentication and, if enabled, confidentiality and integrity.
 
@@ -241,7 +241,7 @@ Handshake nonces are additionally subject to a TTL in the nonce store so that la
 ### 4.5 Finalize rules
 
 **Order and checks.**
-Finalization proceeds in a fixed order—`conclude(my_ref)`, then `finish(your_ref, my_ref)`, then `close(your_ref, my_ref)`—with explicit reference matching at each step.
+Finalization proceeds in a fixed order: `conclude(my_ref)`, then `finish(your_ref, my_ref)`, then `close(your_ref, my_ref)`, with explicit reference matching at each step.
 
 **Cleanup.**
 On a successful `close`, all `NonceEvent` rows for the pair are deleted to reset transient history for the next cycle.
@@ -394,7 +394,7 @@ Every time we accept a peer’s `my_nonce`, we record it exactly once as `flow="
 On a successful `close`, we delete all `NonceEvent` rows for the `(self_id, role, peer_id)` pair. That resets the exchange history so the next cycle starts cleanly. The `RoleState` row remains, which lets the agent reconnect efficiently while keeping transient nonces out of the way.
 
 **Why this is enough for the draft.**
-The nonce echo, the sixty-second handshake window, and the per-pair replay log together stop trivial replays and make accidental duplicates harmless. The design stays minimal—no global registries, no complex clocks—while providing clear, auditable behavior that operators can reason about.
+The nonce echo, the sixty-second handshake window, and the per-pair replay log together stop trivial replays and make accidental duplicates harmless. The design stays minimal (no global registries and no complex clocks) while providing clear, auditable behavior that operators can reason about.
 
 
 
@@ -602,7 +602,7 @@ Define a rotation flow that replaces one or both long-term keys without breaking
 > The specification should cover: how rotations are recorded in the encrypted identity file, how peers cache and expire prior keys, and how to handle recovery if a rotation only partially propagates.
 
 **Optional transcript or channel binding.**
-Introduce an opt-in field that binds the handshake to selected transport parameters—for example, a canonical string that includes the peer addresses observed by each side, or a hash of the first application payload. The goal is to make cross-channel replay harder and to give operators a clear lever when they want stronger linkage to the transport. 
+Introduce an opt-in field that binds the handshake to selected transport parameters. For example, a canonical string that includes the peer addresses observed by each side, or a hash of the first application payload. The goal is to make cross-channel replay harder and to give operators a clear lever when they want stronger linkage to the transport. 
 
 > [!NOTE]
 > The draft should spell out what is bound, how it is encoded, and how strict the verifier should be in the presence of NATs, proxies, or load balancers.
@@ -774,7 +774,7 @@ Specify minimal, structured log fields for security-relevant events (handshake a
 
 <details>
 <summary>
-<b>Purpose and use.</b> These wire-level examples illustrate the serialized shapes that correspond to the algorithms above. They are inspection aids for logging and tests—not templates to hard-code.
+<b>Purpose and use.</b> These wire-level examples illustrate the serialized shapes that correspond to the algorithms above. They are inspection aids for logging and tests, not templates to hard-code.
 </summary>
 
 ### 13.1 Example handshake (init)
