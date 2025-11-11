@@ -122,7 +122,6 @@ Other states (`conclude/finish/close`) are unchanged.
 | `client.flow().activate()`                                                          | Activates the flow engine so that route strings can be parsed and used to trigger handlers.                                                                                |
 | `client_flow.add_arrow_style(stem="-", brackets=("[","]"), separator=",", tip=">")` | Declares how arrows are drawn and parsed (e.g. parsing `stateA --> stateB`).                                                                                               |
 | `Trigger = client_flow.triggers()` | Retrieves the flow engine's trigger objects (`ok`, `error`, `ignore`) used with `Move(Trigger.ok)`, `Stay(Trigger.ignore)`, etc. |
-
 | `@client.upload_states()`                                                           | Registers the handler that reports the agent's current states to the client, driving the **receive** flow transitions.                                                     |
 | `@client.download_states()`                                                         | Registers the handler that ingests the client's allowed states, updating in-memory state before the next **receive** cycle.                                                |
 | `@client.hook(Direction.RECEIVE)`                                                   | Validates or filters all incoming payloads before they reach the route handlers.                                                                                           |
