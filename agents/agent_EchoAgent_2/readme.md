@@ -12,7 +12,7 @@ This agent builds on the progression of [`EchoAgent_0`](../agent_EchoAgent_0/) a
 
 1. On startup, the `setup` coroutine initializes an `asyncio.Queue` named `message_buffer`.  
 2. `MyAgent`, a subclass of `SummonerClient`, loads a persistent UUID (`my_id`) from `id.json`.  
-3. Incoming messages invoke the receive-hook (`@client.hook(Direction.RECEIVE)`):
+3. Incoming messages invoke the receive-hook (`@agent.hook(Direction.RECEIVE)`):
    - If it's a string starting with `"Warning:"`, logs a warning and drops the message.  
    - If it's not a dict with `"remote_addr"` and `"content"`, logs:
      ```
@@ -24,16 +24,16 @@ This agent builds on the progression of [`EchoAgent_0`](../agent_EchoAgent_0/) a
      [hook:recv] <addr> passed validation
      ```
      and forwards the message to the receive handler.  
-4. The receive handler (`@client.receive(route="")`) serializes `content`, enqueues it into `message_buffer`, and logs:
+4. The receive handler (`@agent.receive(route="")`) serializes `content`, enqueues it into `message_buffer`, and logs:
      ```
      Buffered message from:(SocketAddress=<addr>).
      ```
-5. Before sending, the send-hook (`@client.hook(Direction.SEND)`) logs:
+5. Before sending, the send-hook (`@agent.hook(Direction.SEND)`) logs:
      ```
      [hook:send] sign <first-5-chars-of-UUID>
      ```
    It wraps strings into `{"message":...}`, adds `{"from": my_id}`, and forwards the message to the send handler.  
-6. The send handler (`@client.send(route="")`) awaits `message_buffer.get()`, sleeps 1 second, and returns the signed content.  
+6. The send handler (`@agent.send(route="")`) awaits `message_buffer.get()`, sleeps 1 second, and returns the signed content.  
 7. Steps 3-6 repeat until the client is stopped (Ctrl+C).
 
 </details>
@@ -44,13 +44,13 @@ This agent builds on the progression of [`EchoAgent_0`](../agent_EchoAgent_0/) a
 |----------------------------------------|---------------------------------------------------------------|
 | `class MyAgent(SummonerClient)`        | Subclasses `SummonerClient` to load a persistent UUID         |
 | `SummonerClient(name=...)`                  | Instantiates and manages the agent                            |
-| `@client.hook(Direction.RECEIVE)`      | Validates or drops incoming messages before main handling     |
-| `@client.hook(Direction.SEND)`         | Signs outgoing messages by adding a `from` field with UUID    |
-| `@client.receive(route=...)`           | Buffers validated messages into the queue                     |
-| `@client.send(route=...)`              | Emits buffered, signed messages periodically                  |
-| `client.logger`                        | Logs hook activity, buffering, and send lifecycle events      |
-| `client.loop.run_until_complete(...)`  | Runs the `setup` coroutine to initialize the message queue    |
-| `client.run(...)`                  | Connects to the server and starts the asyncio event loop  |
+| `@agent.hook(Direction.RECEIVE)`      | Validates or drops incoming messages before main handling     |
+| `@agent.hook(Direction.SEND)`         | Signs outgoing messages by adding a `from` field with UUID    |
+| `@agent.receive(route=...)`           | Buffers validated messages into the queue                     |
+| `@agent.send(route=...)`              | Emits buffered, signed messages periodically                  |
+| `agent.logger`                        | Logs hook activity, buffering, and send lifecycle events      |
+| `agent.loop.run_until_complete(...)`  | Runs the `setup` coroutine to initialize the message queue    |
+| `agent.run(...)`                  | Connects to the server and starts the asyncio event loop  |
 
 ## How to Run
 

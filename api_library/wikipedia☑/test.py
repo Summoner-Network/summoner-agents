@@ -7,13 +7,19 @@ from typing import List
 WIKI_SEARCH  = "https://en.wikipedia.org/w/rest.php/v1/search/title"
 WIKI_SUMMARY = "https://en.wikipedia.org/api/rest_v1/page/summary"
 
+WIKIPEDIA_DEFAULT_HEADERS = {
+    # Feel free to customize this string for your own project/contact
+    "User-Agent": "Summoner-GPTWikipediaAgent/0.1 (bot; contact: you@example.com)",
+    "Accept": "application/json",
+}
+
 class WikipediaAgent:
     def __init__(self, *, cache_ttl: int = 3600, max_cache: int = 100):
         self._cache   = TTLCache(maxsize=max_cache, ttl=cache_ttl)
         self._session = None  # will be set in __aenter__
 
     async def __aenter__(self):
-        self._session = aiohttp.ClientSession()
+        self._session = aiohttp.ClientSession(headers=WIKIPEDIA_DEFAULT_HEADERS)
         return self
 
     async def __aexit__(self, exc_type, exc, tb):

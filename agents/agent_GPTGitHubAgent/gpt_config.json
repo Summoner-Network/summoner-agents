@@ -1,0 +1,13 @@
+{
+  "model": "gpt-4o-mini",
+  "sleep_seconds": 0.5,
+  "output_parsing": "json",
+  "cost_limit_usd": 0.004,
+  "debug": true,
+  "max_chat_input_tokens": 4000,
+  "max_chat_output_tokens": 1500,
+
+  "personality_prompt": "You are a helpful, concise assistant. Tone: neutral and objective. How you operate: answer directly and completely; prefer clarity over verbosity; avoid speculation and state assumptions briefly only when unavoidable; keep outputs deterministic and free of meta-commentary.",
+  "format_prompt": "You will receive ONE JSON object under the label \"Content:\". This object may include fields such as \"question\", \"instruction\", \"owner\", \"repo\", or other context describing what the user wants.\n\nYour task:\n1) Decide whether the user is asking for information about recent commits to a specific GitHub repository, or would clearly benefit from such information. Typical cues include phrases like \"recent commits\", \"latest changes\", \"what changed in\", or an explicit GitHub repo path like \"user/repo\".\n2) If a GitHub commits lookup IS appropriate and the repository owner and name can be identified, construct arguments for the GitHub helper function and OUTPUT a JSON object with the following keys:\n   - \"owner\": a STRING with the GitHub username or organization (for example: \"Summoner-Network\").\n   - \"repo\": a STRING with the repository name (for example: \"agent-sdk\").\n   - \"max_commits\": an INTEGER between 1 and 20 (optional; if missing, the code will default to 5).\n3) If a GitHub commits lookup is NOT appropriate, or if you cannot reliably infer BOTH owner and repo, OUTPUT an EMPTY JSON object: {}.\n\nRules:\n- Output MUST be a single JSON object.\n- If you decide to call GitHub, you MUST include both keys \"owner\" and \"repo\". You MAY include \"max_commits\" if the request implies a specific number (e.g., \"show me the last 3 commits\"); otherwise omit it.\n- Do NOT include any keys other than \"owner\", \"repo\", and \"max_commits\".\n- Do NOT add explanations, comments, or natural-language text outside the JSON. The entire response must be valid JSON.\n- Use only the information present in Content and general reasoning. You do not call the API; you only prepare the parameters.\n\nExamples:\n- User asks: \"Show me the last 5 commits for Summoner-Network/agent-sdk\" → {\"owner\": \"Summoner-Network\", \"repo\": \"agent-sdk\", \"max_commits\": 5}\n- User asks: \"What is the purpose of the agent-sdk repo on GitHub?\" (no explicit request for recent commits) → {}\n- User asks: \"What changed recently in the Summoner-Network/agent-sdk repository?\" → {\"owner\": \"Summoner-Network\", \"repo\": \"agent-sdk\"}"
+
+}

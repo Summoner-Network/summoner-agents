@@ -690,6 +690,9 @@ Click to show the legend.
 
 <a id="api-agents"></a>
 
+Here’s the same block with only the `...` descriptions filled in (Slack row left untouched as requested):
+
+
 ### API Agents 🚧
 
 <details>
@@ -715,61 +718,13 @@ Click to show the legend.
     </tr>
     </thead>
     <tbody>
-    <tr>
-        <td><code><strong>Wikipedia</strong></code></td>
-        <td style="font-size: 0.8em;">...</td>
+        <tr>
+        <td><code><strong><a href="agents/agent_InputAgent/">InputAgent</a></strong></code></td>
+        <td style="font-size: 0.8em;">Minimal bridge: emits raw strings or parsed JSON; supports single- or multi-line input.</td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
-         <td><code>core</code></td>
-        <td><img src="https://img.shields.io/badge/Registry-%20?color=bd1edd" alt=""></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
-    </tr>
-    <tr>
-        <td><code><strong>ArXiv</strong></code></td>
-        <td style="font-size: 0.8em;">...</td>
-        <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
-         <td><code>core</code></td>
-        <td><img src="https://img.shields.io/badge/Registry-%20?color=bd1edd" alt=""></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
-    </tr>
-    <tr>
-        <td><code><strong>PubMed</strong></code></td>
-        <td style="font-size: 0.8em;">...</td>
-        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
-         <td><code>core</code></td>
-        <td><img src="https://img.shields.io/badge/Registry-%20?color=bd1edd" alt=""></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
-    </tr>
-    <tr>
-        <td><code><strong>GitHub</strong></code></td>
-        <td style="font-size: 0.8em;">...</td>
-        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
-         <td><code>core</code></td>
-        <td><img src="https://img.shields.io/badge/App-%20?color=f1227a" alt=""></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
-    </tr>
-    <tr>
-        <td><code><strong>Reddit</strong></code></td>
-        <td style="font-size: 0.8em;">...</td>
-        <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
-         <td><code>core</code></td>
-        <td><img src="https://img.shields.io/badge/App-%20?color=f1227a" alt=""></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
-    </tr>
-    <tr>
-        <td><code><strong>Notion</strong></code></td>
-        <td style="font-size: 0.8em;">...</td>
-        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
-         <td><code>core</code></td>
-        <td><img src="https://img.shields.io/badge/App-%20?color=f1227a" alt=""></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
-    </tr>
-    <tr>
-        <td><code><strong>Slack</strong></code></td>
-        <td style="font-size: 0.8em;">...</td>
-        <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
-         <td><code>core</code></td>
-        <td><img src="https://img.shields.io/badge/App-%20?color=f1227a" alt=""></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
+        <td><code>core</code></td>
+        <td><img src="https://img.shields.io/badge/Interaction-%20?color=452461" alt="Interaction"></td>
+        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td>
     </tr>
     <tr>
         <td><code><strong><a href="agents/agent_GPTRespondAgent/">GPTRespondAgent</a></strong></code></td>
@@ -796,18 +751,67 @@ Click to show the legend.
         <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
     </tr>
     <tr>
-        <td><code><strong><a href="agents/agent_InputAgent/">InputAgent</a></strong></code></td>
-        <td style="font-size: 0.8em;">Minimal bridge: emits raw strings or parsed JSON; supports single- or multi-line input.</td>
-        <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
-        <td><code>core</code></td>
-        <td><img src="https://img.shields.io/badge/Interaction-%20?color=452461" alt="Interaction"></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td>
+        <td><code><strong><a href="agents/agent_GPTWikipediaAgent/">GPTWikipediaAgent</a></strong></code></td>
+        <td style="font-size: 0.8em;">Guarded GPT bridge to Wikipedia REST API: routes encyclopedic queries to title search/summary calls and returns normalized results.</td>
+        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
+        <td><code>core</code> <code>agent</code> <code>DID</code> <code>guardrails</code> <code>Wikipedia</code></td>
+        <td><img src="https://img.shields.io/badge/Registry-%20?color=bd1edd" alt=""></td>
+        <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
+        <td><code><strong><a href="agents/agent_GPTArXivAgent/">GPTArXivAgent</a></strong></code></td>
+        <td style="font-size: 0.8em;">Guarded GPT bridge to arXiv: turns research queries into arXiv API searches and returns structured lists of recent papers.</td>
+        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
+        <td><code>core</code> <code>agent</code> <code>DID</code> <code>guardrails</code> <code>ArXiv</code></td>
+        <td><img src="https://img.shields.io/badge/Registry-%20?color=bd1edd" alt=""></td>
+        <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
+        <td><code><strong><a href="agents/agent_GPTPubMedAgent/">GPTPubMedAgent</a></strong></code></td>
+        <td style="font-size: 0.8em;">Guarded GPT bridge to PubMed: selects latest or most relevant biomedical articles via E-utilities and returns structured summaries.</td>
+        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
+        <td><code>core</code> <code>agent</code> <code>DID</code> <code>guardrails</code> <code>PubMed</code></td>
+        <td><img src="https://img.shields.io/badge/Registry-%20?color=bd1edd" alt=""></td>
+        <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
+        <td><code><strong><a href="agents/agent_GPTGitHubAgent/">GPTGitHubAgent</a></strong></code></td>
+        <td style="font-size: 0.8em;">Guarded GPT bridge to GitHub: maps repo questions to recent-commit lookups and returns normalized commit metadata.</td>
+        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
+        <td><code>core</code> <code>agent</code> <code>DID</code> <code>guardrails</code> <code>GitHub</code></td>
+        <td><img src="https://img.shields.io/badge/App-%20?color=f1227a" alt=""></td>
+        <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
+        <td><code><strong><a href="agents/agent_GPTRedditAgent/">GPTRedditAgent</a></strong></code></td>
+        <td style="font-size: 0.8em;">Guarded GPT bridge to Reddit: turns topic/subreddit prompts into async PRAW searches and returns summarized post lists.</td>
+        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
+        <td><code>core</code> <code>agent</code> <code>DID</code> <code>guardrails</code> <code>Reddit</code></td>
+        <td><img src="https://img.shields.io/badge/App-%20?color=f1227a" alt=""></td>
+        <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
+        <td><code><strong><a href="agents/agent_GPTNotionAgent/">GPTNotionAgent</a></strong></code></td>
+        <td style="font-size: 0.8em;">Guarded GPT bridge to Notion: decides between search, database query, or page inspection and returns structured workspace data.</td>
+        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
+        <td><code>core</code> <code>agent</code> <code>DID</code> <code>guardrails</code> <code>Notion</code></td>
+        <td><img src="https://img.shields.io/badge/App-%20?color=f1227a" alt=""></td>
+        <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
+        <td><code><strong>GPTSlackAgent</strong></code></td>
+        <td style="font-size: 0.8em;">...</td>
+        <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
+        <td><code>core</code> <code>agent</code> <code>DID</code> <code>guardrails</code> <code>Slack</code></td>
+        <td><img src="https://img.shields.io/badge/App-%20?color=f1227a" alt=""></td>
+        <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
     </tr>
     </tbody>
 </table>
 </div>
 
 </details>
+
 
 <p align="center">
 <img width="600px" src="assets/mov2gif/gifs/demo_gptagent_framed.gif" />

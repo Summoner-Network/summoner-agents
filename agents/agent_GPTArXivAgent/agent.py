@@ -9,20 +9,19 @@ import argparse, json, asyncio, os
 
 from aioconsole import aprint
 from dotenv import load_dotenv
-
-# CrewAI / LangChain
-from crewai import Agent as CrewAgent, Task as CrewTask, Crew
-from langchain_openai import ChatOpenAI
-
-# Optional: only used for model id sanity check (best-effort)
 import openai
+from openai import AsyncOpenAI
 
 from safeguards import (
     count_chat_tokens,
     estimate_chat_request_cost,
-    actual_chat_request_cost,   # kept for interface parity; not used with CrewAI
-    get_usage_from_response,    # kept for interface parity; not used with CrewAI
+    actual_chat_request_cost,
+    get_usage_from_response,
 )
+
+import aiohttp
+import xmltodict
+from datetime import datetime, timezone
 
 # -------------------- early parse so class can load configs --------------------
 prompt_parser = argparse.ArgumentParser(add_help=False)
@@ -38,6 +37,95 @@ async def setup():
     global message_buffer
     message_buffer = asyncio.Queue()
 
+# -------------------- tool ---------------------
+
+ARXIV_BASE_URL = "http://export.arxiv.org/api/query"
+
+async def arxiv_search_raw(query: str, max_results: int = 20) -> list[dict]:
+    """
+    One-shot ArXiv search.
+    Returns a list of entry dicts (Atom XML → Python via xmltodict).
+    """
+    params = {
+        "search_query": query,
+        "sortBy": "submittedDate",
+        "sortOrder": "descending",
+        "max_results": str(max_results),
+    }
+    async with aiohttp.ClientSession() as session:
+        async with session.get(ARXIV_BASE_URL, params=params) as resp:
+            resp.raise_for_status()
+            text = await resp.text()
+
+    doc = xmltodict.parse(text)["feed"]
+    entries = doc.get("entry", [])
+    if isinstance(entries, dict):
+        entries = [entries]
+    return entries
+
+def arxiv_entry_to_summary(e: dict) -> dict:
+    """
+    Normalize a single ArXiv entry to a compact JSON-friendly summary.
+    """
+    arxiv_id = e["id"].split("/")[-1]
+    title = e["title"].strip().replace("\n", " ")
+    published = e["published"][:10]
+
+    authors_field = e.get("author", [])
+    if isinstance(authors_field, dict):
+        authors = [authors_field.get("name")]
+    else:
+        authors = [a.get("name") for a in authors_field]
+
+    summary = (e.get("summary") or "").strip()
+    snippet = summary[:300] + ("…" if len(summary) > 300 else "")
+
+    links = e.get("link", [])
+    if isinstance(links, dict):
+        links = [links]
+    pdf_link = None
+    for l in links:
+        if l.get("@title") == "pdf":
+            pdf_link = l.get("@href")
+            break
+
+    return {
+        "id": arxiv_id,
+        "title": title,
+        "authors": authors,
+        "published": published,
+        "summary_snippet": snippet,
+        "pdf_link": pdf_link,
+    }
+
+async def arxiv_search_summaries(query: str, max_results: int = 5) -> dict:
+    """
+    High level helper used by the agent.
+    Returns a dict with metadata and a list of normalized entries.
+    This is what the agent will return.
+    """
+    query = (query or "").strip()
+    if not query:
+        return {"query": query, "results": [], "error": "empty query"}
+
+    try:
+        max_results = int(max_results)
+    except Exception:
+        max_results = 5
+
+    max_results = max(1, min(max_results, 50))
+
+    entries = await arxiv_search_raw(query=query, max_results=max_results)
+    summaries = [arxiv_entry_to_summary(e) for e in entries]
+
+    return {
+        "query": query,
+        "max_results": max_results,
+        "count": len(summaries),
+        "results": summaries,
+       "timestamp_utc": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+    }
+
 # -------------------- agent --------------------
 class MyAgent(SummonerClient):
     def __init__(self, name: Optional[str] = None):
@@ -49,11 +137,12 @@ class MyAgent(SummonerClient):
         except NameError:
             self.base_dir = Path.cwd()
 
-        # env
+        # env / client
         load_dotenv()
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             raise RuntimeError("OPENAI_API_KEY missing in environment.")
+        self.client = AsyncOpenAI(api_key=api_key)
 
         # ----- GPT config -----
         gpt_cfg_path = Path(prompt_args.gpt_config_path) if prompt_args.gpt_config_path else (self.base_dir / "gpt_config.json")
@@ -93,31 +182,6 @@ class MyAgent(SummonerClient):
             raise ValueError(f"Invalid model in gpt_config.json: {self.model}. "
                              f"Available: {', '.join(model_ids)}")
 
-        # -------- LangChain LLMs used by CrewAI --------
-        # For strict JSON outputs
-        self.lc_json = ChatOpenAI(
-            model=self.model,
-            temperature=0,
-            max_tokens=self.max_chat_output_tokens,
-            # Enforce a single JSON object
-            model_kwargs={"response_format": {"type": "json_object"}},
-        )
-        # For plain text (if you ever flip output_parsing="text")
-        self.lc_text = ChatOpenAI(
-            model=self.model,
-            temperature=0,
-            max_tokens=self.max_chat_output_tokens,
-        )
-
-        # -------- CrewAI "thin" agent --------
-        self.crew_agent = CrewAgent(
-            role="Responder",
-            goal="Return a strict JSON object answering all questions thoroughly and only as JSON.",
-            backstory="A stateless structured-output responder.",
-            llm=self.lc_json,
-            verbose=False,
-        )
-
     # ------------- in-class helpers -------------
 
     def _load_json(self, path: Path) -> dict:
@@ -131,30 +195,6 @@ class MyAgent(SummonerClient):
         body = json.dumps(payload, ensure_ascii=False)
         return f"{personality}\n{self.format_prompt}\n\nContent:\n{body}\n"
 
-    async def _crew_json(self, prompt: str) -> dict:
-        """
-        Run a minimal Crew with a single task that forwards the prompt and expects JSON.
-        CrewAI is synchronous; run it in a thread executor to keep asyncio happy.
-        """
-        task = CrewTask(
-            description=prompt,
-            agent=self.crew_agent,
-            expected_output="A single valid JSON object. No extra text.",
-        )
-        crew = Crew(agents=[self.crew_agent], tasks=[task], verbose=False)
-
-        loop = asyncio.get_running_loop()
-        result = await loop.run_in_executor(None, crew.kickoff)
-        # Crew may return strings or objects; normalize to dict
-        try:
-            # If result is already a dict-like, json.dumps->json.loads is a safe normalize
-            if isinstance(result, (dict, list)):
-                # ensure dict; if list, wrap
-                return result if isinstance(result, dict) else {"data": result}
-            return json.loads(str(result))
-        except Exception:
-            # Fall back to empty object to satisfy downstream contract
-            return {}
 
     # -------------------- in-class safeguarded GPT call --------------------
     async def gpt_call_async(
@@ -188,7 +228,7 @@ class MyAgent(SummonerClient):
             await aprint(f"\033[95m[chat] Estimated cost (for {self.max_chat_output_tokens} output tokens): ${est_cost:.6f}\033[0m")
 
         output: Any = None
-        act_cost: Optional[float] = None  # Crew/LC don't expose usage here; keep None for parity
+        act_cost: Optional[float] = None
 
         # Guard 1: token ceiling
         if prompt_tokens >= self.max_chat_input_tokens:
@@ -202,39 +242,74 @@ class MyAgent(SummonerClient):
                 await aprint(f"\033[93m[chat] Skipping request: estimated cost ${est_cost:.6f} exceeds cost_limit ${cost_limit:.6f}.\033[0m")
             return {"output": output, "cost": act_cost}
 
-        # Proceed with the call via CrewAI (JSON), or direct LC for text/structured
+        # Proceed with the call
         if output_parsing == "text":
-            # Direct LC text call
-            resp = await self.lc_text.ainvoke(message)
-            output = resp.content
-            return {"output": output, "cost": act_cost}
+            response = await self.client.chat.completions.create(
+                messages=messages,
+                model=model_name,
+                max_completion_tokens=self.max_chat_output_tokens,
+            )
+            usage = get_usage_from_response(response)
+            if usage:
+                act_cost = actual_chat_request_cost(model_name, usage.prompt_tokens, usage.completion_tokens)
+                if debug:
+                    await aprint(f"\033[95m[chat] Actual cost: ${act_cost:.6f}\033[0m")
+            else:
+                if debug:
+                    await aprint("\033[93m[chat] Note: usage not available. Skipping cost.\033[0m")
+            output = response.choices[0].message.content
 
         elif output_parsing == "json":
-            # CrewAI one-task pipeline returning strict JSON
-            output = await self._crew_json(message)
-            return {"output": output, "cost": act_cost}
+            response = await self.client.chat.completions.create(
+                messages=messages,
+                model=model_name,
+                max_completion_tokens=self.max_chat_output_tokens,
+                response_format={"type": "json_object"},
+            )
+            usage = get_usage_from_response(response)
+            if usage:
+                act_cost = actual_chat_request_cost(model_name, usage.prompt_tokens, usage.completion_tokens)
+                if debug:
+                    await aprint(f"\033[95m[chat] Actual cost: ${act_cost:.6f}\033[0m")
+            else:
+                if debug:
+                    await aprint("\033[93m[chat] Note: usage not available. Skipping cost.\033[0m")
+            try:
+                output = json.loads(response.choices[0].message.content)
+            except Exception:
+                output = {}
 
         elif output_parsing == "structured":
             if output_type is None:
                 raise ValueError("output_type (schema) is required when output_parsing='structured'.")
-            llm_structured = self.lc_text.with_structured_output(output_type)
-            parsed = await llm_structured.ainvoke(message)
-            # parsed is a pydantic BaseModel or dict-like
-            if hasattr(parsed, "dict"):
-                output = parsed.dict()
+            response = await self.client.responses.parse(
+                input=messages,
+                model=model_name,
+                max_output_tokens=self.max_chat_output_tokens,
+                text_format=output_type,
+            )
+            usage = get_usage_from_response(response)
+            if usage:
+                act_cost = actual_chat_request_cost(model_name, usage.prompt_tokens, usage.completion_tokens)
+                if debug:
+                    await aprint(f"\033[95m[chat] Actual cost: ${act_cost:.6f}\033[0m")
             else:
-                output = parsed
-            return {"output": output, "cost": act_cost}
+                if debug:
+                    await aprint("\033[93m[chat] Note: usage not available for structured response. Skipping cost.\033[0m")
+            output = response.output[0].content[0].parsed
 
         else:
             raise ValueError(f"Unrecognized output_parsing: {output_parsing!r}")
 
-    # ---------------- end class ----------------
+        return {"output": output, "cost": act_cost}
+
+
 
 # instantiate
-agent = MyAgent(name="LangChainCrewAIAgent")
+agent = MyAgent(name="GPTArXivAgent")
 
-# -------------------- hooks --------------------
+# -------------------- ArXiv helpers --------------------
+
 @agent.hook(direction=Direction.RECEIVE)
 async def validate(msg: Any) -> Optional[dict]:
     if isinstance(msg, str) and msg.startswith("Warning:"):
@@ -263,7 +338,7 @@ async def sign(msg: Any) -> Optional[dict]:
 async def receiver_handler(msg: Any) -> None:
     address = msg["remote_addr"]
     if msg["content"] in [{}, None]:
-        return
+            return
     await message_buffer.put(msg["content"])
     agent.logger.info(f"Buffered message from:(SocketAddress={address}).")
 
@@ -274,30 +349,60 @@ async def send_handler() -> Union[dict, str]:
     # Compose user prompt directly from config's prompts
     user_prompt = agent._compose_user_prompt(content)
 
-    # Single guarded call; we expect JSON mapping qid->complete_answer
+    # Ask GPT whether to call the tool and with what parameters
     result = await agent.gpt_call_async(
         message=user_prompt,
         model_name=agent.model,
-        output_parsing=agent.output_parsing,  # usually "json"
+        output_parsing=agent.output_parsing,  # "json"
         output_type=None,
         cost_limit=agent.cost_limit_usd,
         debug=agent.debug,
     )
 
-    answers = result.get("output")
-    if isinstance(answers, str):
+    tool_args = result.get("output")
+
+    # Normalize output to a dict
+    if isinstance(tool_args, str):
         try:
-            answers = json.loads(answers)
+            tool_args = json.loads(tool_args)
         except Exception as e:
-            answers = {"_raw": answers, "parse_error": str(e)[:200]}
-    elif not isinstance(answers, dict):
-        answers = {}
-    output: dict[str, Any] = {"answers": answers}
+            tool_args = {"_raw": tool_args, "parse_error": str(e)[:200]}
+    elif not isinstance(tool_args, dict):
+        tool_args = {}
+
+    performed_call = False
+    api_result: Any = None
+
+    # Decide whether to call arxiv API
+    query = None
+    if isinstance(tool_args, dict):
+        query = tool_args.get("query")
+
+    if tool_args and isinstance(query, str) and query.strip():
+        # Use GPT-provided max_results if present, else default
+        max_results = tool_args.get("max_results", 5)
+        api_result = await arxiv_search_summaries(query=query, max_results=max_results)
+        performed_call = True
+    else:
+        api_result = {
+            "error": "no_arxiv_call_requested",
+            "tool_args": tool_args,
+        }
+
+    # Build outgoing message
+    output: dict[str, Any] = {
+        "tool": "arxiv",
+        "performed_call": performed_call,
+        "result": api_result,
+        "tool_args": tool_args,
+    }
 
     if isinstance(content, dict) and "from" in content:
         output["to"] = content["from"]
 
-    agent.logger.info(f"[respond] model={agent.model} id={agent.my_id} cost={result.get('cost')}")
+    agent.logger.info(
+        f"[respond] model={agent.model} id={agent.my_id} cost={result.get('cost')} performed_call={performed_call}"
+    )
     await asyncio.sleep(agent.sleep_seconds)
 
     return output

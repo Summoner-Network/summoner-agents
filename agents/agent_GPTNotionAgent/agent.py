@@ -19,6 +19,9 @@ from safeguards import (
     get_usage_from_response,
 )
 
+import aiohttp
+from datetime import datetime, timezone
+
 # -------------------- early parse so class can load configs --------------------
 prompt_parser = argparse.ArgumentParser(add_help=False)
 prompt_parser.add_argument("--gpt", dest="gpt_config_path", required=False, help="Path to gpt_config.json (defaults to file next to this script).")
@@ -32,6 +35,215 @@ async def setup():
     """Initialize the internal message buffer used between receive/send handlers."""
     global message_buffer
     message_buffer = asyncio.Queue()
+
+# -------------------- Notion helpers --------------------
+
+NOTION_BASE_URL = "https://api.notion.com/v1"
+NOTION_VERSION_DEFAULT = "2022-06-28"
+
+
+def get_notion_token() -> Optional[str]:
+    """
+    Retrieve the Notion token from the environment.
+
+    Supports both NOTION_API_KEY (official name) and NOTION_TOKEN (legacy)
+    for convenience.
+    """
+    return os.getenv("NOTION_API_KEY") or os.getenv("NOTION_TOKEN")
+
+
+def build_notion_headers() -> dict:
+    """
+    Build Notion API headers using a token from the environment.
+
+    If no token is available, the calling helper should handle that
+    and return a clear error payload.
+    """
+    token = get_notion_token()
+    headers: dict[str, str] = {
+        "Notion-Version": os.getenv("NOTION_VERSION", NOTION_VERSION_DEFAULT),
+        "Content-Type": "application/json",
+    }
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    return headers
+
+
+async def notion_request(
+    session: aiohttp.ClientSession,
+    method: str,
+    path: str,
+    params: Optional[dict] = None,
+    json_body: Optional[dict] = None,
+) -> dict:
+    """
+    Low-level Notion REST call helper.
+
+    Returns a dict with:
+    - status: HTTP status code
+    - data: parsed JSON (or raw text if JSON parsing fails)
+    """
+    url = NOTION_BASE_URL + path
+    headers = build_notion_headers()
+
+    async with session.request(
+        method=method,
+        url=url,
+        headers=headers,
+        params=params,
+        json=json_body,
+    ) as resp:
+        text = await resp.text()
+        try:
+            data = json.loads(text)
+        except Exception:
+            data = {"raw": text}
+        return {"status": resp.status, "data": data}
+
+
+async def notion_handle_request(tool_args: dict) -> dict:
+    """
+    High-level helper used by the agent.
+
+    Expected tool_args structure:
+
+    {
+      "action": "search" | "database_query" | "block_children",
+      "query": "<string>",          # for search
+      "database_id": "<string>",    # for database_query
+      "block_id": "<string>",       # for block_children
+      "page_size": 10               # optional, 1..100
+    }
+
+    It dispatches to the appropriate Notion REST endpoint and
+    returns a normalized result object.
+    """
+    token = get_notion_token()
+    if not token:
+        return {
+            "error": "missing_notion_token",
+            "details": "Set NOTION_API_KEY or NOTION_TOKEN in the environment.",
+            "tool_args": tool_args,
+        }
+
+    action = (tool_args.get("action") or "").strip()
+    page_size = tool_args.get("page_size", 10)
+    try:
+        page_size = int(page_size)
+    except Exception:
+        page_size = 10
+    page_size = max(1, min(page_size, 100))
+
+    timestamp = (
+        datetime.now(timezone.utc)
+        .isoformat(timespec="seconds")
+        .replace("+00:00", "Z")
+    )
+
+    async with aiohttp.ClientSession() as session:
+        # ---- search ----
+        if action == "search":
+            query = (tool_args.get("query") or "").strip()
+            if not query:
+                return {
+                    "error": "missing_query_for_search",
+                    "tool_args": tool_args,
+                }
+
+            body = {
+                "query": query,
+                "page_size": page_size,
+            }
+            # Optionally allow GPT to specify object filter: "page", "database", etc.
+            filter_object = (tool_args.get("filter_object") or "").strip()
+            if filter_object:
+                body["filter"] = {
+                    "value": filter_object,
+                    "property": "object",
+                }
+
+            resp = await notion_request(
+                session=session,
+                method="POST",
+                path="/search",
+                params=None,
+                json_body=body,
+            )
+            return {
+                "action": action,
+                "query": query,
+                "page_size": page_size,
+                "status": resp["status"],
+                "data": resp["data"],
+                "timestamp_utc": timestamp,
+            }
+
+        # ---- database_query ----
+        elif action == "database_query":
+            database_id = (tool_args.get("database_id") or "").strip()
+            if not database_id:
+                return {
+                    "error": "missing_database_id",
+                    "tool_args": tool_args,
+                }
+
+            body = {
+                "page_size": page_size,
+            }
+            # You can extend here later with filters/sorts if you want.
+
+            resp = await notion_request(
+                session=session,
+                method="POST",
+                path=f"/databases/{database_id}/query",
+                params=None,
+                json_body=body,
+            )
+            return {
+                "action": action,
+                "database_id": database_id,
+                "page_size": page_size,
+                "status": resp["status"],
+                "data": resp["data"],
+                "timestamp_utc": timestamp,
+            }
+
+        # ---- block_children ----
+        elif action == "block_children":
+            block_id = (tool_args.get("block_id") or "").strip()
+            if not block_id:
+                return {
+                    "error": "missing_block_id",
+                    "tool_args": tool_args,
+                }
+
+            params = {
+                "page_size": str(page_size),
+            }
+
+            resp = await notion_request(
+                session=session,
+                method="GET",
+                path=f"/blocks/{block_id}/children",
+                params=params,
+                json_body=None,
+            )
+            return {
+                "action": action,
+                "block_id": block_id,
+                "page_size": page_size,
+                "status": resp["status"],
+                "data": resp["data"],
+                "timestamp_utc": timestamp,
+            }
+
+        # ---- unsupported ----
+        else:
+            return {
+                "error": "unsupported_action",
+                "action": action,
+                "tool_args": tool_args,
+            }
 
 # -------------------- agent --------------------
 class MyAgent(SummonerClient):
@@ -213,7 +425,7 @@ class MyAgent(SummonerClient):
 
 
 # instantiate
-agent = MyAgent(name="GPTRespondAgent")
+agent = MyAgent(name="GPTNotionAgent")
 
 # -------------------- hooks --------------------
 @agent.hook(direction=Direction.RECEIVE)
@@ -255,30 +467,57 @@ async def send_handler() -> Union[dict, str]:
     # Compose user prompt directly from config's prompts
     user_prompt = agent._compose_user_prompt(content)
 
-    # Single guarded call; we expect JSON mapping qid->complete_answer
+    # Ask GPT whether to call the Notion tool and with what parameters
     result = await agent.gpt_call_async(
         message=user_prompt,
         model_name=agent.model,
-        output_parsing=agent.output_parsing,  # usually "json"
+        output_parsing=agent.output_parsing,  # "json"
         output_type=None,
         cost_limit=agent.cost_limit_usd,
         debug=agent.debug,
     )
 
-    answers = result.get("output")
-    if isinstance(answers, str):
+    tool_args = result.get("output")
+
+    # Normalize output to a dict
+    if isinstance(tool_args, str):
         try:
-            answers = json.loads(answers)
+            tool_args = json.loads(tool_args)
         except Exception as e:
-            answers = {"_raw": answers, "parse_error": str(e)[:200]}
-    elif not isinstance(answers, dict):
-        answers = {}
-    output: dict[str, Any] = {"answers": answers}
+            tool_args = {"_raw": tool_args, "parse_error": str(e)[:200]}
+    elif not isinstance(tool_args, dict):
+        tool_args = {}
+
+    performed_call = False
+    api_result: Any = None
+
+    # Decide whether to call Notion
+    action = (tool_args.get("action") or "").strip() if isinstance(tool_args, dict) else ""
+
+    if tool_args and action:
+        api_result = await notion_handle_request(tool_args)
+        performed_call = True
+    else:
+        api_result = {
+            "error": "no_notion_call_requested_or_missing_action",
+            "tool_args": tool_args,
+        }
+
+    # Build outgoing message
+    output: dict[str, Any] = {
+        "tool": "notion",
+        "performed_call": performed_call,
+        "result": api_result,
+        "tool_args": tool_args,
+    }
 
     if isinstance(content, dict) and "from" in content:
         output["to"] = content["from"]
 
-    agent.logger.info(f"[respond] model={agent.model} id={agent.my_id} cost={result.get('cost')}")
+    agent.logger.info(
+        f"[respond] model={agent.model} id={agent.my_id} "
+        f"cost={result.get('cost')} performed_call={performed_call}"
+    )
     await asyncio.sleep(agent.sleep_seconds)
 
     return output

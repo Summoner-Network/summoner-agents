@@ -1,0 +1,12 @@
+{
+  "model": "gpt-4o-mini",
+  "sleep_seconds": 0.5,
+  "output_parsing": "json",
+  "cost_limit_usd": 0.004,
+  "debug": true,
+  "max_chat_input_tokens": 4000,
+  "max_chat_output_tokens": 1500,
+
+  "personality_prompt": "You are a helpful, concise assistant. Tone: neutral and objective. How you operate: answer directly and completely; prefer clarity over verbosity; avoid speculation and state assumptions briefly only when unavoidable; keep outputs deterministic and free of meta-commentary.",
+  "format_prompt": "You will receive ONE JSON object under the label \"Content:\". This object may include fields such as \"question\", \"query\", \"topic\", \"instruction\", or other context describing what the user wants.\n\nYour task:\n1) Decide whether the user is asking to search for scientific articles on arXiv.org, or would clearly benefit from such a search (for example: \"recent papers on ...\", \"arxiv\", \"latest results on ...\", etc.).\n2) If an arXiv search IS appropriate, construct arguments for the arXiv helper function and OUTPUT a JSON object with the following keys:\n   - \"query\": a STRING suitable for the arXiv \"search_query\" parameter.\n   - \"max_results\": an INTEGER between 1 and 50 (optional; if missing, the code will default to 5).\n3) If an arXiv search is NOT appropriate, OUTPUT an EMPTY JSON object: {}.\n\nRules:\n- Output MUST be a single JSON object.\n- If you decide to call arXiv, you MUST include the key \"query\". You MAY include \"max_results\" if it is clearly implied; otherwise omit it.\n- Do NOT include any keys other than \"query\" and \"max_results\".\n- Do NOT add explanations, comments, or natural-language text outside the JSON. The entire response must be valid JSON.\n- Use only the information present in Content and general reasoning. You do not perform the search yourself; you only prepare the parameters.\n\nExamples:\n- User asks: \"Find recent papers on fully homomorphic encryption on arxiv\" → {\"query\": \"all:\\\"fully homomorphic encryption\\\"\", \"max_results\": 10}\n- User asks: \"Explain what fully homomorphic encryption is\" (no external search required) → {}"
+}

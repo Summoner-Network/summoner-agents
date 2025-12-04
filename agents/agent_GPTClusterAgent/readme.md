@@ -37,7 +37,7 @@ A guarded **embedding-and-clustering** agent that takes an iterable of texts, co
      * default `clustering` parameters (e.g., `algo`, `k`, `max_iter`, `seed`),
    * An identity UUID (`my_id`) from `id.json` (or `--id <path>`).
 
-3. Incoming messages invoke the receive-hook (`@client.hook(Direction.RECEIVE)`):
+3. Incoming messages invoke the receive-hook (`@agent.hook(Direction.RECEIVE)`):
 
    * If it's a string starting with `"Warning:"`, logs a warning and drops it.
    * If it's not a dict with `"remote_addr"` and `"content"`, logs:
@@ -55,13 +55,13 @@ A guarded **embedding-and-clustering** agent that takes an iterable of texts, co
 
      and forwards the message to the receive handler.
 
-4. The receive handler (`@client.receive(route="")`) serializes `content`, enqueues it into `message_buffer`, and logs:
+4. The receive handler (`@agent.receive(route="")`) serializes `content`, enqueues it into `message_buffer`, and logs:
 
    ```
    Buffered message from:(SocketAddress=<addr>).
    ```
 
-5. Before sending, the send-hook (`@client.hook(Direction.SEND)`) logs:
+5. Before sending, the send-hook (`@agent.hook(Direction.SEND)`) logs:
 
    ```
    [hook:send] sign <uuid>
@@ -69,7 +69,7 @@ A guarded **embedding-and-clustering** agent that takes an iterable of texts, co
 
    It wraps raw strings into `{"message": ...}`, adds `{"from": my_id}`, and forwards the message to the send handler.
 
-6. The send handler (`@client.send(route="")`) dequeues the payload, expecting content of the form:
+6. The send handler (`@agent.send(route="")`) dequeues the payload, expecting content of the form:
 
    ```json
    {"texts": [...], "clustering": { /* optional overrides */ }}
@@ -124,13 +124,13 @@ A guarded **embedding-and-clustering** agent that takes an iterable of texts, co
 | Feature                               | Description                                                             |
 | ------------------------------------- | ----------------------------------------------------------------------- |
 | `class MyAgent(SummonerClient)`       | Subclasses `SummonerClient` to load configs, identity, and manage state |
-| `@client.hook(Direction.RECEIVE)`     | Validates or drops incoming messages before main handling               |
-| `@client.hook(Direction.SEND)`        | Signs outgoing messages by adding a `from` field with UUID              |
-| `@client.receive(route=...)`          | Buffers validated messages into the queue                               |
-| `@client.send(route=...)`             | Embeds texts, applies guardrails, clusters, and returns results         |
-| `client.logger`                       | Logs hook activity, buffering, and send lifecycle events                |
-| `client.loop.run_until_complete(...)` | Runs the `setup` coroutine to initialize the message queue              |
-| `client.run(...)`                     | Connects to the server and starts the asyncio event loop                |
+| `@agent.hook(Direction.RECEIVE)`     | Validates or drops incoming messages before main handling               |
+| `@agent.hook(Direction.SEND)`        | Signs outgoing messages by adding a `from` field with UUID              |
+| `@agent.receive(route=...)`          | Buffers validated messages into the queue                               |
+| `@agent.send(route=...)`             | Embeds texts, applies guardrails, clusters, and returns results         |
+| `agent.logger`                       | Logs hook activity, buffering, and send lifecycle events                |
+| `agent.loop.run_until_complete(...)` | Runs the `setup` coroutine to initialize the message queue              |
+| `agent.run(...)`                     | Connects to the server and starts the asyncio event loop                |
 
 ## How to Run
 

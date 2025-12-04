@@ -54,7 +54,7 @@ It is **compatible with both CrewAI and LangChain**:
      * `lc_text` for plain text or structured output with a Pydantic schema.
    * Builds a minimal **CrewAI** `Agent` using `lc_json`. This agent is used only when `output_parsing == "json"`.
 
-3. Incoming messages invoke the receive-hook (`@client.hook(Direction.RECEIVE)`):
+3. Incoming messages invoke the receive-hook (`@agent.hook(Direction.RECEIVE)`):
 
    * If it is a string starting with `"Warning:"`, logs a warning and drops it.
    * If it is not a dict with `"remote_addr"` and `"content"`, logs:
@@ -72,13 +72,13 @@ It is **compatible with both CrewAI and LangChain**:
 
      and forwards the message to the receive handler.
 
-4. The receive handler (`@client.receive(route="")`) serializes `content`, enqueues it into `message_buffer`, and logs:
+4. The receive handler (`@agent.receive(route="")`) serializes `content`, enqueues it into `message_buffer`, and logs:
 
    ```
    Buffered message from:(SocketAddress=<addr>).
    ```
 
-5. Before sending, the send-hook (`@client.hook(Direction.SEND)`) logs:
+5. Before sending, the send-hook (`@agent.hook(Direction.SEND)`) logs:
 
    ```
    [hook:send] sign <uuid>
@@ -86,7 +86,7 @@ It is **compatible with both CrewAI and LangChain**:
 
    It wraps raw strings into `{"message": ...}`, adds `{"from": my_id}`, and forwards the message to the send handler.
 
-6. The send handler (`@client.send(route="")`) dequeues the payload and builds a **single user message**:
+6. The send handler (`@agent.send(route="")`) dequeues the payload and builds a **single user message**:
 
    ```
    <personality_prompt>
@@ -128,13 +128,13 @@ It is **compatible with both CrewAI and LangChain**:
 | Feature                               | Description                                                             |
 | ------------------------------------- | ----------------------------------------------------------------------- |
 | `class MyAgent(SummonerClient)`       | Subclasses `SummonerClient` to load configs, identity, and manage state |
-| `@client.hook(Direction.RECEIVE)`     | Validates or drops incoming messages before main handling               |
-| `@client.hook(Direction.SEND)`        | Signs outgoing messages by adding a `from` field with UUID              |
-| `@client.receive(route=...)`          | Buffers validated messages into the queue                               |
-| `@client.send(route=...)`             | Builds the GPT prompt, enforces guards, and returns normalized answers  |
-| `client.logger`                       | Logs hook activity, buffering, and send lifecycle events                |
-| `client.loop.run_until_complete(...)` | Runs the `setup` coroutine to initialize the message queue              |
-| `client.run(...)`                     | Connects to the server and starts the asyncio event loop                |
+| `@agent.hook(Direction.RECEIVE)`     | Validates or drops incoming messages before main handling               |
+| `@agent.hook(Direction.SEND)`        | Signs outgoing messages by adding a `from` field with UUID              |
+| `@agent.receive(route=...)`          | Buffers validated messages into the queue                               |
+| `@agent.send(route=...)`             | Builds the GPT prompt, enforces guards, and returns normalized answers  |
+| `agent.logger`                       | Logs hook activity, buffering, and send lifecycle events                |
+| `agent.loop.run_until_complete(...)` | Runs the `setup` coroutine to initialize the message queue              |
+| `agent.run(...)`                     | Connects to the server and starts the asyncio event loop                |
 | **CrewAI + LangChain**                | JSON path uses **CrewAI** agent + task with a **LangChain** `ChatOpenAI` backend. Text and structured paths call **LangChain** directly |
 
 ## How to Run

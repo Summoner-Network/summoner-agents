@@ -239,7 +239,7 @@ async def send_handler() -> Union[dict, str]:
         answers = {}
     output: dict[str, Any] = {"answers": answers}
 
-    if "from" in content:
+    if isinstance(content, dict) and "from" in content:
         output["to"] = content["from"]
 
     agent.logger.info(f"[respond] model={agent.model} id={agent.my_id} cost={result.get('cost')}")

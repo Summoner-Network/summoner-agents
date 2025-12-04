@@ -9,20 +9,18 @@ import argparse, json, asyncio, os
 
 from aioconsole import aprint
 from dotenv import load_dotenv
-
-# CrewAI / LangChain
-from crewai import Agent as CrewAgent, Task as CrewTask, Crew
-from langchain_openai import ChatOpenAI
-
-# Optional: only used for model id sanity check (best-effort)
 import openai
+from openai import AsyncOpenAI
 
 from safeguards import (
     count_chat_tokens,
     estimate_chat_request_cost,
-    actual_chat_request_cost,   # kept for interface parity; not used with CrewAI
-    get_usage_from_response,    # kept for interface parity; not used with CrewAI
+    actual_chat_request_cost,
+    get_usage_from_response,
 )
+
+import aiohttp
+from datetime import datetime, timezone
 
 # -------------------- early parse so class can load configs --------------------
 prompt_parser = argparse.ArgumentParser(add_help=False)
@@ -38,6 +36,151 @@ async def setup():
     global message_buffer
     message_buffer = asyncio.Queue()
 
+# -------------------- GitHub helpers --------------------
+
+def build_github_headers() -> dict:
+    """
+    Build GitHub API headers using an optional GITHUB_TOKEN from the environment.
+    The .env file is loaded in MyAgent.__init__, so by the time we call this,
+    environment variables should be available.
+    """
+    token = os.getenv("GITHUB_TOKEN")
+    headers: dict[str, str] = {
+        "Accept": "application/vnd.github+json",
+    }
+    if token:
+        headers["Authorization"] = f"token {token}"
+    return headers
+
+
+async def github_fetch_json(session: aiohttp.ClientSession, url: str) -> dict:
+    """
+    One-shot JSON fetch with GitHub headers.
+    """
+    async with session.get(url, headers=build_github_headers()) as resp:
+        resp.raise_for_status()
+        return await resp.json()
+
+
+async def github_latest_commits_summary(
+    owner: str,
+    repo: str,
+    max_commits: int = 5,
+) -> dict:
+    """
+    High-level helper used by the agent.
+
+    Given an owner and repo, returns a summary of the latest commits,
+    including message, author, timestamp, stats, and changed files.
+
+    This is what the agent will return as its 'result' when a GitHub
+    call is requested.
+    """
+    owner = (owner or "").strip()
+    repo = (repo or "").strip()
+    if not owner or not repo:
+        return {
+            "owner": owner,
+            "repo": repo,
+            "commits": [],
+            "error": "owner_or_repo_missing",
+        }
+
+    try:
+        max_commits = int(max_commits)
+    except Exception:
+        max_commits = 5
+
+    # Clamp max_commits to a safe range
+    max_commits = max(1, min(max_commits, 20))
+
+    commits_url = (
+        f"https://api.github.com/repos/{owner}/{repo}/commits"
+        f"?per_page={max_commits}"
+    )
+
+    summaries: list[dict] = []
+    async with aiohttp.ClientSession() as session:
+        try:
+            commits = await github_fetch_json(session, commits_url)
+        except Exception as e:
+            return {
+                "owner": owner,
+                "repo": repo,
+                "max_commits": max_commits,
+                "commits": [],
+                "error": f"fetch_commits_failed: {type(e).__name__}: {e}",
+            }
+
+        # Normalize to a list (GitHub returns a list, but be defensive)
+        if isinstance(commits, dict):
+            commits_list = [commits]
+        else:
+            commits_list = list(commits or [])
+
+        commits_list = commits_list[:max_commits]
+
+        # For each commit, enrich with stats + file changes via detail endpoint
+        for c in commits_list:
+            sha = c.get("sha")
+            if not sha:
+                continue
+
+            details_url = (
+                f"https://api.github.com/repos/{owner}/{repo}/commits/{sha}"
+            )
+            try:
+                detail = await github_fetch_json(session, details_url)
+            except Exception:
+                # If detail fails, fall back to shallow info
+                detail = c
+
+            commit_info = detail.get("commit", {})
+            author_info = commit_info.get("author", {}) or {}
+            author_name = author_info.get("name") or author_info.get("email")
+            date = author_info.get("date")
+            message = commit_info.get("message") or ""
+            subject = message.splitlines()[0] if message else ""
+
+            files_field = detail.get("files") or []
+            if isinstance(files_field, dict):
+                files_field = [files_field]
+
+            files_summary = [
+                {
+                    "filename": f.get("filename"),
+                    "additions": f.get("additions"),
+                    "deletions": f.get("deletions"),
+                    "changes": f.get("changes"),
+                }
+                for f in files_field
+            ]
+
+            summaries.append(
+                {
+                    "sha": sha,
+                    "short_sha": sha[:7],
+                    "author": author_name,
+                    "date": date,
+                    "subject": subject,
+                    "message": message,
+                    "html_url": detail.get("html_url"),
+                    "stats": detail.get("stats", {}),
+                    "files": files_summary,
+                }
+            )
+
+    return {
+        "owner": owner,
+        "repo": repo,
+        "max_commits": max_commits,
+        "count": len(summaries),
+        "commits": summaries,
+        "timestamp_utc": datetime.now(timezone.utc)
+        .isoformat(timespec="seconds")
+        .replace("+00:00", "Z"),
+    }
+
 # -------------------- agent --------------------
 class MyAgent(SummonerClient):
     def __init__(self, name: Optional[str] = None):
@@ -49,11 +192,12 @@ class MyAgent(SummonerClient):
         except NameError:
             self.base_dir = Path.cwd()
 
-        # env
+        # env / client
         load_dotenv()
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             raise RuntimeError("OPENAI_API_KEY missing in environment.")
+        self.client = AsyncOpenAI(api_key=api_key)
 
         # ----- GPT config -----
         gpt_cfg_path = Path(prompt_args.gpt_config_path) if prompt_args.gpt_config_path else (self.base_dir / "gpt_config.json")
@@ -93,31 +237,6 @@ class MyAgent(SummonerClient):
             raise ValueError(f"Invalid model in gpt_config.json: {self.model}. "
                              f"Available: {', '.join(model_ids)}")
 
-        # -------- LangChain LLMs used by CrewAI --------
-        # For strict JSON outputs
-        self.lc_json = ChatOpenAI(
-            model=self.model,
-            temperature=0,
-            max_tokens=self.max_chat_output_tokens,
-            # Enforce a single JSON object
-            model_kwargs={"response_format": {"type": "json_object"}},
-        )
-        # For plain text (if you ever flip output_parsing="text")
-        self.lc_text = ChatOpenAI(
-            model=self.model,
-            temperature=0,
-            max_tokens=self.max_chat_output_tokens,
-        )
-
-        # -------- CrewAI "thin" agent --------
-        self.crew_agent = CrewAgent(
-            role="Responder",
-            goal="Return a strict JSON object answering all questions thoroughly and only as JSON.",
-            backstory="A stateless structured-output responder.",
-            llm=self.lc_json,
-            verbose=False,
-        )
-
     # ------------- in-class helpers -------------
 
     def _load_json(self, path: Path) -> dict:
@@ -131,30 +250,6 @@ class MyAgent(SummonerClient):
         body = json.dumps(payload, ensure_ascii=False)
         return f"{personality}\n{self.format_prompt}\n\nContent:\n{body}\n"
 
-    async def _crew_json(self, prompt: str) -> dict:
-        """
-        Run a minimal Crew with a single task that forwards the prompt and expects JSON.
-        CrewAI is synchronous; run it in a thread executor to keep asyncio happy.
-        """
-        task = CrewTask(
-            description=prompt,
-            agent=self.crew_agent,
-            expected_output="A single valid JSON object. No extra text.",
-        )
-        crew = Crew(agents=[self.crew_agent], tasks=[task], verbose=False)
-
-        loop = asyncio.get_running_loop()
-        result = await loop.run_in_executor(None, crew.kickoff)
-        # Crew may return strings or objects; normalize to dict
-        try:
-            # If result is already a dict-like, json.dumps->json.loads is a safe normalize
-            if isinstance(result, (dict, list)):
-                # ensure dict; if list, wrap
-                return result if isinstance(result, dict) else {"data": result}
-            return json.loads(str(result))
-        except Exception:
-            # Fall back to empty object to satisfy downstream contract
-            return {}
 
     # -------------------- in-class safeguarded GPT call --------------------
     async def gpt_call_async(
@@ -188,7 +283,7 @@ class MyAgent(SummonerClient):
             await aprint(f"\033[95m[chat] Estimated cost (for {self.max_chat_output_tokens} output tokens): ${est_cost:.6f}\033[0m")
 
         output: Any = None
-        act_cost: Optional[float] = None  # Crew/LC don't expose usage here; keep None for parity
+        act_cost: Optional[float] = None
 
         # Guard 1: token ceiling
         if prompt_tokens >= self.max_chat_input_tokens:
@@ -202,37 +297,71 @@ class MyAgent(SummonerClient):
                 await aprint(f"\033[93m[chat] Skipping request: estimated cost ${est_cost:.6f} exceeds cost_limit ${cost_limit:.6f}.\033[0m")
             return {"output": output, "cost": act_cost}
 
-        # Proceed with the call via CrewAI (JSON), or direct LC for text/structured
+        # Proceed with the call
         if output_parsing == "text":
-            # Direct LC text call
-            resp = await self.lc_text.ainvoke(message)
-            output = resp.content
-            return {"output": output, "cost": act_cost}
+            response = await self.client.chat.completions.create(
+                messages=messages,
+                model=model_name,
+                max_completion_tokens=self.max_chat_output_tokens,
+            )
+            usage = get_usage_from_response(response)
+            if usage:
+                act_cost = actual_chat_request_cost(model_name, usage.prompt_tokens, usage.completion_tokens)
+                if debug:
+                    await aprint(f"\033[95m[chat] Actual cost: ${act_cost:.6f}\033[0m")
+            else:
+                if debug:
+                    await aprint("\033[93m[chat] Note: usage not available. Skipping cost.\033[0m")
+            output = response.choices[0].message.content
 
         elif output_parsing == "json":
-            # CrewAI one-task pipeline returning strict JSON
-            output = await self._crew_json(message)
-            return {"output": output, "cost": act_cost}
+            response = await self.client.chat.completions.create(
+                messages=messages,
+                model=model_name,
+                max_completion_tokens=self.max_chat_output_tokens,
+                response_format={"type": "json_object"},
+            )
+            usage = get_usage_from_response(response)
+            if usage:
+                act_cost = actual_chat_request_cost(model_name, usage.prompt_tokens, usage.completion_tokens)
+                if debug:
+                    await aprint(f"\033[95m[chat] Actual cost: ${act_cost:.6f}\033[0m")
+            else:
+                if debug:
+                    await aprint("\033[93m[chat] Note: usage not available. Skipping cost.\033[0m")
+            try:
+                output = json.loads(response.choices[0].message.content)
+            except Exception:
+                output = {}
 
         elif output_parsing == "structured":
             if output_type is None:
                 raise ValueError("output_type (schema) is required when output_parsing='structured'.")
-            llm_structured = self.lc_text.with_structured_output(output_type)
-            parsed = await llm_structured.ainvoke(message)
-            # parsed is a pydantic BaseModel or dict-like
-            if hasattr(parsed, "dict"):
-                output = parsed.dict()
+            response = await self.client.responses.parse(
+                input=messages,
+                model=model_name,
+                max_output_tokens=self.max_chat_output_tokens,
+                text_format=output_type,
+            )
+            usage = get_usage_from_response(response)
+            if usage:
+                act_cost = actual_chat_request_cost(model_name, usage.prompt_tokens, usage.completion_tokens)
+                if debug:
+                    await aprint(f"\033[95m[chat] Actual cost: ${act_cost:.6f}\033[0m")
             else:
-                output = parsed
-            return {"output": output, "cost": act_cost}
+                if debug:
+                    await aprint("\033[93m[chat] Note: usage not available for structured response. Skipping cost.\033[0m")
+            output = response.output[0].content[0].parsed
 
         else:
             raise ValueError(f"Unrecognized output_parsing: {output_parsing!r}")
 
-    # ---------------- end class ----------------
+        return {"output": output, "cost": act_cost}
+
+
 
 # instantiate
-agent = MyAgent(name="LangChainCrewAIAgent")
+agent = MyAgent(name="GPTGitHubAgent")
 
 # -------------------- hooks --------------------
 @agent.hook(direction=Direction.RECEIVE)
@@ -263,7 +392,7 @@ async def sign(msg: Any) -> Optional[dict]:
 async def receiver_handler(msg: Any) -> None:
     address = msg["remote_addr"]
     if msg["content"] in [{}, None]:
-        return
+            return
     await message_buffer.put(msg["content"])
     agent.logger.info(f"Buffered message from:(SocketAddress={address}).")
 
@@ -274,33 +403,73 @@ async def send_handler() -> Union[dict, str]:
     # Compose user prompt directly from config's prompts
     user_prompt = agent._compose_user_prompt(content)
 
-    # Single guarded call; we expect JSON mapping qid->complete_answer
+    # Ask GPT whether to call the GitHub tool and with what parameters
     result = await agent.gpt_call_async(
         message=user_prompt,
         model_name=agent.model,
-        output_parsing=agent.output_parsing,  # usually "json"
+        output_parsing=agent.output_parsing,  # "json"
         output_type=None,
         cost_limit=agent.cost_limit_usd,
         debug=agent.debug,
     )
 
-    answers = result.get("output")
-    if isinstance(answers, str):
+    tool_args = result.get("output")
+
+    # Normalize output to a dict
+    if isinstance(tool_args, str):
         try:
-            answers = json.loads(answers)
+            tool_args = json.loads(tool_args)
         except Exception as e:
-            answers = {"_raw": answers, "parse_error": str(e)[:200]}
-    elif not isinstance(answers, dict):
-        answers = {}
-    output: dict[str, Any] = {"answers": answers}
+            tool_args = {"_raw": tool_args, "parse_error": str(e)[:200]}
+    elif not isinstance(tool_args, dict):
+        tool_args = {}
+
+    performed_call = False
+    api_result: Any = None
+
+    # Decide whether to call the GitHub API
+    owner = tool_args.get("owner") if isinstance(tool_args, dict) else None
+    repo = tool_args.get("repo") if isinstance(tool_args, dict) else None
+
+    if (
+        isinstance(tool_args, dict)
+        and isinstance(owner, str)
+        and isinstance(repo, str)
+        and owner.strip()
+        and repo.strip()
+    ):
+        max_commits = tool_args.get("max_commits", 5)
+        api_result = await github_latest_commits_summary(
+            owner=owner,
+            repo=repo,
+            max_commits=max_commits,
+        )
+        performed_call = True
+    else:
+        api_result = {
+            "error": "no_github_call_requested_or_missing_owner_repo",
+            "tool_args": tool_args,
+        }
+
+    # Build outgoing message
+    output: dict[str, Any] = {
+        "tool": "github",
+        "performed_call": performed_call,
+        "result": api_result,
+        "tool_args": tool_args,
+    }
 
     if isinstance(content, dict) and "from" in content:
         output["to"] = content["from"]
 
-    agent.logger.info(f"[respond] model={agent.model} id={agent.my_id} cost={result.get('cost')}")
+    agent.logger.info(
+        f"[respond] model={agent.model} id={agent.my_id} "
+        f"cost={result.get('cost')} performed_call={performed_call}"
+    )
     await asyncio.sleep(agent.sleep_seconds)
 
     return output
+
 
 # -------------------- main --------------------
 if __name__ == "__main__":

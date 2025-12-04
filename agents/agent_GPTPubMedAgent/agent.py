@@ -19,6 +19,10 @@ from safeguards import (
     get_usage_from_response,
 )
 
+import aiohttp
+import xmltodict
+from datetime import datetime, timezone
+
 # -------------------- early parse so class can load configs --------------------
 prompt_parser = argparse.ArgumentParser(add_help=False)
 prompt_parser.add_argument("--gpt", dest="gpt_config_path", required=False, help="Path to gpt_config.json (defaults to file next to this script).")
@@ -32,6 +36,316 @@ async def setup():
     """Initialize the internal message buffer used between receive/send handlers."""
     global message_buffer
     message_buffer = asyncio.Queue()
+
+# -------------------- PubMed helpers --------------------
+
+PUBMED_BASE = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
+ESEARCH_URL = f"{PUBMED_BASE}/esearch.fcgi"
+EFETCH_URL  = f"{PUBMED_BASE}/efetch.fcgi"
+
+def get_ncbi_api_key() -> Optional[str]:
+    """
+    Optional PubMed / NCBI API key.
+
+    If present in NCBI_API_KEY, it will be added to E-utilities
+    requests to increase rate limits.
+    """
+    return os.getenv("NCBI_API_KEY")
+
+
+async def pubmed_esearch(
+    session: aiohttp.ClientSession,
+    term: str,
+    sort: str = "pub_date",
+    retmax: int = 5,
+) -> list[str]:
+    """
+    ESearch wrapper for PubMed.
+
+    sort:
+      - 'pub_date'   → newest first
+      - 'relevance'  → best match / relevance
+
+    retmax: number of IDs to retrieve (1..100).
+    """
+    api_key = get_ncbi_api_key()
+
+    # Bound retmax to a reasonable range
+    try:
+        retmax_int = int(retmax)
+    except Exception:
+        retmax_int = 5
+    retmax_int = max(1, min(retmax_int, 100))
+
+    params: dict[str, Any] = {
+        "db": "pubmed",
+        "term": term,
+        "retmode": "json",
+        "retmax": str(retmax_int),
+        "sort": sort,  # valid: 'pub_date', 'relevance', etc. (see NCBI docs)
+    }
+    if api_key:
+        params["api_key"] = api_key
+
+    async with session.get(ESEARCH_URL, params=params) as resp:
+        resp.raise_for_status()
+        data = await resp.json()
+
+    idlist = data.get("esearchresult", {}).get("idlist", []) or []
+    return [str(pmid) for pmid in idlist]
+
+
+def _normalize_pubmed_article(article: dict) -> dict:
+    """
+    Normalize one PubMedArticle (from xmltodict) into a simple dict.
+
+    Returns:
+      {
+        "pmid": str,
+        "title": str,
+        "journal": str,
+        "date": str,
+        "authors": [str],
+        "abstract": str,
+        "link": str,
+      }
+    """
+    medline = article.get("MedlineCitation", {})
+    art     = medline.get("Article", {})
+
+    pmid = medline.get("PMID") or ""
+    if isinstance(pmid, dict):
+        pmid = pmid.get("#text", "") or ""
+
+    title   = art.get("ArticleTitle", "No title available")
+    journal = art.get("Journal", {}).get("Title", "Unknown journal")
+
+    pubdate = art.get("Journal", {}).get("JournalIssue", {}).get("PubDate", {})
+    if isinstance(pubdate, dict):
+        year = pubdate.get("Year")
+        medline_date = pubdate.get("MedlineDate")
+        date_str = year or medline_date or "Unknown date"
+    else:
+        date_str = "Unknown date"
+
+    authors: list[str] = []
+    author_list = art.get("AuthorList", {}).get("Author", [])
+    if isinstance(author_list, dict):
+        author_list = [author_list]
+
+    for a in author_list:
+        if not isinstance(a, dict):
+            continue
+        fore = a.get("ForeName", "") or a.get("Initials", "")
+        last = a.get("LastName", "")
+        if fore or last:
+            authors.append(f"{fore} {last}".strip())
+
+    abstract_text = ""
+    abstract_obj = art.get("Abstract")
+    if abstract_obj:
+        secs = abstract_obj.get("AbstractText", "")
+        if isinstance(secs, list):
+            parts = []
+            for sec in secs:
+                if isinstance(sec, dict):
+                    parts.append(sec.get("#text", "") or "")
+                else:
+                    parts.append(str(sec))
+            abstract_text = " ".join(filter(None, parts))
+        elif isinstance(secs, dict):
+            abstract_text = secs.get("#text", "") or ""
+        else:
+            abstract_text = str(secs)
+
+    return {
+        "pmid": pmid,
+        "title": title,
+        "journal": journal,
+        "date": date_str,
+        "authors": authors,
+        "abstract": abstract_text.strip(),
+        "link": f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/" if pmid else "",
+    }
+
+
+async def pubmed_efetch(
+    session: aiohttp.ClientSession,
+    pmids: list[str],
+) -> list[dict]:
+    """
+    EFetch wrapper for PubMed.
+
+    Accepts a list of PMIDs and returns a list of normalized article dicts.
+    """
+    api_key = get_ncbi_api_key()
+
+    # Deduplicate / clean
+    clean_pmids = [str(p).strip() for p in pmids if str(p).strip()]
+    if not clean_pmids:
+        return []
+
+    params: dict[str, Any] = {
+        "db": "pubmed",
+        "id": ",".join(clean_pmids),
+        "retmode": "xml",
+        "rettype": "abstract",
+    }
+    if api_key:
+        params["api_key"] = api_key
+
+    async with session.get(EFETCH_URL, params=params) as resp:
+        resp.raise_for_status()
+        text = await resp.text()
+
+    doc = xmltodict.parse(text).get("PubmedArticleSet", {})
+
+    articles = doc.get("PubmedArticle", []) or []
+    if isinstance(articles, dict):
+        articles = [articles]
+
+    normalized: list[dict] = []
+    for art in articles:
+        if not isinstance(art, dict):
+            continue
+        normalized.append(_normalize_pubmed_article(art))
+
+    return normalized
+
+
+async def pubmed_handle_request(tool_args: dict) -> dict:
+    """
+    High-level helper used by GPTPubMedAgent.
+
+    Expected tool_args shape (GPT decides):
+
+    {
+      "action": "search_fetch",
+      "term": "<search query>",          # optional if pmids provided
+      "retmax": 5,                      # 1..50
+      "sort": "pub_date" | "relevance", # optional (default 'pub_date')
+      "pmids": ["12345678", "34567890"] # optional, overrides term if present
+    }
+
+    Behavior:
+
+    - If 'pmids' is provided and non-empty, skip ESearch and just EFetch those IDs.
+    - Else, if 'term' is provided, run ESearch with sort/retmax, then EFetch.
+    - Else, return an error.
+
+    Returns a dict with:
+      {
+        "action": "search_fetch",
+        "term": ...,
+        "pmids": [...],
+        "retmax": N,
+        "sort": "pub_date" | "relevance",
+        "count": <number of articles>,
+        "articles": [ {pmid, title, ...}, ... ],
+        "timestamp_utc": "...",
+      }
+      or an error payload.
+    """
+    action = (tool_args.get("action") or "").strip()
+    if action != "search_fetch":
+        return {
+            "error": "unsupported_action",
+            "action": action,
+            "tool_args": tool_args,
+        }
+
+    # retmax
+    try:
+        retmax = int(tool_args.get("retmax", 5))
+    except Exception:
+        retmax = 5
+    retmax = max(1, min(retmax, 50))
+
+    # sort: normalize some human-ish values
+    sort_raw = (tool_args.get("sort") or "").strip().lower()
+    if sort_raw in ("", "latest", "newest", "recent", "pub_date", "pub date"):
+        sort = "pub_date"
+    elif sort_raw in ("relevance", "relevant", "best_match", "best match"):
+        sort = "relevance"
+    else:
+        # safe default
+        sort = "pub_date"
+
+    # pmids (if any)
+    pmids_param = tool_args.get("pmids")
+    pmids: list[str] = []
+    if isinstance(pmids_param, str):
+        # Allow comma or space separated
+        if "," in pmids_param:
+            pmids = [p.strip() for p in pmids_param.split(",")]
+        else:
+            pmids = [p.strip() for p in pmids_param.split()]
+    elif isinstance(pmids_param, list):
+        pmids = [str(p).strip() for p in pmids_param if str(p).strip()]
+
+    # Single 'pmid' convenience
+    single_pmid = tool_args.get("pmid")
+    if single_pmid and not pmids:
+        pmids = [str(single_pmid).strip()]
+
+    term = (tool_args.get("term") or "").strip()
+
+    # If we have PMIDs, we just fetch them (optionally respecting retmax)
+    async with aiohttp.ClientSession() as session:
+        used_pmids: list[str] = []
+
+        if pmids:
+            used_pmids = pmids[:retmax]
+        elif term:
+            # ESearch to get IDs for the term
+            idlist = await pubmed_esearch(
+                session=session,
+                term=term,
+                sort=sort,
+                retmax=retmax,
+            )
+            if not idlist:
+                timestamp = (
+                    datetime.now(timezone.utc)
+                    .isoformat(timespec="seconds")
+                    .replace("+00:00", "Z")
+                )
+                return {
+                    "action": action,
+                    "term": term,
+                    "pmids": [],
+                    "retmax": retmax,
+                    "sort": sort,
+                    "count": 0,
+                    "articles": [],
+                    "timestamp_utc": timestamp,
+                }
+            used_pmids = idlist[:retmax]
+        else:
+            return {
+                "error": "missing_term_and_pmids",
+                "tool_args": tool_args,
+            }
+
+        # Fetch article details
+        articles = await pubmed_efetch(session=session, pmids=used_pmids)
+
+    timestamp = (
+        datetime.now(timezone.utc)
+        .isoformat(timespec="seconds")
+        .replace("+00:00", "Z")
+    )
+
+    return {
+        "action": action,
+        "term": term if term else None,
+        "pmids": used_pmids,
+        "retmax": retmax,
+        "sort": sort,
+        "count": len(articles),
+        "articles": articles,
+        "timestamp_utc": timestamp,
+    }
 
 # -------------------- agent --------------------
 class MyAgent(SummonerClient):
@@ -213,7 +527,7 @@ class MyAgent(SummonerClient):
 
 
 # instantiate
-agent = MyAgent(name="GPTRespondAgent")
+agent = MyAgent(name="GPTPubMedAgent")
 
 # -------------------- hooks --------------------
 @agent.hook(direction=Direction.RECEIVE)
@@ -255,33 +569,60 @@ async def send_handler() -> Union[dict, str]:
     # Compose user prompt directly from config's prompts
     user_prompt = agent._compose_user_prompt(content)
 
-    # Single guarded call; we expect JSON mapping qid->complete_answer
+    # Ask GPT whether to call the PubMed tool and with what parameters
     result = await agent.gpt_call_async(
         message=user_prompt,
         model_name=agent.model,
-        output_parsing=agent.output_parsing,  # usually "json"
+        output_parsing=agent.output_parsing,  # "json"
         output_type=None,
         cost_limit=agent.cost_limit_usd,
         debug=agent.debug,
     )
 
-    answers = result.get("output")
-    if isinstance(answers, str):
+    tool_args = result.get("output")
+
+    # Normalize GPT output to a dict
+    if isinstance(tool_args, str):
         try:
-            answers = json.loads(answers)
+            tool_args = json.loads(tool_args)
         except Exception as e:
-            answers = {"_raw": answers, "parse_error": str(e)[:200]}
-    elif not isinstance(answers, dict):
-        answers = {}
-    output: dict[str, Any] = {"answers": answers}
+            tool_args = {"_raw": tool_args, "parse_error": str(e)[:200]}
+    elif not isinstance(tool_args, dict):
+        tool_args = {}
+
+    performed_call = False
+    api_result: Any = None
+
+    action = (tool_args.get("action") or "").strip() if isinstance(tool_args, dict) else ""
+
+    if tool_args and action:
+        api_result = await pubmed_handle_request(tool_args)
+        performed_call = True
+    else:
+        api_result = {
+            "error": "no_pubmed_call_requested_or_missing_action",
+            "tool_args": tool_args,
+        }
+
+    # Build outgoing message
+    output: dict[str, Any] = {
+        "tool": "pubmed",
+        "performed_call": performed_call,
+        "result": api_result,
+        "tool_args": tool_args,
+    }
 
     if isinstance(content, dict) and "from" in content:
         output["to"] = content["from"]
 
-    agent.logger.info(f"[respond] model={agent.model} id={agent.my_id} cost={result.get('cost')}")
+    agent.logger.info(
+        f"[respond] model={agent.model} id={agent.my_id} "
+        f"cost={result.get('cost')} performed_call={performed_call}"
+    )
     await asyncio.sleep(agent.sleep_seconds)
 
     return output
+
 
 # -------------------- main --------------------
 if __name__ == "__main__":

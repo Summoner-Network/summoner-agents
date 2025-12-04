@@ -339,7 +339,7 @@ async def send_handler() -> Union[dict, str]:
         "result": result,
     }
 
-    if "from" in content:
+    if isinstance(content, dict) and "from" in content:
         output["to"] = content["from"]
 
     agent.logger.info(f"[cluster] model={agent.embedding_model} id={agent.my_id} texts={len(texts)}")
