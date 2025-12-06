@@ -252,6 +252,8 @@ async def receiver_handler(msg: Any) -> None:
 async def send_handler() -> Union[dict, str]:
     content = await message_buffer.get()
 
+    handoff = content.pop("handoff", {}) if isinstance(content, dict) else {}
+
     # Compose user prompt directly from config's prompts
     user_prompt = agent._compose_user_prompt(content)
 
@@ -273,7 +275,10 @@ async def send_handler() -> Union[dict, str]:
             answers = {"_raw": answers, "parse_error": str(e)[:200]}
     elif not isinstance(answers, dict):
         answers = {}
-    output: dict[str, Any] = {"answers": answers}
+    output: dict[str, Any] = {
+        "answers": answers,
+        "handoff": handoff,
+        }
 
     if isinstance(content, dict) and "from" in content:
         output["to"] = content["from"]

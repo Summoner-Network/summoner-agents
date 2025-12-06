@@ -1,2 +1,2 @@
-slack-bolt 
 python-dotenv
+slack-sdk

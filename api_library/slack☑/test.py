@@ -1,45 +1,79 @@
 import os
 import asyncio
-import threading
-from slack_bolt import App
-from slack_bolt.adapter.socket_mode import SocketModeHandler
+
 from dotenv import load_dotenv
-from clock_events import good_morning_scheduler
+
+from slack_sdk.web.async_client import AsyncWebClient
+from slack_sdk.socket_mode.aiohttp import SocketModeClient
+from slack_sdk.socket_mode.request import SocketModeRequest
+from slack_sdk.socket_mode.response import SocketModeResponse
 
 load_dotenv()
 
-BOT_TOKEN   = os.getenv("SLACK_BOT_TOKEN")
-APP_TOKEN   = os.getenv("SLACK_APP_TOKEN")
+SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN")   # xoxb-...
+SLACK_APP_TOKEN = os.getenv("SLACK_APP_TOKEN")   # xapp-...
 
-app = App(token=BOT_TOKEN)
+async def handle_events(sm_client: SocketModeClient, req: SocketModeRequest):
+    """
+    Main handler for everything Slack sends over Socket Mode.
+    """
+    # 1) ACK the envelope so Slack doesn't retry
+    await sm_client.send_socket_mode_response(
+        SocketModeResponse(envelope_id=req.envelope_id)
+    )
 
-@app.event("app_mention")
-def handle_mention(body, say):
-    event = body["event"]
-    user  = event["user"]
-    say(f"👋 Hello <@{user}>! I am alive and listening.")
+    # We only care about "events_api" envelopes here
+    if req.type != "events_api":
+        return
 
-@app.event("message")
-def handle_message_events(body, logger):
-    logger.info(body)
-    print(body)
+    event = req.payload.get("event", {}) or {}
+    event_type = event.get("type")
 
-@app.message("ping")
-def handle_ping(message, say):
-    say("pong")
+    # --- Detect app mentions ---
+    if event_type == "app_mention":
+        channel = event.get("channel")
+        user    = event.get("user")
 
-def start_scheduler_loop():
-    """Run the scheduler in its own asyncio event loop (daemon thread)."""
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    # Pass the WebClient from Bolt
-    loop.run_until_complete(good_morning_scheduler(app.client))
+        # Simple hello reply to the user
+        if channel and user:
+            await sm_client.web_client.chat_postMessage(
+                channel=channel,
+                text=f"👋 Hello <@{user}>! I heard your mention via slack_sdk + Socket Mode."
+            )
+        return
+
+    # --- You can also handle plain messages here if you want ---
+    if event_type == "message" and not event.get("bot_id"):
+        text    = (event.get("text") or "").strip().lower()
+        channel = event.get("channel")
+        user    = event.get("user")
+
+        print(f"[message] user={user} channel={channel} text={text!r}")
+
+        # Example: simple ping/pong test
+        if text == "ping" and channel and user:
+            await sm_client.web_client.chat_postMessage(
+                channel=channel,
+                text=f"pong (from slack_sdk Socket Mode)"
+            )
+
+async def main():
+    # Async WebClient for calling Slack Web API (chat_postMessage, etc.)
+    web_client = AsyncWebClient(token=SLACK_BOT_TOKEN)
+
+    # Socket Mode client for receiving events
+    sm_client = SocketModeClient(
+        app_token=SLACK_APP_TOKEN,
+        web_client=web_client,
+    )
+
+    # Register our event handler
+    sm_client.socket_mode_request_listeners.append(handle_events)
+
+    # Connect and keep the process alive
+    await sm_client.connect()
+    print("Socket Mode client connected. Waiting for events...")
+    await asyncio.Event().wait()  # never completes; keeps the loop alive
 
 if __name__ == "__main__":
-    # 1) Launch scheduler thread
-    scheduler_thread = threading.Thread(target=start_scheduler_loop, daemon=True)
-    scheduler_thread.start()
-
-    # 2) Start Socket Mode (blocks here)
-    handler = SocketModeHandler(app, app_token=APP_TOKEN)
-    handler.start()
+    asyncio.run(main())

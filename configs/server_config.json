@@ -28,7 +28,7 @@
         "control_channel_capacity": 8,
         "queue_monitor_capacity": 100,
 
-        "client_timeout_secs": 600,
+        "client_timeout_secs": null,
         "rate_limit_msgs_per_minute": 1000,
         "timeout_check_interval_secs": 30,
         "accept_error_backoff_ms": 100,

@@ -566,6 +566,8 @@ async def receiver_handler(msg: Any) -> None:
 async def send_handler() -> Union[dict, str]:
     content = await message_buffer.get()
 
+    handoff = content.pop("handoff", {}) if isinstance(content, dict) else {}
+
     # Compose user prompt directly from config's prompts
     user_prompt = agent._compose_user_prompt(content)
 
@@ -610,6 +612,7 @@ async def send_handler() -> Union[dict, str]:
         "performed_call": performed_call,
         "result": api_result,
         "tool_args": tool_args,
+        "handoff": handoff,
     }
 
     if isinstance(content, dict) and "from" in content:

@@ -317,6 +317,8 @@ async def receiver_handler(msg: Any) -> None:
 async def send_handler() -> Union[dict, str]:
     content = await message_buffer.get()
 
+    handoff = content.pop("handoff", {}) if isinstance(content, dict) else {}
+
     # Expect: payload like {"texts": [...], "clustering": {"algo":"kmeans","k":3}} OR just {"texts":[...]}
     texts_in = content.get("texts")
     if not isinstance(texts_in, (list, tuple)):
@@ -337,6 +339,7 @@ async def send_handler() -> Union[dict, str]:
         "embedding_model": agent.embedding_model,
         "num_texts": len(texts),
         "result": result,
+        "handoff": handoff,
     }
 
     if isinstance(content, dict) and "from" in content:

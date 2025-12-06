@@ -20,7 +20,7 @@
     * [Feedback Agents](#feedback-agents)
     * [Connector Agents (to MCP, LangChain, CrewAI, etc.)](#connector-agents)
     * [Security and Handshake Agents](#security-and-handshake-agents)
-    * [API Agents 🚧 (in progress)](#api-agents)
+    * [API Agents](#api-agents)
     * [DNA-Induced Agents 🚧 (planned)](#dna-induced-agents)
 
 
@@ -799,8 +799,8 @@ Here’s the same block with only the `...` descriptions filled in (Slack row le
         <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
     </tr>
     <tr>
-        <td><code><strong>GPTSlackAgent</strong></code></td>
-        <td style="font-size: 0.8em;">...</td>
+        <td><code><strong><a href="agents/agent_GPTSlackAgent/">GPTSlackAgent</a></strong></code></td>
+        <td style="font-size: 0.8em;">Guarded GPT bridge to Slack: listens to app mentions, decides relay vs direct reply, and posts threaded answers with channel/user handoff metadata.</td>
         <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
         <td><code>core</code> <code>agent</code> <code>DID</code> <code>guardrails</code> <code>Slack</code></td>
         <td><img src="https://img.shields.io/badge/App-%20?color=f1227a" alt=""></td>
