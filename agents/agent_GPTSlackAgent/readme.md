@@ -3,9 +3,12 @@
 A guarded GPT-powered agent that connects a **Slack workspace** to the Summoner network. It listens for `app_mention` events in allowed channels, decides whether to **relay** the request to backend agents, and then posts answers back into Slack threads using a second GPT pass.
 
 Specifically, `GPTSlackAgent` listens for `app_mention` events via Slack **Socket Mode** and decides (with GPT) whether to:
+
 * **Relay** the user’s request to backend agents on the Summoner server, and
 * **Post** answers or status updates back into Slack threads,
+
 using two separate GPT prompts:
+
 * `relay_format_prompt` for **Slack → Summoner (relay)**,
 * `post_format_prompt` for **Summoner → Slack (post)**.
 
