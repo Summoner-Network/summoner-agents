@@ -693,7 +693,7 @@ Click to show the legend.
 Here’s the same block with only the `...` descriptions filled in (Slack row left untouched as requested):
 
 
-### API Agents 🚧
+### API Agents
 
 <details>
 <summary><b>(Click to expand)</b> Agents of <b>level 1-3</b> bridging external services (registries, apps, LLM tools) to extend SDK capabilities.</summary>

@@ -26,54 +26,6 @@ from slack_sdk.socket_mode.request import SocketModeRequest
 from slack_sdk.socket_mode.response import SocketModeResponse
 from slack_sdk.errors import SlackApiError
 
-# -------------------------------------------------------------------------
-#  Env + allowed channels
-# -------------------------------------------------------------------------
-# Load .env once at module import so ALLOWED_CHANNEL_IDS can see it.
-load_dotenv()
-
-# Static allowlist for posting *and* listening
-# (keys: channel IDs and canonical names; values: inverse mapping)
-ALLOWED_CHANNEL_IDS = {
-    # by ID:
-    "C07AA1K6BQB": "#general",
-    "C08K6V1SVB2": "#gm-ga-ge-gn",
-    "C0A2TK7P8SC": "#summonerbot-tests",
-    # optionally by name for convenience:
-    "#general": "C07AA1K6BQB",
-    "#gm-ga-ge-gn": "C08K6V1SVB2",
-    "#summonerbot-tests": "C0A2TK7P8SC",
-}
-
-# Runtime blocklist learned from Slack errors (posting)
-BLOCKED_CHANNEL_IDS: set[str] = set()
-BLOCKED_CHANNEL_NAMES: set[str] = set()
-
-# Channels where posting failed (e.g. not_in_channel) – used also to ignore events
-NOT_ALLOWED_CHANNEL_IDS: set[str] = set()
-
-
-def normalize_post_channel(raw: str) -> Optional[str]:
-    """
-    Turn a user/GPT channel token into a Slack channel ID we may post to.
-    Returns None if the channel is not allowed.
-    """
-    if not raw:
-        return None
-
-    # If GPT gave us something like "#general"
-    if raw in ALLOWED_CHANNEL_IDS:
-        cid = ALLOWED_CHANNEL_IDS[raw]
-        return cid if cid not in BLOCKED_CHANNEL_IDS and cid not in NOT_ALLOWED_CHANNEL_IDS else None
-
-    # If GPT gave an ID directly
-    if raw in ALLOWED_CHANNEL_IDS.values():
-        return raw if raw not in BLOCKED_CHANNEL_IDS and raw not in NOT_ALLOWED_CHANNEL_IDS else None
-
-    # Anything else is not allowed
-    return None
-
-
 # -------------------- early parse so class can load configs --------------------
 prompt_parser = argparse.ArgumentParser(add_help=False)
 prompt_parser.add_argument("--gpt", dest="gpt_config_path", required=False, help="Path to gpt_config.json (defaults to file next to this script).")
@@ -110,6 +62,40 @@ async def setup() -> None:
 
 # -------------------- Slack helpers --------------------
 
+load_dotenv()
+
+# Channels where posting failed (e.g. not_in_channel / channel_not_found)
+# – used to ignore events and posts
+NOT_ALLOWED_CHANNEL_IDS: set[str] = set()
+
+# Channels where posting SUCCEEDED at least once
+# – dynamic allowlist used in the GPT prompt
+ALLOWED_CHANNEL_TOKENS: set[str] = set()
+
+
+def normalize_post_channel(raw: str) -> Optional[str]:
+    """
+    Turn a user/GPT channel token into a Slack channel ID/name we may post to.
+
+    Normalization:
+      - Strip a single leading '#' if present (Slack expects 'general' or 'C123..',
+        not '#general' / '#C123..').
+      - Then check the NOT_ALLOWED_CHANNEL_IDS set.
+      - Otherwise, be optimistic and let Slack teach us via errors.
+    """
+    if not raw:
+        return None
+
+    # Strip one leading '#' – this makes '#general' -> 'general', '#C123' -> 'C123'
+    token = raw[1:] if raw.startswith("#") else raw
+
+    # Hard block: channels we already learned are unusable
+    if token in NOT_ALLOWED_CHANNEL_IDS:
+        return None
+
+    return token
+
+
 async def slack_handle_events(sm_client: SocketModeClient, req: SocketModeRequest):
     """
     Main handler for everything Slack sends over Socket Mode.
@@ -117,7 +103,8 @@ async def slack_handle_events(sm_client: SocketModeClient, req: SocketModeReques
     We keep it as thin as possible: normalize events and push them
     into to_server_buffer. GPT decisions happen in @send('relay').
 
-    IMPORTANT: we only react to app_mention events in allowed channels.
+    We react to app_mention events in any channel that is not explicitly
+    marked as NOT_ALLOWED_CHANNEL_IDS.
     """
     global to_server_buffer, SEEN_SLACK_EVENTS
 
@@ -151,12 +138,7 @@ async def slack_handle_events(sm_client: SocketModeClient, req: SocketModeReques
         agent.logger.info(f"[slack] ignoring app_mention from NOT_ALLOWED channel={channel}")
         return
 
-    # 2) Soft allowlist: if ALLOWED_CHANNEL_IDS is non-empty, we only listen to those IDs
-    if ALLOWED_CHANNEL_IDS and channel not in ALLOWED_CHANNEL_IDS:
-        agent.logger.info(f"[slack] ignoring app_mention from disallowed channel={channel}")
-        return
-
-    # 3) Dedupe (same channel+ts can come more than once)
+    # 2) Dedupe (same channel+ts can come more than once)
     if SEEN_SLACK_EVENTS is not None:
         key = (channel, ts)
         if key in SEEN_SLACK_EVENTS:
@@ -176,8 +158,9 @@ async def slack_handle_events(sm_client: SocketModeClient, req: SocketModeReques
 
     if to_server_buffer is not None:
         await to_server_buffer.put(payload)
-    agent.logger.info(f"[slack] buffered app_mention from user={user} channel={channel}")
-
+    agent.logger.info(
+        f"[slack] buffered app_mention from user={user} channel={channel}"
+    )
 
 
 async def slack_socket_loop() -> None:
@@ -252,9 +235,7 @@ async def slack_post_loop() -> None:
 
         channel = normalize_post_channel(str(raw_channel))
         if channel is None:
-            agent.logger.info(
-                f"[slack_post_loop] suppressed post to disallowed/unknown channel={raw_channel!r}"
-            )
+            agent.logger.info(f"[slack_post_loop] suppressed post to disallowed/unknown channel={raw_channel!r}")
             continue
 
         try:
@@ -263,6 +244,10 @@ async def slack_post_loop() -> None:
                 kwargs["thread_ts"] = thread_ts
             await SLACK_WEB_CLIENT.chat_postMessage(**kwargs)
             agent.logger.info(f"[slack_post_loop] posted to channel={channel}")
+
+            # Learn this channel as allowed on successful post
+            ALLOWED_CHANNEL_TOKENS.add(channel)
+
         except Exception as e:
             agent.logger.warning(
                 f"[slack_post_loop] failed to post: {type(e).__name__}: {e}"
@@ -271,51 +256,95 @@ async def slack_post_loop() -> None:
             # Learn from Slack's error
             if isinstance(e, SlackApiError):
                 err = (e.response.get("error") or "").strip()
-                if err == "not_in_channel":
-                    # Mark that channel as blocked so we never try again
-                    BLOCKED_CHANNEL_IDS.add(channel)
+                if err in ("not_in_channel", "channel_not_found"):
+                    # Mark that channel as not allowed so we never try again
                     NOT_ALLOWED_CHANNEL_IDS.add(channel)
-                    # Also keep its human name, if we have one
-                    for key, val in ALLOWED_CHANNEL_IDS.items():
-                        if val == channel and key.startswith("#"):
-                            BLOCKED_CHANNEL_NAMES.add(key)
-
+                    # If we previously thought it was allowed, forget it
+                    ALLOWED_CHANNEL_TOKENS.discard(channel)
                     agent.logger.info(
-                        f"[slack_post_loop] learned not_in_channel for channel_id={channel}; "
+                        f"[slack_post_loop] learned {err} for channel_id={channel}; "
                         f"future posts and events for this channel will be suppressed."
                     )
 
 
 def build_channel_policy_clause() -> str:
     """
-    Describe allowed and blocked channels to the model in natural language.
+    Describe known allowed and blocked channels to the model in natural language.
+
+    We keep this short and machine-like to reduce fuzzy matching:
+    - Explicit list of blocked tokens, with character-by-character spelling.
+    - Dynamic list of allowed tokens (channels that succeeded at least once).
+    - Clear rule that blocking only happens on exact, character-level matches.
+    - Clear instruction: write the reason first, then set 'should_post' based on it.
     """
-    allowed_names: set[str] = set()
-    for k, v in ALLOWED_CHANNEL_IDS.items():
-        # k can be "#general"; v is "C07..."
-        if k.startswith("#"):
-            allowed_names.add(k)
-
     parts: list[str] = []
-    if allowed_names:
-        allowed_str = ", ".join(sorted(allowed_names))
+
+    allowed = sorted(ALLOWED_CHANNEL_TOKENS)
+    blocked = sorted(NOT_ALLOWED_CHANNEL_IDS)
+
+    # ------------------------------------------------------------------
+    # Blocked channels: printed with character-by-character spelling
+    # to force exact matching in the model's reasoning.
+    # ------------------------------------------------------------------
+    if blocked:
+        blocked_lines = [
+            f"- {ch}: " + ", ".join(ch)
+            for ch in blocked
+        ]
+        blocked_str = "\n".join(blocked_lines)
         parts.append(
-            "You are only allowed to post into the following Slack channels: "
-            f"{allowed_str}. If the Content asks to post in any other channel "
-            "(for example \"funding\" or \"#random\"), you must output "
-            "{\"should_post\": false}."
+            "<blocked_channels>\n"
+            "Blocked Slack channels. This is a sensitive field: channel names with slight variation "
+            "must NOT be blocked by mistake.\n"
+            f"{blocked_str}\n"
+            "You must treat a channel as blocked only when the Content channel token matches one of "
+            "these entries EXACTLY, character by character. Similarity or partial matches do not count.\n"
+            "</blocked_channels>"
         )
 
-    if BLOCKED_CHANNEL_NAMES or BLOCKED_CHANNEL_IDS or NOT_ALLOWED_CHANNEL_IDS:
-        blocked_tokens = set(BLOCKED_CHANNEL_NAMES)
-        blocked_tokens.update(BLOCKED_CHANNEL_IDS)
-        blocked_tokens.update(NOT_ALLOWED_CHANNEL_IDS)
-        blocked_str = ", ".join(sorted(blocked_tokens))
+    # ------------------------------------------------------------------
+    # Allowed channels: dynamic allowlist (channels that have succeeded).
+    # If empty, we fall back to the rule “any non-blocked channel is allowed”.
+    # ------------------------------------------------------------------
+    if allowed:
+        allowed_str = ", ".join(allowed)
         parts.append(
-            "The following channels are currently unavailable (the bot is not in them): "
-            f"{blocked_str}. You must not attempt to post to them and should return "
-            "{\"should_post\": false} if Content targets one of these."
+            "<allowed_channels>\n"
+            "Allowed Slack channels (these are known to be safe to post to): "
+            f"{allowed_str}.\n"
+            "If a channel name appears both here and in the blocked list, the blocked status takes precedence.\n"
+            "</allowed_channels>"
         )
+    else:
+        parts.append(
+            "<allowed_channels>\n"
+            "There is currently no explicit allowlist. Any channel that is not blocked MAY be used, "
+            "as long as it does not exactly match a blocked token.\n"
+            "</allowed_channels>"
+        )
+
+    # ------------------------------------------------------------------
+    # Global decision rule: reason first, then should_post.
+    # This is the key pattern that stabilizes the model.
+    # ------------------------------------------------------------------
+    parts.append(
+        "Channel decision rules:\n"
+        "- ANY channel that is not blocked can be posted into. A channel name or ID should only be blocked "
+        "if it corresponds EXACTLY to a blocked name/ID.\n"
+        "  Example: #helloworld and #helloworlds are different because of the extra character 's'.\n"
+        "- ALWAYS provide a brief 'reason' for why you accept or block a channel. The reason must appear "
+        "BEFORE the 'should_post' field in the JSON you return.\n"
+        "- Base the 'should_post' value strictly on that reason:\n"
+        "    * If the Content channel matches a blocked channel token exactly (character-by-character), "
+        "then should_post must be false.\n"
+        "    * If it does NOT match any blocked token exactly, then you may set should_post to true, "
+        "subject to the rest of the instructions.\n"
+        "- When explaining your reason, you MUST spell the Content's channel token character-by-character and "
+        "explicitly say whether it matches the spelling of a blocked channel exactly.\n"
+        "- If it does not match character-by-character, you have it wrong and should treat the channel as allowed.\n"
+        "- Ambiguous similarity or naming resemblance (for example, #summoner-tests vs #summonerbot-tests) is NOT a "
+        "valid reason for blocking. Only exact matches justify blocking."
+    )
 
     return "\n".join(parts)
 
@@ -441,24 +470,14 @@ class MyAgent(SummonerClient):
 
         prompt_tokens = count_chat_tokens(messages, model_name)
         if debug:
-            await aprint(
-                f"\033[96mPrompt tokens: {prompt_tokens} > {self.max_chat_input_tokens} ? "
-                f"{prompt_tokens > self.max_chat_input_tokens}\033[0m"
-            )
-            messages_str = str(messages)
-            long_messages = len(messages_str) > 100000
-            await aprint(
-                f"\033[92mInput: {messages_str[:100000] + '...' * long_messages}\033[0m"
-            )
+            await aprint(f"\033[96mPrompt tokens: {prompt_tokens} > {self.max_chat_input_tokens} ? {prompt_tokens > self.max_chat_input_tokens}\033[0m")
+            messages_str = str(message)
+            long_messages = len(messages_str) > 20000
+            await aprint(f"\033[92mInput: {messages_str[:20000] + '...' * long_messages}\033[0m")
 
-        est_cost = estimate_chat_request_cost(
-            model_name, prompt_tokens, self.max_chat_output_tokens
-        )
+        est_cost = estimate_chat_request_cost(model_name, prompt_tokens, self.max_chat_output_tokens)
         if debug:
-            await aprint(
-                f"\033[95m[chat] Estimated cost (for {self.max_chat_output_tokens} "
-                f"output tokens): ${est_cost:.6f}\033[0m"
-            )
+            await aprint(f"\033[95m[chat] Estimated cost (for {self.max_chat_output_tokens} output tokens): ${est_cost:.6f}\033[0m")
 
         output: Any = None
         act_cost: Optional[float] = None
@@ -466,18 +485,13 @@ class MyAgent(SummonerClient):
         # Guard 1: token ceiling
         if prompt_tokens >= self.max_chat_input_tokens:
             if debug:
-                await aprint(
-                    "\033[93mTokens exceeded — unable to send the request.\033[0m"
-                )
+                await aprint("\033[93mTokens exceeded — unable to send the request.\033[0m")
             return {"output": output, "cost": act_cost}
 
         # Guard 2: cost ceiling
         if cost_limit is not None and est_cost > cost_limit:
             if debug:
-                await aprint(
-                    f"\033[93m[chat] Skipping request: estimated cost ${est_cost:.6f} "
-                    f"exceeds cost_limit ${cost_limit:.6f}.\033[0m"
-                )
+                await aprint(f"\033[93m[chat] Skipping request: estimated cost ${est_cost:.6f} exceeds cost_limit ${cost_limit:.6f}.\033[0m")
             return {"output": output, "cost": act_cost}
 
         # Proceed with the call
@@ -489,19 +503,12 @@ class MyAgent(SummonerClient):
             )
             usage = get_usage_from_response(response)
             if usage:
-                act_cost = actual_chat_request_cost(
-                    model_name, usage.prompt_tokens, usage.completion_tokens
-                )
+                act_cost = actual_chat_request_cost(model_name, usage.prompt_tokens, usage.completion_tokens)
                 if debug:
-                    await aprint(
-                        f"\033[95m[chat] Actual cost: ${act_cost:.6f}\033[0m"
-                    )
+                    await aprint(f"\033[95m[chat] Actual cost: ${act_cost:.6f}\033[0m")
             else:
                 if debug:
-                    await aprint(
-                        "\033[93m[chat] Note: usage not available. "
-                        "Skipping cost.\033[0m"
-                    )
+                    await aprint("\033[93m[chat] Note: usage not available. Skipping cost.\033[0m")
             output = response.choices[0].message.content
 
         elif output_parsing == "json":
@@ -513,19 +520,12 @@ class MyAgent(SummonerClient):
             )
             usage = get_usage_from_response(response)
             if usage:
-                act_cost = actual_chat_request_cost(
-                    model_name, usage.prompt_tokens, usage.completion_tokens
-                )
+                act_cost = actual_chat_request_cost(model_name, usage.prompt_tokens, usage.completion_tokens)
                 if debug:
-                    await aprint(
-                        f"\033[95m[chat] Actual cost: ${act_cost:.6f}\033[0m"
-                    )
+                    await aprint(f"\033[95m[chat] Actual cost: ${act_cost:.6f}\033[0m")
             else:
                 if debug:
-                    await aprint(
-                        "\033[93m[chat] Note: usage not available. "
-                        "Skipping cost.\033[0m"
-                    )
+                    await aprint("\033[93m[chat] Note: usage not available. Skipping cost.\033[0m")
             try:
                 output = json.loads(response.choices[0].message.content)
             except Exception:
@@ -533,10 +533,7 @@ class MyAgent(SummonerClient):
 
         elif output_parsing == "structured":
             if output_type is None:
-                raise ValueError(
-                    "output_type (schema) is required when "
-                    "output_parsing='structured'."
-                )
+                raise ValueError("output_type (schema) is required when output_parsing='structured'.")
             response = await self.client.responses.parse(
                 input=messages,
                 model=model_name,
@@ -545,19 +542,12 @@ class MyAgent(SummonerClient):
             )
             usage = get_usage_from_response(response)
             if usage:
-                act_cost = actual_chat_request_cost(
-                    model_name, usage.prompt_tokens, usage.completion_tokens
-                )
+                act_cost = actual_chat_request_cost(model_name, usage.prompt_tokens, usage.completion_tokens)
                 if debug:
-                    await aprint(
-                        f"\033[95m[chat] Actual cost: ${act_cost:.6f}\033[0m"
-                    )
+                    await aprint(f"\033[95m[chat] Actual cost: ${act_cost:.6f}\033[0m")
             else:
                 if debug:
-                    await aprint(
-                        "\033[93m[chat] Note: usage not available for structured "
-                        "response. Skipping cost.\033[0m"
-                    )
+                    await aprint("\033[93m[chat] Note: usage not available for structured response. Skipping cost.\033[0m")
             output = response.output[0].content[0].parsed
 
         else:
@@ -644,6 +634,41 @@ async def send_post() -> Optional[Union[dict, str]]:
 
     user_id = None
     request_thread_ts = None
+
+    # ------------------------------------------------------------------
+    # Pre-scan for explicit target Slack channels and skip GPT if any of
+    # them are already known to be NOT_ALLOWED.
+    # ------------------------------------------------------------------
+    explicit_channels: set[str] = set()
+
+    if isinstance(content, dict):
+        # 1) From explicit handoff (canonical source)
+        if handoff and isinstance(handoff, dict) and agent.name in handoff:
+            slack_handoff = handoff[agent.name]
+            ch = slack_handoff.get("channel")
+            if isinstance(ch, str):
+                explicit_channels.add(ch)
+
+        # 2) From content["slack_channel"], if your server uses this convention
+        ch2 = content.get("slack_channel")
+        if isinstance(ch2, str):
+            explicit_channels.add(ch2)
+
+        # 3) From content["slack"]["channel"], if present
+        slack_meta = content.get("slack")
+        if isinstance(slack_meta, dict):
+            ch3 = slack_meta.get("channel")
+            if isinstance(ch3, str):
+                explicit_channels.add(ch3)
+
+    if any(ch in NOT_ALLOWED_CHANNEL_IDS for ch in explicit_channels):
+        agent.logger.info(
+            f"[send:post] skipping GPT call for NOT_ALLOWED channels={explicit_channels!r}"
+        )
+        await asyncio.sleep(agent.sleep_seconds)
+        return None
+    # ------------------------------------------------------------------
+
     if isinstance(content, dict):
         # strip routing metadata
         prompt_payload = {k: v for k, v in content.items() if k not in ["to", "from"]}
@@ -659,23 +684,13 @@ async def send_post() -> Optional[Union[dict, str]]:
             if user_request:
                 prompt_payload["original_user_request"] = f"You MUST respond to this user's message: {user_request}"
 
+
             if isinstance(slack_channel, str):
-                # If it's a channel ID we know, convert to a canonical "#name" for the model
-                if slack_channel in ALLOWED_CHANNEL_IDS.values():
-                    # find the canonical name key for this ID
-                    for k, v in ALLOWED_CHANNEL_IDS.items():
-                        if v == slack_channel and k.startswith("#"):
-                            prompt_payload["slack_channel"] = k
-                            break
-                    else:
-                        # fallback: just pass the ID
-                        prompt_payload["slack_channel"] = slack_channel
-                else:
-                    # If already a "#name", let it pass through
-                    prompt_payload["slack_channel"] = slack_channel
+                # At this point we already screened NOT_ALLOWED_CHANNEL_IDS above;
+                # if we got here, the channel is not known-bad.
+                prompt_payload["slack_channel"] = slack_channel
     else:
         prompt_payload = content
-
 
     # GPT: decide how to post to Slack
     user_prompt = agent._compose_post_prompt(prompt_payload)
@@ -689,7 +704,8 @@ async def send_post() -> Optional[Union[dict, str]]:
     )
 
     decision = result.get("output")
-    await aprint("decision:", decision)
+    if agent.debug:
+        await aprint("decision:", decision)
 
     if isinstance(decision, str):
         try:
@@ -705,10 +721,10 @@ async def send_post() -> Optional[Union[dict, str]]:
     thread_ts   = request_thread_ts or decision.get("thread_ts")
 
     if should_post and channel and text:
-        # Final safety: ignore non-allowed channels even if GPT misbehaves
+        # Final safety: ignore blocked channels even if GPT misbehaves
         if normalize_post_channel(str(channel)) is None:
             agent.logger.info(
-                f"[send:post] GPT picked disallowed channel={channel!r}; suppressing post."
+                f"[send:post] GPT picked blocked/invalid channel={channel!r}; suppressing post."
             )
         else:
             await to_slack_buffer.put(
@@ -763,6 +779,9 @@ async def send_relay() -> Optional[Union[dict, str]]:
     )
 
     decision = result.get("output")
+    if agent.debug:
+        await aprint("decision:", decision)
+
     if isinstance(decision, str):
         try:
             decision = json.loads(decision)
@@ -820,12 +839,7 @@ async def send_relay() -> Optional[Union[dict, str]]:
 # -------------------- main --------------------
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run a Summoner client with a specified config.")
-    parser.add_argument(
-        '--config',
-        dest='config_path',
-        required=False,
-        help='The relative path to the client config (JSON), e.g., --config configs/client_config.json'
-    )
+    parser.add_argument('--config', dest='config_path', required=False, help='The relative path to the client config (JSON), e.g., --config configs/client_config.json')
     args, _ = parser.parse_known_args()
 
     agent.loop.run_until_complete(setup())
@@ -835,19 +849,13 @@ if __name__ == "__main__":
     slack_post_task   = agent.loop.create_task(slack_post_loop())
 
     try:
-        agent.run(
-            host="127.0.0.1",
-            port=8888,
-            config_path=args.config_path or "configs/client_config.json"
-        )
+        agent.run(host="127.0.0.1", port=8888, config_path=args.config_path or "configs/client_config.json")
     finally:
         # Cancel background tasks
         for t in (slack_socket_task, slack_post_task):
             t.cancel()
         try:
-            agent.loop.run_until_complete(
-                asyncio.gather(slack_socket_task, slack_post_task, return_exceptions=True)
-            )
+            agent.loop.run_until_complete(asyncio.gather(slack_socket_task, slack_post_task, return_exceptions=True))
         except Exception:
             pass
         agent.logger.info("Slack background tasks cancelled cleanly.")
