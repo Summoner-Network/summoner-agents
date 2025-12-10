@@ -690,9 +690,6 @@ Click to show the legend.
 
 <a id="api-agents"></a>
 
-Here’s the same block with only the `...` descriptions filled in (Slack row left untouched as requested):
-
-
 ### API Agents
 
 <details>
