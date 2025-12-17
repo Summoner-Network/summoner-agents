@@ -7,3 +7,5 @@ aioconsole
 
 aiohttp 
 xmltodict
+
+mcp
