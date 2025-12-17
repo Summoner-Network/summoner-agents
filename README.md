@@ -845,7 +845,7 @@ Click to show the legend.
         <td><code><strong><a href="agents/agent_MCPArXivAgent/">MCPArXivAgent</a></strong></code></td>
         <td style="font-size: 0.8em;">Guarded GPT bridge to arXiv via MCP: turns research queries into MCP tool calls and returns structured lists of recent papers.</td>
         <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
-        <td><code>core</code> <code>agent</code> <code>DID</code> <code>guardrails</code> <code>MCP</code> <code>ArXiv</code></td>
+        <td><code>core</code> <code>agent</code> <code>DID</code> <code>guardrails</code> <code>ArXiv</code></td>
         <td><img src="https://img.shields.io/badge/Registry-%20?color=bd1edd" alt=""> <img src="https://img.shields.io/badge/MCP-%20?color=1122ce" alt=""></td>
         <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
     </tr>
