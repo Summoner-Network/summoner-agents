@@ -21,6 +21,7 @@
     * [Connector Agents (to MCP, LangChain, CrewAI, etc.)](#connector-agents)
     * [Security and Handshake Agents](#security-and-handshake-agents)
     * [API Agents](#api-agents)
+    * [MCP-based Agents](#mcp-based-agents)
     * [DNA-Induced Agents 🚧 (planned)](#dna-induced-agents)
 
 
@@ -172,6 +173,8 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 </details>
 
 ## Agent Collection
+
+There are 50 agents available in this repo.
 
 ### Legend
 
@@ -357,7 +360,7 @@ Click to show the legend.
 </details>
 
 <p align="center">
-<img width="550px" src="assets/mov2gif/gifs/demo_travel_border.gif" />
+<img width="550px" src="assets/mov2gif/gifs/demo_travel_framed.gif" />
 </p>
 
 ### Feedback Agents
@@ -448,13 +451,13 @@ Click to show the legend.
 </details>
 
 <p align="center">
-<img width="600px" src="assets/mov2gif/gifs/demo_exam_border.gif" />
+<img width="600px" src="assets/mov2gif/gifs/demo_exam_framed.gif" />
 </p>
 
 ### Connector Agents
 
 <details>
-<summary><b>(Click to expand)</b> Agents of <b>level 1-2</b> enabling composability via connectors to integrate external ecosystems (e.g., MCP, LangChain, CrewAI).</summary>
+<summary><b>(Click to expand)</b> Agents of <b>level 1-2</b> enabling composability via connectors to integrate external ecosystems (e.g., database servers, MCP, LangChain, CrewAI).</summary>
 <br>
 
 <div style="display: flex; justify-content: center;">
@@ -481,7 +484,7 @@ Click to show the legend.
         <td style="font-size: 0.8em;">Combines <code>@receive</code> and <code>@send(multi=True)</code> to relay Summoner messages via SQLite, using <code>db_sdk</code> (ORM) with batching and persistent connections.</td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
         <td><code>core</code> <code>multi</code></td>
-        <td><img src="https://img.shields.io/badge/MCP-%20?color=1122ce" alt=""></td>
+        <td><img src="https://img.shields.io/badge/MCP-%20?color=1122ce" alt=""> <img src="https://img.shields.io/badge/Database-%20?color=a48453" alt=""></td>
         <td>✅</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✗</td>
     </tr>
     <tr>
@@ -489,7 +492,7 @@ Click to show the legend.
         <td style="font-size: 0.8em;">Combines <code>@receive</code> and <code>@send(multi=True)</code> to relay Summoner messages via SQLite, using raw <code>aiosqlite</code> with short-lived connections.</td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
         <td><code>core</code> <code>multi</code></td>
-        <td><img src="https://img.shields.io/badge/MCP-%20?color=1122ce" alt=""></td>
+        <td><img src="https://img.shields.io/badge/MCP-%20?color=1122ce" alt=""> <img src="https://img.shields.io/badge/Database-%20?color=a48453" alt=""></td>
         <td>✅</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✅</td><td>✗</td>
     </tr>
     <tr>
@@ -499,7 +502,7 @@ Click to show the legend.
         <td><code>core</code> <code>agent</code> <code>DID</code> <code>guardrails</code> <code>LangChain</code> <code>CrewAI</code></td>
         <td>
             <img src="https://img.shields.io/badge/LangChain-%20?color=a51c30" alt="LangChain">
-            <img src="https://img.shields.io/badge/CrewAI-%20?color=00c2d7" alt="CrewAI">
+            <img src="https://img.shields.io/badge/CrewAI-%20?color=c90076" alt="CrewAI">
         </td>
         <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
         </tr>
@@ -685,10 +688,8 @@ Click to show the legend.
 </details>
 
 <p align="center">
-<img width="600px" src="assets/mov2gif/gifs/demo_merchants_border.gif" />
+<img width="600px" src="assets/mov2gif/gifs/demo_merchants_framed.gif" />
 </p>
-
-<a id="api-agents"></a>
 
 ### API Agents
 
@@ -809,10 +810,95 @@ Click to show the legend.
 
 </details>
 
-
 <p align="center">
 <img width="600px" src="assets/mov2gif/gifs/demo_gptagent_framed.gif" />
 </p>
+
+
+
+### MCP-based Agents
+
+<details>
+<summary><b>(Click to expand)</b> MCP-based agents of <b>level 2</b> that call external services via an MCP tool server (local or remote).</summary>
+<br>
+
+<div style="display: flex; justify-content: center;">
+<table style="border-collapse: collapse; width: 95%; text-align: center;">
+    <thead>
+    <tr>
+        <th style="width: 10%; text-align: center;">Agent Name</th>
+        <th style="width: 33%; text-align: center;">Description</th>
+        <th style="width: 12%; text-align: center;">Level</th>
+        <th style="width: 12%; text-align: center;">Features</th>
+        <th style="width: 12%; text-align: center;">Applications</th>
+        <th style="width: 3%; text-align: center;">DB</th>
+        <th style="width: 3%; text-align: center;">Queue</th>
+        <th style="width: 3%; text-align: center;">Flows</th>
+        <th style="width: 3%; text-align: center;">Logs</th>
+        <th style="width: 3%; text-align: center;">Hooks</th>
+        <th style="width: 3%; text-align: center;">Temp.</th>
+        <th style="width: 3%; text-align: center;">Comp.</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td><code><strong><a href="agents/agent_MCPArXivAgent/">MCPArXivAgent</a></strong></code></td>
+        <td style="font-size: 0.8em;">Guarded GPT bridge to arXiv via MCP: turns research queries into MCP tool calls and returns structured lists of recent papers.</td>
+        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
+        <td><code>core</code> <code>agent</code> <code>DID</code> <code>guardrails</code> <code>MCP</code> <code>ArXiv</code></td>
+        <td><img src="https://img.shields.io/badge/Registry-%20?color=bd1edd" alt=""> <img src="https://img.shields.io/badge/MCP-%20?color=1122ce" alt=""></td>
+        <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
+        <td><code><strong><a href="agents/agent_MCPPubMedAgent/">MCPPubMedAgent</a></strong></code></td>
+        <td style="font-size: 0.8em;">Guarded GPT bridge to PubMed via MCP: turns biomedical prompts into a single MCP tool call and returns structured article metadata.</td>
+        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
+        <td><code>core</code> <code>agent</code> <code>DID</code> <code>guardrails</code> <code>PubMed</code></td>
+        <td><img src="https://img.shields.io/badge/Registry-%20?color=bd1edd" alt=""> <img src="https://img.shields.io/badge/MCP-%20?color=1122ce" alt=""></td>
+        <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
+        <td><code><strong><a href="agents/agent_MCPWikipediaAgent/">MCPWikipediaAgent</a></strong></code></td>
+        <td style="font-size: 0.8em;">Guarded GPT bridge to Wikipedia via MCP: maps encyclopedic prompts to a single MCP tool call and returns normalized title search/summary results.</td>
+        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
+        <td><code>core</code> <code>agent</code> <code>DID</code> <code>guardrails</code> <code>Wikipedia</code></td>
+        <td><img src="https://img.shields.io/badge/Registry-%20?color=bd1edd" alt=""> <img src="https://img.shields.io/badge/MCP-%20?color=1122ce" alt=""></td>
+        <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
+        <td><code><strong><a href="agents/agent_MCPGitHubAgent/">MCPGitHubAgent</a></strong></code></td>
+        <td style="font-size: 0.8em;">Guarded GPT bridge to GitHub via MCP: maps repo prompts to a single MCP tool call and returns normalized commit / repo metadata.</td>
+        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
+        <td><code>core</code> <code>agent</code> <code>DID</code> <code>guardrails</code> <code>GitHub</code></td>
+        <td><img src="https://img.shields.io/badge/App-%20?color=f1227a" alt=""> <img src="https://img.shields.io/badge/MCP-%20?color=1122ce" alt=""></td>
+        <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
+        <td><code><strong><a href="agents/agent_MCPNotionAgent/">MCPNotionAgent</a></strong></code></td>
+        <td style="font-size: 0.8em;">Guarded GPT bridge to Notion via MCP: chooses an MCP tool call (search/query/page) and returns structured workspace data.</td>
+        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
+        <td><code>core</code> <code>agent</code> <code>DID</code> <code>guardrails</code> <code>Notion</code></td>
+        <td><img src="https://img.shields.io/badge/App-%20?color=f1227a" alt=""> <img src="https://img.shields.io/badge/MCP-%20?color=1122ce" alt=""></td>
+        <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
+        <td><code><strong><a href="agents/agent_MCPRedditAgent/">MCPRedditAgent</a></strong></code></td>
+        <td style="font-size: 0.8em;">Guarded GPT bridge to Reddit via MCP: turns subreddit/topic/thread prompts into a single MCP tool call backed by Async PRAW, returning normalized posts/comments.</td>
+        <td><img src="https://img.shields.io/badge/LVL_2-%20?color=b1d52d" alt=""></td>
+        <td><code>core</code> <code>agent</code> <code>DID</code> <code>guardrails</code> <code>Reddit</code></td>
+        <td><img src="https://img.shields.io/badge/App-%20?color=f1227a" alt=""> <img src="https://img.shields.io/badge/MCP-%20?color=1122ce" alt=""></td>
+        <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+    </tr>
+    </tbody>
+</table>
+</div>
+
+</details>
+
+<p align="center">
+<img width="600px" src="assets/mov2gif/gifs/demo_mcp_pubmed_framed.gif" />
+</p>
+
 
 <a id="dna-induced-agents"></a>
 

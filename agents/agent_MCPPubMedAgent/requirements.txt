@@ -4,4 +4,8 @@ python-dotenv
 urllib3
 pydantic
 aioconsole
-asyncpraw
+
+aiohttp 
+xmltodict
+
+mcp

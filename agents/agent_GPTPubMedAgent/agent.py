@@ -558,7 +558,7 @@ async def sign(msg: Any) -> Optional[dict]:
 async def receiver_handler(msg: Any) -> None:
     address = msg["remote_addr"]
     if msg["content"] in [{}, None]:
-            return
+        return
     await message_buffer.put(msg["content"])
     agent.logger.info(f"Buffered message from:(SocketAddress={address}).")
 

@@ -19,15 +19,32 @@ from safeguards import (
     get_usage_from_response,
 )
 
-import aiohttp
-from datetime import datetime, timezone
-from urllib.parse import quote
+from mcp.client.streamable_http import streamablehttp_client
+from mcp import ClientSession
 
 # -------------------- early parse so class can load configs --------------------
 prompt_parser = argparse.ArgumentParser(add_help=False)
 prompt_parser.add_argument("--gpt", dest="gpt_config_path", required=False, help="Path to gpt_config.json (defaults to file next to this script).")
 prompt_parser.add_argument("--id", dest="id_json_path", required=False, help="Path to id.json (defaults to file next to this script).")
 prompt_args, _ = prompt_parser.parse_known_args()
+
+# -------------------- MCP helpers --------------------
+
+async def mcp_call_tool(mcp_url: str, tool_name: str, arguments: dict):
+    async with streamablehttp_client(mcp_url) as (read, write, _):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            return await session.call_tool(tool_name, arguments=arguments)
+
+def unwrap_mcp_result(res: Any) -> Any:
+    for attr in ("structuredContent", "structured_content", "data"):
+        if hasattr(res, attr):
+            v = getattr(res, attr)
+            if v is not None:
+                return v
+    if hasattr(res, "model_dump"):
+        return res.model_dump()
+    return res
 
 # -------------------- async queue --------------------
 message_buffer: Optional[asyncio.Queue] = None
@@ -36,218 +53,6 @@ async def setup():
     """Initialize the internal message buffer used between receive/send handlers."""
     global message_buffer
     message_buffer = asyncio.Queue()
-
-# -------------------- Wikipedia helpers --------------------
-
-WIKI_SEARCH_BASE  = "https://{lang}.wikipedia.org/w/rest.php/v1/search/title"
-WIKI_SUMMARY_BASE = "https://{lang}.wikipedia.org/api/rest_v1/page/summary"
-
-WIKIPEDIA_DEFAULT_HEADERS = {
-    # Feel free to customize this string for your own project/contact
-    "User-Agent": "Summoner-GPTWikipediaAgent/0.1 (bot; contact: you@example.com)",
-    "Accept": "application/json",
-}
-
-
-async def _wikipedia_search_titles(
-    session: aiohttp.ClientSession,
-    query: str,
-    *,
-    limit: int = 5,
-    lang: str = "en",
-) -> dict:
-    """
-    Call the Wikipedia REST search/title endpoint and return a normalized payload.
-    """
-    url = WIKI_SEARCH_BASE.format(lang=lang)
-    params = {"q": query, "limit": limit}
-    async with session.get(url, params=params) as resp:
-        resp.raise_for_status()
-        data = await resp.json()
-
-    pages = data.get("pages", []) or []
-    results: list[dict] = []
-    for p in pages:
-        title = p.get("title")
-        if not title:
-            continue
-        desc = p.get("description") or ""
-        key = p.get("key") or title
-        encoded = quote(title, safe="")
-        page_url = f"https://{lang}.wikipedia.org/wiki/{encoded}"
-        results.append(
-            {
-                "title": title,
-                "description": desc,
-                "key": key,
-                "url": page_url,
-            }
-        )
-
-    return {
-        "query": query,
-        "lang": lang,
-        "limit": limit,
-        "count": len(results),
-        "pages": results,
-    }
-
-
-async def _wikipedia_summary(
-    session: aiohttp.ClientSession,
-    title: str,
-    *,
-    lang: str = "en",
-) -> dict:
-    """
-    Call the Wikipedia REST page/summary endpoint for a given title.
-    """
-    encoded = quote(title, safe="")
-    url = f"{WIKI_SUMMARY_BASE.format(lang=lang)}/{encoded}"
-    async with session.get(url) as resp:
-        if resp.status == 404:
-            return {
-                "error": "page_not_found",
-                "title": title,
-                "lang": lang,
-            }
-        resp.raise_for_status()
-        data = await resp.json()
-
-    extract = (data.get("extract") or "").strip()
-    description = (data.get("description") or "").strip()
-    page_title = data.get("title") or title
-    content_urls = data.get("content_urls") or {}
-    desktop = content_urls.get("desktop") or {}
-    page_url = desktop.get("page") or f"https://{lang}.wikipedia.org/wiki/{encoded}"
-
-    if not extract:
-        return {
-            "error": "no_summary_available",
-            "title": page_title,
-            "lang": lang,
-            "url": page_url,
-        }
-
-    return {
-        "title": page_title,
-        "lang": lang,
-        "description": description,
-        "summary": extract,
-        "url": page_url,
-    }
-
-
-async def wikipedia_handle_request(tool_args: dict) -> dict:
-    """
-    High-level helper used by GPTWikipediaAgent.
-
-    Supported actions:
-      - 'search_titles'     → search for page titles matching a query
-      - 'summary'           → get summary for a specific title
-      - 'search_summary'    → search then return summary for the top match
-    """
-    action = (tool_args.get("action") or "").strip()
-    if not action:
-        return {
-            "error": "missing_action",
-            "tool_args": tool_args,
-        }
-
-    # language (optional)
-    lang_raw = (tool_args.get("lang") or "en").strip().lower()
-    # keep it simple: only check it's non-empty, fall back to 'en' otherwise
-    lang = lang_raw or "en"
-
-    # Small helper to build timestamp
-    timestamp = (
-        datetime.now(timezone.utc)
-        .isoformat(timespec="seconds")
-        .replace("+00:00", "Z")
-    )
-
-    async with aiohttp.ClientSession(headers=WIKIPEDIA_DEFAULT_HEADERS) as session:
-        if action == "search_titles":
-            query = (tool_args.get("query") or "").strip()
-            if not query:
-                return {
-                    "error": "missing_query",
-                    "tool_args": tool_args,
-                }
-            try:
-                limit = int(tool_args.get("limit", 5))
-            except Exception:
-                limit = 5
-            limit = max(1, min(limit, 50))
-
-            core = await _wikipedia_search_titles(session, query, limit=limit, lang=lang)
-            core["action"] = "search_titles"
-            core["timestamp_utc"] = timestamp
-            return core
-
-        elif action == "summary":
-            title = (tool_args.get("title") or "").strip()
-            if not title:
-                return {
-                    "error": "missing_title",
-                    "tool_args": tool_args,
-                }
-
-            core = await _wikipedia_summary(session, title, lang=lang)
-            core["action"] = "summary"
-            core["timestamp_utc"] = timestamp
-            return core
-
-        elif action == "search_summary":
-            query = (tool_args.get("query") or "").strip()
-            if not query:
-                return {
-                    "error": "missing_query",
-                    "tool_args": tool_args,
-                }
-            try:
-                limit = int(tool_args.get("limit", 5))
-            except Exception:
-                limit = 5
-            limit = max(1, min(limit, 50))
-
-            search_res = await _wikipedia_search_titles(
-                session, query, limit=limit, lang=lang
-            )
-            if not search_res.get("pages"):
-                return {
-                    "action": "search_summary",
-                    "query": query,
-                    "lang": lang,
-                    "limit": limit,
-                    "count": 0,
-                    "pages": [],
-                    "error": "no_pages_found",
-                    "timestamp_utc": timestamp,
-                }
-
-            top = search_res["pages"][0]
-            summary_res = await _wikipedia_summary(
-                session, top["title"], lang=lang
-            )
-
-            return {
-                "action": "search_summary",
-                "query": query,
-                "lang": lang,
-                "limit": limit,
-                "search": search_res,
-                "top_title": top["title"],
-                "summary": summary_res,
-                "timestamp_utc": timestamp,
-            }
-
-        else:
-            return {
-                "error": "unsupported_action",
-                "action": action,
-                "tool_args": tool_args,
-            }
 
 # -------------------- agent --------------------
 class MyAgent(SummonerClient):
@@ -270,6 +75,11 @@ class MyAgent(SummonerClient):
         # ----- GPT config -----
         gpt_cfg_path = Path(prompt_args.gpt_config_path) if prompt_args.gpt_config_path else (self.base_dir / "gpt_config.json")
         self.gpt_cfg = self._load_json(gpt_cfg_path)
+
+        # MCP endpoint
+        self.mcp_url = (self.gpt_cfg.get("mcp_url") or os.getenv("MCP_URL") or "").strip()
+        if not self.mcp_url:
+            raise RuntimeError("Missing MCP URL (set gpt_config.json:mcp_url or MCP_URL env var).")
 
         # chat knobs (all configurable)
         self.model                  = self.gpt_cfg.get("model", "gpt-4o-mini")
@@ -429,7 +239,7 @@ class MyAgent(SummonerClient):
 
 
 # instantiate
-agent = MyAgent(name="GPTWikipediaAgent")
+agent = MyAgent(name="MCPWikipediaAgent")
 
 # -------------------- hooks --------------------
 @agent.hook(direction=Direction.RECEIVE)
@@ -499,14 +309,20 @@ async def send_handler() -> Union[dict, str]:
 
     action = (tool_args.get("action") or "").strip() if isinstance(tool_args, dict) else ""
 
-    if tool_args and action:
-        api_result = await wikipedia_handle_request(tool_args)
+    if tool_args and action and agent.mcp_url:
+        mcp_raw = await mcp_call_tool(
+            mcp_url=agent.mcp_url,
+            tool_name="wikipedia_handle_request",
+            arguments={"tool_args": tool_args},
+        )
+        api_result = unwrap_mcp_result(mcp_raw)
         performed_call = True
     else:
         api_result = {
             "error": "no_wikipedia_call_requested_or_missing_action",
             "tool_args": tool_args,
         }
+
 
     # Build outgoing message
     output: dict[str, Any] = {

@@ -569,7 +569,7 @@ async def sign(msg: Any) -> Optional[dict]:
 async def receiver_handler(msg: Any) -> None:
     address = msg["remote_addr"]
     if msg["content"] in [{}, None]:
-            return
+        return
     await message_buffer.put(msg["content"])
     agent.logger.info(f"Buffered message from:(SocketAddress={address}).")
 
@@ -606,9 +606,7 @@ async def send_handler() -> Union[dict, str]:
     performed_call = False
     api_result: Any = None
 
-    action = ""
-    if isinstance(tool_args, dict):
-        action = (tool_args.get("action") or "").strip()
+    action = (tool_args.get("action") or "").strip() if isinstance(tool_args, dict) else ""
 
     if tool_args and action:
         api_result = await reddit_handle_request(tool_args)

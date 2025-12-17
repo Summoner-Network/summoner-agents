@@ -37,7 +37,7 @@ async def setup():
     global message_buffer
     message_buffer = asyncio.Queue()
 
-# -------------------- tool ---------------------
+# -------------------- ArXiv helpers ---------------------
 
 ARXIV_BASE_URL = "http://export.arxiv.org/api/query"
 
@@ -338,7 +338,7 @@ async def sign(msg: Any) -> Optional[dict]:
 async def receiver_handler(msg: Any) -> None:
     address = msg["remote_addr"]
     if msg["content"] in [{}, None]:
-            return
+        return
     await message_buffer.put(msg["content"])
     agent.logger.info(f"Buffered message from:(SocketAddress={address}).")
 
