@@ -27,13 +27,13 @@
 
 ## SDK Setup
 
-This repo assumes you have installed **Summoner**. We keep platform setup on the GitHub organization page (prereqs, SDK install, and run workflow) so this README stays focused on agents. Click these three sections on the org page (via the badges below), in order:
+This repo assumes you have installed **Summoner**. We keep platform setup on the [organization page](https://github.com/Summoner-Network) so this README stays focused on agents. Click these three sections on the org page (via the badges below), in order:
 
 [![① Prereqs](https://img.shields.io/badge/①%20Prereqs-6f42c1)](https://github.com/Summoner-Network#-install-essential-dependencies)
 [![② Use the SDK](https://img.shields.io/badge/②%20Use%20the%20SDK-0b5ed7)](https://github.com/Summoner-Network#-install-your-summoner-sdk)
 [![③ Run Agents](https://img.shields.io/badge/③%20Run%20Agents-4f9bff)](https://github.com/Summoner-Network#-start-with-runnable-agent-examples)
 
-* **① Prereqs**: installs Python/Git (+ optional Rust/Node depending on your platform and whether you use the Desktop app).
+* **① Prereqs**: installs Python/Git + optional Rust (depending on your platform).
 * **② Use the SDK**: runs the installer script for this repo and creates the local `venv/`.
 * **③ Run Agents**: installs per-agent dependencies and shows the server + agent launch workflow.
 
