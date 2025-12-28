@@ -101,45 +101,6 @@ function Activate-Venv {
   $env:VIRTUAL_ENV = (Resolve-Path $VenvDir).ProviderPath
   $env:Path = "$($vp.Bin);$env:Path"
 
-  # Verification
-  # verification via temp script to avoid quoting/parsing issues
-function Activate-Venv {
-  param([string]$VenvDir)
-
-  $vp = Resolve-VenvPaths $VenvDir
-  if (-not $vp.Py) { Die ("venv not found at {0}. Run setup first." -f $VenvDir) }
-
-  $activatePS = Join-Path $VenvDir 'Scripts\Activate.ps1'
-  if (Test-Path $activatePS) {
-    try {
-      . $activatePS
-    } catch {
-      Write-Warning ("Activation script failed: {0}" -f $_.Exception.Message)
-      # fallback to manual env setup below
-    }
-  }
-
-  # Ensure environment variables and PATH are set so python/pip resolve to venv
-  Remove-Item Function:\python -ErrorAction SilentlyContinue
-  Remove-Item Function:\pip   -ErrorAction SilentlyContinue
-
-  $env:VIRTUAL_ENV = (Resolve-Path $VenvDir).ProviderPath
-  $env:Path = "$($vp.Bin);$env:Path"
-
-  # Verification
-  $verifyPy = @'
-import sys, os
-print("python executable:", sys.executable)
-print("sys.prefix:", os.path.abspath(sys.prefix))
-'@
-  $tmpVerify = [IO.Path]::Combine($env:TEMP, "verify_python_prefix.py")
-  $verifyPy | Set-Content -Path $tmpVerify -Encoding UTF8
-  & $vp.Py $tmpVerify
-  Remove-Item $tmpVerify -ErrorAction SilentlyContinue
-
-  Write-Host ("Activated venv at: {0}" -f $VenvDir)
-}
-
   Write-Host ("Activated venv at: {0}" -f $VenvDir)
 }
 
