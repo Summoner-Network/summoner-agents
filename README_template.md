@@ -11,7 +11,9 @@ This repository provides a **GitHub template** that includes `build_sdk.sh`, a o
 * *(Optional)* `uv` if you want to use `--uv` (Linux/macOS only)
 
 > [!NOTE]
-> By convention, this template does not support Rust installation on Windows. For Windows users, use the PowerShell script `build_sdk_on_windows.ps1` (see below). The `--uv` option is only supported for `build_sdk.sh` on Linux/macOS workflows.
+> By convention, this template does not support Rust installation on Windows. For Windows users, use the PowerShell script `build_sdk_on_windows.ps1` (see below).
+>
+> The `--uv`, `--server`, and `--venv` options are only supported for `build_sdk.sh` on Linux/macOS workflows. On Windows, `build_sdk_on_windows.ps1` always uses `venv/` and does not provide Rust server selection (so no `--server` equivalent).
 
 ## Getting Started
 
@@ -65,6 +67,9 @@ The script exposes similar commands to the Bash script (see subsequent sections 
 . .\build_sdk_on_windows.ps1 use_venv
 ```
 
+> [!NOTE]
+> The Windows script always uses `venv/` and does not support Rust server selection (so no `--venv` or `--server` equivalent).
+
 ## How to Run `build_sdk.sh`
 
 You can invoke `build_sdk.sh` in two ways:
@@ -100,13 +105,14 @@ You can invoke `build_sdk.sh` in two ways:
 
    When sourced, the script activates the virtual environment automatically. Your shell remains in the environment, ready to use the `summoner` SDK immediately.
 
-   `--uv` is optional. When provided, `build_sdk.sh` will create the venv using `uv venv` and install Python dependencies using `uv pip ...` instead of `pip ...`. If you do not pass `--uv`, the script uses `python -m venv` and `pip` (default behavior).
+**Options:**
 
-   `--server <version>` is optional. It selects which Rust server prefix to install via `reinstall_python_sdk.sh`. For example, `--server v1_1_0` will install `rust_server_v1_1_0`. If omitted, the default is `v1_0_0` (so it installs `rust_server_v1_0_0`).
+* `--uv` is optional. When provided, `build_sdk.sh` will create the venv using `uv venv` and install Python dependencies using `uv pip ...` instead of `pip ...`. If you do not pass `--uv`, the script uses `python -m venv` and `pip` (default behavior). *(Linux/macOS only)*
 
-   `--venv <path>` is optional. It selects where the virtual environment lives. Default is `venv/` in the repository root. This is useful when you want `.venv/` (or any other name) or when integrating into a parent repo.
+* `--server <version>` is optional. It selects which Rust server prefix to install via `reinstall_python_sdk.sh`. For example, `--server v1_1_0` will install `rust_server_v1_1_0`. If omitted, the default is `v1_0_0` (so it installs `rust_server_v1_0_0`). *(Linux/macOS only)*
 
-   If you use `--venv`, you should reuse the same value for `setup`, `deps`, `reset`, and `delete` so the scripts operate on the same environment and cleanup does what you expect.
+* `--venv <path>` is optional. It selects where the virtual environment lives. Default is `venv/` in the repository root. This is useful when you want `.venv/` (or any other name) or when integrating into a parent repo.
+  If you use `--venv`, you should reuse the same value for `setup`, `deps`, `reset`, and `delete` so the scripts operate on the same environment and cleanup does what you expect. *(Linux/macOS only)*
 
 ### Available Commands
 
@@ -120,7 +126,8 @@ You can invoke `build_sdk.sh` in two ways:
 | `clean`       | —                                             | Remove only build artifacts in `native_build/` and any `test_*.py`, `test_*.json`, or `test_*.log` files (preserves the virtual environment).               |
 
 > [!NOTE]
-> All commands accept an optional `--uv` flag (Linux/macOS only). Default is `pip`. You can also optionally select the Rust server prefix with `--server <version>` (default `v1_0_0`) and the venv location with `--venv <path>` (default `venv/`).
+> All commands accept an optional `--uv` flag (Linux/macOS only). Default is `pip`. You can also optionally select the Rust server prefix with `--server <version>` (default `v1_0_0`) and the venv location with `--venv <path>` (default `venv/`). These options are not supported by the Windows PowerShell script.
+
 
 ### Usage Examples
 
@@ -131,32 +138,16 @@ You can invoke `build_sdk.sh` in two ways:
 # Use source to stay in the venv automatically
 source build_sdk.sh setup
 
-# Use a custom venv path (recommended naming in many repos)
-source build_sdk.sh setup --venv .venv
-
-# Same, but use uv for venv + installs (Linux/macOS only)
-source build_sdk.sh setup --uv
-
-# Combine uv + custom venv
-source build_sdk.sh setup --uv --venv .venv
-
-# Select a Rust server prefix (defaults to v1_0_0 if omitted)
-source build_sdk.sh setup --server v1_1_0
-
-# Combine uv + server prefix + custom venv
-source build_sdk.sh setup --uv --server v1_1_0 --venv .venv
-
-# Explicit build variants
-source build_sdk.sh setup build
-source build_sdk.sh setup test_build
-
-# With uv + variant
-source build_sdk.sh setup test_build --uv
-
 # If using execution instead
 bash build_sdk.sh setup
 # Then activate manually:
 source venv/bin/activate
+
+# Custom venv + uv + choose Rust server prefix (creates/uses .venv/, installs via uv, and reinstalls rust_server_v1_1_0*)
+source build_sdk.sh setup --uv --server v1_1_0 --venv .venv
+
+# Setup using test_build.txt + uv + custom venv + specific Rust server prefix
+source build_sdk.sh setup test_build --uv --server v1_1_0 --venv .venv
 
 # If you used --venv during setup, reuse it for deps/reset/delete
 source build_sdk.sh deps --venv .venv
@@ -192,31 +183,31 @@ source build_sdk.sh delete --venv .venv
 **Usage**
 
 ```bash
-# default (uses build.txt, pip, server=v1_0_0, venv=venv/)
+# Default (uses build.txt, pip, server=v1_0_0, venv=venv/)
 source build_sdk.sh setup
 
-# use .venv instead of venv
+# Use .venv instead of venv
 source build_sdk.sh setup --venv .venv
 
-# same, but use uv (Linux/macOS only)
+# Same, but use uv (Linux/macOS only)
 source build_sdk.sh setup --uv
 
-# uv + .venv
+# With uv + .venv
 source build_sdk.sh setup --uv --venv .venv
 
-# select a Rust server prefix
+# Select a Rust server prefix
 source build_sdk.sh setup --server v1_1_0
 
-# combine uv + server prefix + venv path
+# Combine uv + server prefix + venv path
 source build_sdk.sh setup --uv --server v1_1_0 --venv .venv
 
-# explicitly use build.txt
+# Explicitly use build.txt
 source build_sdk.sh setup build
 
-# use test_build.txt for a quick demo against the starter template
+# Use test_build.txt for a quick demo against the starter template
 source build_sdk.sh setup test_build
 
-# uv + test_build
+# With uv + test_build
 source build_sdk.sh setup test_build --uv
 ```
 
@@ -395,3 +386,4 @@ feature_y
 ```
 
 This format gives you fine-grained control over which modules are included in the SDK build, making it easy to tailor your environment to specific use cases or test scenarios.
+
