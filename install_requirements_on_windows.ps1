@@ -1,4 +1,3 @@
-
 # install_requirements_on_windows.ps1 — PowerShell-only manager (uses core\.venv exclusively)
 # ==============================================================================
 # How to use this script
