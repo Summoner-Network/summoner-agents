@@ -18,6 +18,7 @@
     * [Core Messaging Agents](#core-messaging-agents)
     * [Chat Agents](#chat-agents)
     * [Feedback Agents](#feedback-agents)
+    * [Category-theory-based Agents](#category-theory-based-agents)
     * [Connector Agents (Database servers, MCP, LangChain, CrewAI, etc.)](#connector-agents)
     * [Security and Handshake Agents](#security-and-handshake-agents)
     * [API Agents](#api-agents)
