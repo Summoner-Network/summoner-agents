@@ -465,6 +465,72 @@ Click to show the legend.
 <img width="600px" src="assets/mov2gif/gifs/demo_exam_framed.gif" />
 </p>
 
+
+### Category-theory-based Agents
+
+<details>
+<summary><b>(Click to expand)</b> Agents of <b>level 3–5</b> that treat orchestration as a typed state machine: objects are workflow stages, 1-cells are transitions or decision-making choices, and 2-cells encode path-dependent amendments between decisions.</summary>
+<br>
+
+<div style="display: flex; justify-content: center;">
+<table style="border-collapse: collapse; width: 95%; text-align: center;">
+    <thead>
+    <tr>
+        <th style="width: 10%; text-align: center;">Agent Name</th>
+        <th style="width: 33%; text-align: center;">Description</th>
+        <th style="width: 12%; text-align: center;">Level</th>
+        <th style="width: 12%; text-align: center;">Features</th>
+        <th style="width: 12%; text-align: center;">Applications</th>
+        <th style="width: 3%; text-align: center;">DB</th>
+        <th style="width: 3%; text-align: center;">Queue</th>
+        <th style="width: 3%; text-align: center;">Flows</th>
+        <th style="width: 3%; text-align: center;">Logs</th>
+        <th style="width: 3%; text-align: center;">Hooks</th>
+        <th style="width: 3%; text-align: center;">Temp.</th>
+        <th style="width: 3%; text-align: center;">Comp.</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td><code><strong><a href="agents/agent_CatAgent_0/">CatAgent_0</a></strong></code></td>
+        <td style="font-size: 0.8em;">
+            Exposes a finite-state graph via <code>@upload_states</code>/<code>@download_states</code>; incoming routes trigger <code>Move</code>/<code>Stay</code> transitions.
+        </td>
+        <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
+        <td><code>core</code> <code>upload_states</code> <code>download_states</code> <code>hooks</code> <code>on_triggers</code> <code>on_actions</code> <code>dna</code></td>
+        <td><img src="https://img.shields.io/badge/Orchestration-%20?color=3a6ea5" alt=""></td>
+        <td>✗</td><td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
+        <td><code><strong><a href="agents/agent_CatAgent_1/">CatAgent_1</a></strong></code></td>
+        <td style="font-size: 0.8em;">
+            Persists chosen tokens in memory; re-uploads them each tick so later transitions are gated by the prior path (“anchoring”).
+        </td>
+        <td><img src="https://img.shields.io/badge/LVL_4-%20?color=DF7919" alt=""></td>
+        <td><code>core</code> <code>upload_states</code> <code>download_states</code> <code>hooks</code> <code>on_triggers</code> <code>on_actions</code> <code>dna</code></td>
+        <td><img src="https://img.shields.io/badge/Planning-%20?color=2b6f63" alt=""></td>
+        <td>✗</td><td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
+        <td><code><strong><a href="agents/agent_CatUpdateAgent/">CatUpdateAgent</a></strong></code></td>
+        <td style="font-size: 0.8em;">
+            Supply-chain 2-category flow: <code>A→B→C→D</code> (objects), <code>f/g</code> then <code>p/q</code> (1-cells), <code>eta_*</code>/<code>mu_*</code> set intent without advancing stage (2-cells).
+        </td>
+        <td><img src="https://img.shields.io/badge/LVL_5-%20?color=DF4119" alt=""></td>
+        <td><code>core</code> <code>upload_states</code> <code>download_states</code> <code>hooks</code> <code>on_triggers</code> <code>on_actions</code> <code>dna</code></td>
+        <td><img src="https://img.shields.io/badge/Decision_Flow-%20?color=6b3fa0" alt=""></td>
+        <td>✗</td><td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td>
+    </tr>
+    </tbody>
+</table>
+</div>
+
+</details>
+
+<p align="center">
+<img width="600px" src="assets/mov2gif/gifs/demo_category_framed.gif" />
+</p>
+
 ### Connector Agents
 
 <details>

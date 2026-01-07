@@ -18,6 +18,7 @@ build_sdk_dev.sh
 *.id
 agents/agent_GPTPresentAgent/
 agents/agent_InputPresentAgent/
+agents/agent_InputCmdAgent/
 
 
 # Byte-compiled / optimized / DLL files

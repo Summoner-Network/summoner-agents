@@ -12,7 +12,7 @@ Behind the scenes, all messages live in at most **two databases** (they can be t
 * `/post "..."` inserts a new, **outgoing** item into the **receive DB**.
 
 <p align="center">
-  <img width="500" src="./sketch.png" alt="Connector relaying between Summoner and an MCP-style agent via two SQLite tools"/>
+  <img width="500" src="../../assets/img/sketch.png" alt="Connector relaying between Summoner and an MCP-style agent via two SQLite tools"/>
 </p>
 
 **How this relates to [MCP (Model Context Protocol)](https://modelcontextprotocol.io/docs/getting-started/intro).**
@@ -24,7 +24,7 @@ You can think of the connector as a minimal "MCP-style server," and the two SQLi
 The CLI simulator plays the **client**: `/get` calls the "read" tool; `/post` calls the "write" tool. The handoff between **connector ⇄ simulator** mirrors an MCP client speaking to one or more MCP servers — only here the "transport" is a pair of files instead of JSON-RPC over stdio/HTTP.
 
 <p align="center">
-  <img width="500" src="./sketch_mcp.png" alt="Connector relaying between Summoner and an MCP client via two SQLite tools"/>
+  <img width="500" src="../../assets/img/sketch_mcp.png" alt="Connector relaying between Summoner and an MCP client via two SQLite tools"/>
 </p>
 
 ## Behavior
