@@ -185,7 +185,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 
 ## Agent Collection
 
-There are 50 agents available in this repo.
+There are 51 agents available in this repo.
 
 ### Legend
 
