@@ -492,9 +492,9 @@ Click to show the legend.
     </thead>
     <tbody>
     <tr>
-        <td><code><strong><a href="agents/agent_CatAgent_0/">CatAgent_0</a></strong></code></td>
+        <td><code><strong><a href="agents/agent_CatArrowAgent/">CatArrowAgent</a></strong></code></td>
         <td style="font-size: 0.8em;">
-            Exposes a finite-state graph via <code>@upload_states</code>/<code>@download_states</code>; incoming routes trigger <code>Move</code>/<code>Stay</code> transitions.
+        "Walking-arrow" category: <code>@upload_states</code>/<code>@download_states</code> expose the tape; route handlers return <code>Move</code>/<code>Stay</code> to traverse or block the arrow.
         </td>
         <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
         <td><code>core</code> <code>upload_states</code> <code>download_states</code> <code>hooks</code> <code>on_triggers</code> <code>on_actions</code> <code>dna</code></td>
@@ -502,9 +502,9 @@ Click to show the legend.
         <td>✗</td><td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td>
     </tr>
     <tr>
-        <td><code><strong><a href="agents/agent_CatAgent_1/">CatAgent_1</a></strong></code></td>
+        <td><code><strong><a href="agents/agent_CatTriangleAgent/">CatTriangleAgent</a></strong></code></td>
         <td style="font-size: 0.8em;">
-            Persists chosen tokens in memory; re-uploads them each tick so later transitions are gated by the prior path (“anchoring”).
+        Triangle category with partial inputs: messages merge into memory; <code>@upload_states</code>/<code>@download_states</code> route by available fields; handlers return <code>Move</code>/<code>Stay</code>.
         </td>
         <td><img src="https://img.shields.io/badge/LVL_4-%20?color=DF7919" alt=""></td>
         <td><code>core</code> <code>upload_states</code> <code>download_states</code> <code>hooks</code> <code>on_triggers</code> <code>on_actions</code> <code>dna</code></td>
@@ -514,7 +514,7 @@ Click to show the legend.
     <tr>
         <td><code><strong><a href="agents/agent_CatUpdateAgent/">CatUpdateAgent</a></strong></code></td>
         <td style="font-size: 0.8em;">
-            Supply-chain 2-category flow: <code>A→B→C→D</code> (objects), <code>f/g</code> then <code>p/q</code> (1-cells), <code>eta_*</code>/<code>mu_*</code> set intent without advancing stage (2-cells).
+        2-category supply-chain: objects <code>A→B→C→D</code>; 1-cells <code>f/g</code> then <code>p/q</code>; 2-cells <code>eta_*</code>/<code>mu_*</code> set intent without advancing stage.
         </td>
         <td><img src="https://img.shields.io/badge/LVL_5-%20?color=DF4119" alt=""></td>
         <td><code>core</code> <code>upload_states</code> <code>download_states</code> <code>hooks</code> <code>on_triggers</code> <code>on_actions</code> <code>dna</code></td>
