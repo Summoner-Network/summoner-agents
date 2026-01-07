@@ -318,11 +318,11 @@ async def upload(payload: dict) -> dict[str, str]:
     # Negotiation view
     peer_row = await get_state(db, peer_id)
 
-    seller_state = peer_row["agreement"] if peer_row and peer_row["agreement"] else "resp_exchange_0"
+    buyer_state = peer_row["agreement"] if peer_row and peer_row["agreement"] else "resp_exchange_0"
 
     # Merge / Fork logic
     if resp_state == "resp_exchange_0":
-        state_dict = {f"buyer:{peer_id}": seller_state}
+        state_dict = {f"buyer:{peer_id}": buyer_state}
     else:
         state_dict = {f"responder:{peer_id}": resp_state}
 

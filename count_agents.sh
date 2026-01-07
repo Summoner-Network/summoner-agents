@@ -6,13 +6,10 @@ README="README.md"
 AGENTS_DIR="agents"
 PATTERN="agent_*Agent*"
 
-# Agents that should NOT be counted
-EXCLUDED_AGENTS=(
-  "agent_InputPresentAgent"
-  "agent_InputCmdAgent"
-  "agent_GPTPresentAgent"
-  "agent_CatUpdateAgent_0.old"
-  "agent_CatUpdateAgent_1.old"
+# Agent directory globs that should NOT be counted
+EXCLUDED_PATTERNS=(
+  "$AGENTS_DIR/agent_*_x"
+  "$AGENTS_DIR/agent_*.old"
 )
 
 # --- sanity checks ---
@@ -26,14 +23,16 @@ if [[ ! -d "$AGENTS_DIR" ]]; then
   exit 1
 fi
 
-# --- build exclusion regex ---
-EXCLUDE_REGEX="$(printf '(%s)|' "${EXCLUDED_AGENTS[@]}")"
-EXCLUDE_REGEX="${EXCLUDE_REGEX%|}"
+# --- build find exclusions ---
+FIND_EXCLUDES=()
+for pattern in "${EXCLUDED_PATTERNS[@]}"; do
+  FIND_EXCLUDES+=( ! -path "$pattern" )
+done
 
 # --- count agents ---
 AGENT_COUNT=$(
   find "$AGENTS_DIR" -maxdepth 1 -type d -name "$PATTERN" \
-  | grep -v -E "$EXCLUDE_REGEX" \
+    "${FIND_EXCLUDES[@]}" \
   | wc -l | tr -d ' '
 )
 

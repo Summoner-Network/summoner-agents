@@ -16,10 +16,7 @@ private_*
 agent_todo.txt
 build_sdk_dev.sh
 *.id
-agents/agent_GPTPresentAgent/
-agents/agent_InputPresentAgent/
-agents/agent_InputCmdAgent/
-
+agents/agent_*_x/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

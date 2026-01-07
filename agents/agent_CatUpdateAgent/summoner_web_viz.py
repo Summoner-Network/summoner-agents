@@ -320,6 +320,15 @@ function computeDims(nodes, edges) {
 
 function edgeK(e) {
   const labs = e.labels || [];
+
+  // Unlabelled arrow: treat it as a (base+1)-cell so it shows up.
+  // For ordinary object-to-object arrows (0-cells), this puts it in k=1.
+  const s = String(e.source);
+  const t = String(e.target);
+  const base = Math.max(DIMS[s] ?? 0, DIMS[t] ?? 0);
+  if (labs.length === 0) return base + 1;
+
+  // Labelled arrow: keep existing behavior (dimension driven by label tokens).
   let k = 0;
   for (const l0 of labs) {
     const l = String(l0);
