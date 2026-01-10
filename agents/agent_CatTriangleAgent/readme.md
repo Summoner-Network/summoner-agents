@@ -10,7 +10,7 @@ B --[ g ]--> C
 A --[ h ]--> C
 ```
 
-`A` is an uncommitted drafting state, `B` is a committed collection state, and `C` is a terminal “registration complete” state.
+`A` is an uncommitted drafting state, `B` is a committed collection state, and `C` is a terminal "registration complete" state.
 
 > [!IMPORTANT]
 > **OpenAI credentials required.** The agent calls `load_dotenv()` and expects an environment variable named `OPENAI_API_KEY`. Put a `.env` file at the **project root** (or set the variable in your shell/CI) so it is available at runtime:
@@ -140,7 +140,7 @@ A --[ h ]--> C
 | `SummonerClient(name=...)`                                 | Creates a named client agent (`AGENT_ID = "CatTriangleAgent"`)            |
 | `client.flow().activate()`                                 | Enables flow parsing and dispatch                                         |
 | `flow.add_arrow_style(...)`                                | Defines route syntax like `A --[ f ]--> B`                                |
-| `@client.upload_states()`                                  | Supplies current `states` to Summoner’s tape                              |
+| `@client.upload_states()`                                  | Supplies current `states` to Summoner's tape                              |
 | `@client.download_states()`                                | Receives tape updates, applies priority rule, synchronizes local `states` |
 | `@client.hook(Direction.RECEIVE)`                          | Validates incoming message shape before dispatch                          |
 | `@client.hook(Direction.SEND)`                             | Normalizes outgoing payload and adds `from=AGENT_ID`                      |
@@ -226,7 +226,7 @@ Interpretation:
 In the browser:
 
 <p align="center">
-  <img width="380" src="../../assets/img/cat_1_triangle_A_green.png" alt="Connector relaying between Summoner and an MCP-style agent via two SQLite tools"/>
+  <img width="380" src="../../assets/img/cat_1_triangle_A_green.png"/>
 </p>
 
 
@@ -297,7 +297,7 @@ Interpretation:
 In the browser:
 
 <p align="center">
-  <img width="300" src="../../assets/img/cat_1_triangle_A_green.png" alt="..." style="vertical-align: middle;" />
+  <img width="300" src="../../assets/img/_triangle_A_green.png" alt="..." style="vertical-align: middle;" />
   <span style="vertical-align: middle;">&rarr;</span>
   <img width="308" src="../../assets/img/cat_1_triangle_C_green.png" alt="..." style="vertical-align: middle;" />
 </p>

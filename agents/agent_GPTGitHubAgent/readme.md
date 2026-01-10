@@ -351,7 +351,7 @@ In Terminal 2 (`InputAgent`), type:
 
 ### Scenario B — InputAgent, GitHub query as JSON
 
-Here we vary the shape of the request to test the prompt’s robustness. In Terminal 2, type:
+Here we vary the shape of the request to test the prompt's robustness. In Terminal 2, type:
 
 ```text
 > {"owner":"Summoner-Network","repo":"agent-sdk","note":"if helpful, show me recent commits","n":5}
@@ -377,7 +377,7 @@ In Terminal 2 (`InputAgent`), type:
 > {"instruction":"Explain what the Summoner-Network/agent-sdk project does conceptually."}
 ```
 
-Here the user did not explicitly ask for recent commits or “what changed”; the intent is descriptive rather than “show latest changes”. The `format_prompt` tells GPT to only request a GitHub call when a commits lookup clearly makes sense.
+Here the user did not explicitly ask for recent commits or "what changed"; the intent is descriptive rather than "show latest changes". The `format_prompt` tells GPT to only request a GitHub call when a commits lookup clearly makes sense.
 
 In this case, GPT should output `{}` as tool args, the agent will not call GitHub, and the response will look like:
 
@@ -399,5 +399,5 @@ In this case, GPT should output `{}` as tool args, the agent will not call GitHu
 
 You can use these three scenarios to verify:
 
-* that GitHub is called when the intent is clearly “show recent commits for this repo” (even with different field names or plain strings), and
+* that GitHub is called when the intent is clearly "show recent commits for this repo" (even with different field names or plain strings), and
 * that no call is made when the request is purely explanatory.

@@ -268,7 +268,7 @@ The sender proves control of `sign_priv` by signing the tuple `nonce|kx_pub|time
 * The handshake nonce is recorded as "received" for replay accounting.
 * A session key is derived as
   `sym_key = HKDF-SHA256( X25519(priv_kx, peer_kx_pub), info="handshake", length=32, salt=None )`.
-* The peer’s signing public key is cached so envelopes can be verified.
+* The peer's signing public key is cached so envelopes can be verified.
 
 
 
@@ -420,7 +420,7 @@ RoleState(
 * **local_reference / peer_reference.** Short tokens exchanged during finalize to close the cycle cleanly.
 * **exchange_count / finalize_retry_count.** Small counters to bound loops and retries so we do not get stuck.
 * **peer_address.** Best-effort convenience field for logging and troubleshooting.
-* **optional crypto metadata.** When present, we record the peer’s signing key, the peer’s key-exchange key, and timestamps for when a secure key was derived and last used.
+* **optional crypto metadata.** When present, we record the peer's signing key, the peer's key-exchange key, and timestamps for when a secure key was derived and last used.
 
 **Replay log: `NonceEvent`**
 A fast, append-only record of nonces seen per pair.
@@ -430,7 +430,7 @@ NonceEvent(self_id, role, peer_id, flow, nonce)
 ```
 
 * **flow.** Either `"sent"` or `"received"`.
-* **Indexes.** We index by `(self_id, role, peer_id)` and by `(self_id, role, peer_id, flow, nonce)` so we can quickly detect duplicates and quickly delete a whole thread’s entries on close.
+* **Indexes.** We index by `(self_id, role, peer_id)` and by `(self_id, role, peer_id, flow, nonce)` so we can quickly detect duplicates and quickly delete a whole thread's entries on close.
 
 **Why two tables.** `RoleState` is the "current snapshot" for a thread. `NonceEvent` is the "flight recorder" used for replay checks and cleanup. Keeping them separate keeps queries simple and predictable.
 
@@ -445,7 +445,7 @@ When a signed handshake arrives, the validator uses `DBNonceStore` to consult `N
 2. **Is the handshake fresh?** We apply a **time-to-live window** (default sixty seconds). If the timestamp is too old, the validator rejects it as stale.
 
 **What gets recorded.**
-Every time we accept a peer’s `my_nonce`, we record it exactly once as `flow="received"`. If the same value shows up again, we can ignore it safely.
+Every time we accept a peer's `my_nonce`, we record it exactly once as `flow="received"`. If the same value shows up again, we can ignore it safely.
 
 **When we clean up.**
 On a successful `close`, we delete all `NonceEvent` rows for the `(self_id, role, peer_id)` pair. That resets the exchange history so the next cycle starts cleanly. The `RoleState` row remains, which lets the agent reconnect efficiently while keeping transient nonces out of the way.
@@ -653,7 +653,7 @@ External tooling may treat the tuple `(my_id, sign_pub, kx_pub)` as the minimal 
 ## 11. Future work
 
 **Key rotation with continuity proofs.**
-Define a rotation flow that replaces one or both long-term keys without breaking the application’s notion of "the same agent." The draft direction is to publish a signed *continuity proof* where the current `sign_priv` signs a statement that names the new public keys (and, optionally, the old ones), a rotation reason, and a timestamp. Peers that already trust the old key can verify the signature and accept the new key material without out-of-band coordination. 
+Define a rotation flow that replaces one or both long-term keys without breaking the application's notion of "the same agent." The draft direction is to publish a signed *continuity proof* where the current `sign_priv` signs a statement that names the new public keys (and, optionally, the old ones), a rotation reason, and a timestamp. Peers that already trust the old key can verify the signature and accept the new key material without out-of-band coordination. 
 
 > [!NOTE]
 > The specification should cover: how rotations are recorded in the encrypted identity file, how peers cache and expire prior keys, and how to handle recovery if a rotation only partially propagates.

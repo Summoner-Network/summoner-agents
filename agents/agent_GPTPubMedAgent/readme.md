@@ -386,10 +386,10 @@ In Terminal 2 (`InputAgent`), type:
 >
 ```
 
-This scenario checks that **“latest”** is correctly mapped to `sort="pub_date"` and `retmax=1`.
+This scenario checks that **"latest"** is correctly mapped to `sort="pub_date"` and `retmax=1`.
 
 
-### Scenario B — InputAgent, most relevant papers on Alzheimer’s disease
+### Scenario B — InputAgent, most relevant papers on Alzheimer's disease
 
 In Terminal 2, type:
 
@@ -465,8 +465,8 @@ The agent calls ESearch with `sort=relevance`, then EFetches up to 3 PMIDs. You 
 
 This scenario checks that the agent can:
 
-* recognize “most relevant” → `sort="relevance"`,
-* map “about 3 articles” → `retmax=3`.
+* recognize "most relevant" → `sort="relevance"`,
+* map "about 3 articles" → `retmax=3`.
 
 ---
 
@@ -500,5 +500,5 @@ In this case, GPT should output `{}` as tool args, the agent will not call PubMe
 
 You can use these three scenarios to verify:
 
-* that PubMed is called when the intent is clearly “look up biomedical papers” (with appropriate **latest** vs **most relevant** behavior), and
+* that PubMed is called when the intent is clearly "look up biomedical papers" (with appropriate **latest** vs **most relevant** behavior), and
 * that no call is made when the request is purely explanatory and does not require a PubMed lookup.

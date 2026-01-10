@@ -4,7 +4,7 @@ A guarded GPT-powered agent that connects a **Slack workspace** to the Summoner 
 
 Specifically, `GPTSlackAgent` listens for `app_mention` events via Slack **Socket Mode** and decides (with GPT) whether to:
 
-* **Relay** the user’s request to backend agents on the Summoner server, and
+* **Relay** the user's request to backend agents on the Summoner server, and
 * **Post** answers or status updates back into Slack threads,
 
 using two separate GPT prompts:
@@ -22,7 +22,7 @@ It demonstrates how to:
 * load prompts from [`gpt_config.json`](./gpt_config.json) to structure Slack behavior,
 * track a **dynamic channel allow/block policy**, learning from Slack errors (`not_in_channel`) and feeding this back into GPT with a spelling-based guard.
 
-The agent uses an identity tag from [`id.json`](./id.json) and is designed to interoperate with other agents (GitHub, Reddit, Notion, etc.) that answer the user’s question and send results back via the Summoner server.
+The agent uses an identity tag from [`id.json`](./id.json) and is designed to interoperate with other agents (GitHub, Reddit, Notion, etc.) that answer the user's question and send results back via the Summoner server.
 
 > [!NOTE]
 > The overall structure is inspired by [`EchoAgent_2`](../agent_EchoAgent_2/) and its GPT adaptation [`GPTRespondAgent`](../agent_GPTRespondAgent/), extended with:
@@ -62,7 +62,7 @@ The agent uses an identity tag from [`id.json`](./id.json) and is designed to in
 > * `SLACK_APP_TOKEN` – **App-level token** (starts with `xapp-`), used by Socket Mode to open a WebSocket connection.  
 > * `SLACK_SIGNING_SECRET` – the signing secret from **Basic Information → App Credentials**; not used directly by this agent yet, but useful if you later add HTTP endpoints.
 >
-> To obtain these values you must [create and install a Slack app](https://api.slack.com/apps/) in your workspace and enable Socket Mode. See [How to Run, step&nbsp;2](#slack-app-setup) (“Create your Slack app and get the tokens”) for a step-by-step procedure.
+> To obtain these values you must [create and install a Slack app](https://api.slack.com/apps/) in your workspace and enable Socket Mode. See [How to Run, step&nbsp;2](#slack-app-setup) ("Create your Slack app and get the tokens") for a step-by-step procedure.
 >
 > If `SLACK_BOT_TOKEN` or `SLACK_APP_TOKEN` is missing, the agent logs:
 >
@@ -298,7 +298,7 @@ This payload is what `send_relay` sees as `slack_event`.
      * Removes it from `ALLOWED_CHANNEL_TOKENS`.
      * Logs that future posts/events for this channel will be suppressed.
 
-This is the runtime “learning” of blocked channels used by the GPT prompt.
+This is the runtime "learning" of blocked channels used by the GPT prompt.
 
 ### 7. Channel guard prompt (`build_channel_policy_clause`)
 
@@ -318,7 +318,7 @@ It also encodes strict rules:
 * Similarity or partial matches (e.g. `summoner-tests` vs `summonerbot-tests`) **do not** justify blocking.
 * The model must:
 
-  * explain the decision in a `reason` field, spelling the content’s channel character by character, and
+  * explain the decision in a `reason` field, spelling the content's channel character by character, and
   * then set `should_post` **based** on that reason.
 
 This spelling-based redundancy stabilizes behavior with smaller models (e.g. `gpt-4o-mini`).
@@ -528,7 +528,7 @@ python server.py --config configs/server_config_nojsonlogs.json
     1. Go to the Slack API dashboard:
     [https://api.slack.com/apps/](https://api.slack.com/apps/)
 
-    2. Click **“Create New App”** → **“From scratch”**:
+    2. Click **"Create New App"** → **"From scratch"**:
 
         * Give it a name, for example: `SummonerBot`.
         * Select the workspace where you want to install it.
@@ -563,7 +563,7 @@ python server.py --config configs/server_config_nojsonlogs.json
     5. Create the **App-level token** (`SLACK_APP_TOKEN`) for Socket Mode:
 
         * Go back to **Basic Information**.
-        * Scroll to **App-Level Tokens** and click **“Generate Token and Scopes”**.
+        * Scroll to **App-Level Tokens** and click **"Generate Token and Scopes"**.
         * Give it a name (for example `socket-mode`) and add the scope:
 
             * `connections:write`

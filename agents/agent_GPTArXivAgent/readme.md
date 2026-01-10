@@ -309,7 +309,7 @@ In Terminal 2 (`InputAgent`), type:
 
 ### Scenario B — InputAgent, arXiv query in a different shape
 
-Here we vary the shape of the request to test the prompt’s robustness. In Terminal 2, type:
+Here we vary the shape of the request to test the prompt's robustness. In Terminal 2, type:
 
 ```txt
 > {"topic":"recent advances in lattice-based fully homomorphic encryption","hint":"if needed, you can search on arxiv for the latest work","limit":3}
@@ -357,6 +357,6 @@ In this case, GPT should output `{}` as tool args, the agent will not call arXiv
 
 You can use these three scenarios to verify:
 
-* that arXiv is called when the intent is clearly “search arxiv” (even with different field names), and
+* that arXiv is called when the intent is clearly "search arxiv" (even with different field names), and
 * that no call is made when the request is purely explanatory.
 

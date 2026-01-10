@@ -23,7 +23,7 @@ A minimal Summoner client that traverses a **1-categorical arrow** and exposes i
 <summary><b>(Click to expand)</b> The agent goes through these steps:</summary>
 <br>
 
-1. On startup, the agent initializes `states = [Node("A")]` and a lock (`state_lock`) used to protect updates coming from Summoner’s tape lifecycle.
+1. On startup, the agent initializes `states = [Node("A")]` and a lock (`state_lock`) used to protect updates coming from Summoner's tape lifecycle.
 
 2. The agent configures its flow and arrow syntax:
 
@@ -80,7 +80,7 @@ A minimal Summoner client that traverses a **1-categorical arrow** and exposes i
    * `"move"` → `Move(Trigger.ok)`
    * `"stay"` → `Stay(Trigger.ok)`
 
-7. Object and cell handlers (`route="A"`, `route="B"`, `route="f"`) return `Test(Trigger.ok)`. These are minimal “processing” steps to exercise the tape lifecycle.
+7. Object and cell handlers (`route="A"`, `route="B"`, `route="f"`) return `Test(Trigger.ok)`. These are minimal "processing" steps to exercise the tape lifecycle.
 
 8. Send handlers emit a short event trace back to the server depending on the action that fired (Move / Stay / Test).
 
@@ -93,7 +93,7 @@ A minimal Summoner client that traverses a **1-categorical arrow** and exposes i
 | `SummonerClient(name=...)`                                 | Creates a named client agent (`AGENT_ID = "CatArrowAgent"`)          |
 | `client.flow().activate()`                                 | Enables flow parsing/dispatch                                        |
 | `flow.add_arrow_style(...)`                                | Defines route syntax like `A --[ f ]--> B`                           |
-| `@client.upload_states()`                                  | Supplies current `states` to Summoner’s tape                         |
+| `@client.upload_states()`                                  | Supplies current `states` to Summoner's tape                         |
 | `@client.download_states()`                                | Receives tape updates and synchronizes local `states`                |
 | `@client.hook(Direction.RECEIVE)`                          | Validates incoming message shape before dispatch                     |
 | `@client.hook(Direction.SEND)`                             | Normalizes outgoing payload and adds `from=AGENT_ID`                 |
@@ -199,7 +199,7 @@ Terminal 2 (`CatArrowAgent`) prints the LLM decision:
 The browser should display the following image:
 
 <p align="center">
-  <img width="380" src="../../assets/img/cat_1_arrow_A_green.png" alt="Connector relaying between Summoner and an MCP-style agent via two SQLite tools"/>
+  <img width="380" src="../../assets/img/cat_1_arrow_A_green.png"/>
 </p>
 
 
@@ -230,7 +230,7 @@ Terminal 2 prints:
 The browser should display the following image:
 
 <p align="center">
-  <img width="380" src="../../assets/img/cat_1_arrow_B_f_green.png" alt="Connector relaying between Summoner and an MCP-style agent via two SQLite tools"/>
+  <img width="380" src="../../assets/img/cat_1_arrow_B_f_green.png"/>
 </p>
 
 

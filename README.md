@@ -18,11 +18,11 @@
     * [Core Messaging Agents](#core-messaging-agents)
     * [Chat Agents](#chat-agents)
     * [Feedback Agents](#feedback-agents)
-    * [Category-theory-based Agents](#category-theory-based-agents)
+    * [Graph-Based (or Category-Based) Agents ](#graph-based-or-category-based-agents)
     * [Connector Agents (Database servers, MCP, LangChain, CrewAI, etc.)](#connector-agents)
     * [Security and Handshake Agents](#security-and-handshake-agents)
     * [API Agents](#api-agents)
-    * [MCP-based Agents](#mcp-based-agents)
+    * [MCP-Based Agents](#mcp-based-agents)
     * [DNA-Induced Agents 🚧 (planned)](#dna-induced-agents)
 
 
@@ -186,7 +186,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 
 ## Agent Collection
 
-There are 51 agents available in this repo.
+There are 52 agents available in this repo.
 
 ### Legend
 
@@ -335,7 +335,7 @@ Click to show the legend.
     <tbody>
     <tr>
         <td><code><strong><a href="agents/agent_ChatAgent_0/">ChatAgent_0</a></strong></code></td>
-        <td style="font-size: 0.8em;">Implements a minimal chat UI via <code>@send</code>/<code>@receive</code>; supports single- or multi-line input.</td>
+        <td style="font-size: 0.8em;">Implements a minimal chat UI via <code>@send</code> / <code>@receive</code>; supports single- or multi-line input.</td>
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
         <td><code>core</code></td>
         <td><img src="https://img.shields.io/badge/Interaction-%20?color=452461" alt="Interaction"></td>
@@ -359,7 +359,7 @@ Click to show the legend.
     </tr>
     <tr>
     <td><code><strong><a href="agents/agent_ChatAgent_3/">ChatAgent_3</a></strong></code></td>
-    <td style="font-size: 0.8em;">Shows explicit automaton transitions with <code>Move</code>/<code>Stay</code> (<code>opened → locked → opened</code>); remote/self travel, lock/open, quit.</td>
+    <td style="font-size: 0.8em;">Shows explicit automaton transitions with <code>Move</code> / <code>Stay</code> (<code>opened → locked → opened</code>); remote/self travel, lock/open, quit.</td>
     <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
     <td><code>core</code> <code>upload_states</code> <code>download_states</code> <code>traveling</code></td>
     <td><img src="https://img.shields.io/badge/Orchestration-%20?color=3a6ea5" alt="Orchestration"></td>
@@ -467,10 +467,10 @@ Click to show the legend.
 </p>
 
 
-### Category-theory-based Agents
+### [Graph-Based](https://en.wikipedia.org/wiki/Graph_theory) (or [Category-Based](https://en.wikipedia.org/wiki/Category_theory)) Agents 
 
 <details>
-<summary><b>(Click to expand)</b> Agents of <b>level 3–5</b> that treat orchestration as a typed state machine: objects are workflow stages, 1-cells are transitions or decision-making choices, and 2-cells encode path-dependent amendments between decisions.</summary>
+<summary><b>(Click to expand)</b> Agents of <b>level 3–5</b> that treat orchestration as a typed state machine: nodes are workflow stages, edges are transitions or decision-making choices, and "edges between edges" encode path-dependent amendments between decisions.</summary>
 <br>
 
 <div style="display: flex; justify-content: center;">
@@ -495,7 +495,7 @@ Click to show the legend.
     <tr>
         <td><code><strong><a href="agents/agent_CatArrowAgent/">CatArrowAgent</a></strong></code></td>
         <td style="font-size: 0.8em;">
-        "Walking-arrow" category: <code>@upload_states</code>/<code>@download_states</code> expose the tape; route handlers return <code>Move</code>/<code>Stay</code> to traverse or block the arrow.
+        Single-arrow-shaped agent: <code>@upload_states</code> / <code>@download_states</code> expose the tape; route handlers return <code>Move</code> / <code>Stay</code> to traverse or block the arrow.
         </td>
         <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
         <td><code>core</code> <code>upload_states</code> <code>download_states</code> <code>hooks</code> <code>on_triggers</code> <code>on_actions</code> <code>dna</code></td>
@@ -505,7 +505,7 @@ Click to show the legend.
     <tr>
         <td><code><strong><a href="agents/agent_CatTriangleAgent/">CatTriangleAgent</a></strong></code></td>
         <td style="font-size: 0.8em;">
-        Triangle category with partial inputs: messages merge into memory; <code>@upload_states</code>/<code>@download_states</code> route by available fields; handlers return <code>Move</code>/<code>Stay</code>.
+        Triangle-shaped agent handling partial inputs: <code>@upload_states</code> / <code>@download_states</code> route by available fields; handlers return <code>Move</code> / <code>Stay</code>; message is reconstructed in memory.
         </td>
         <td><img src="https://img.shields.io/badge/LVL_4-%20?color=DF7919" alt=""></td>
         <td><code>core</code> <code>upload_states</code> <code>download_states</code> <code>hooks</code> <code>on_triggers</code> <code>on_actions</code> <code>dna</code></td>
@@ -513,14 +513,24 @@ Click to show the legend.
         <td>✗</td><td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td>
     </tr>
     <tr>
-        <td><code><strong><a href="agents/agent_CatUpdateAgent/">CatUpdateAgent</a></strong></code></td>
+        <td><code><strong><a href="agents/agent_CatUpdateAgent_0/">CatUpdateAgent_0</a></strong></code></td>
         <td style="font-size: 0.8em;">
-        2-category supply-chain: objects <code>A→B→C→D</code>; 1-cells <code>f/g</code> then <code>p/q</code>; 2-cells <code>eta_*</code>/<code>mu_*</code> set intent without advancing stage.
+        2-category-like modeling of a supply-chain use case: objects <code>A→B→C→D</code> are stages; arrows <code>f/g</code> with  <code>p/q</code> are decisions; arrows between arrows <code>eta_*</code> / <code>mu_*</code> are admendments.
         </td>
         <td><img src="https://img.shields.io/badge/LVL_5-%20?color=DF4119" alt=""></td>
         <td><code>core</code> <code>upload_states</code> <code>download_states</code> <code>hooks</code> <code>on_triggers</code> <code>on_actions</code> <code>dna</code></td>
         <td><img src="https://img.shields.io/badge/Decision_Flow-%20?color=6b3fa0" alt=""></td>
-        <td>✗</td><td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td>
+        <td>✗</td><td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✗</td><td>✗</td>
+    </tr>
+    <tr>
+        <td><code><strong><a href="agents/agent_CatUpdateAgent_1/">CatUpdateAgent_1</a></strong></code></td>
+        <td style="font-size: 0.8em;">
+        Same as <a href="agents/agent_CatUpdateAgent_0/"><code>CatUpdateAgent_0</code></a>, but with human-readable public state names, a switchable policy strategy (use <code>--intent-strategy</code>), and a built-in final report + scoring step.
+        </td>
+        <td><img src="https://img.shields.io/badge/LVL_5-%20?color=DF4119" alt=""></td>
+        <td><code>core</code> <code>upload_states</code> <code>download_states</code> <code>hooks</code> <code>on_triggers</code> <code>on_actions</code> <code>dna</code></td>
+        <td><img src="https://img.shields.io/badge/Decision_Flow-%20?color=6b3fa0" alt=""></td>
+        <td>✗</td><td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✗</td><td>✗</td>
     </tr>
     </tbody>
 </table>
@@ -529,7 +539,7 @@ Click to show the legend.
 </details>
 
 <p align="center">
-<img width="600px" src="assets/mov2gif/gifs/demo_category_framed.gif" />
+<img width="600px" src="assets/mov2gif/gifs/demo_li_supply_framed.gif" />
 </p>
 
 ### Connector Agents
@@ -894,7 +904,7 @@ Click to show the legend.
 
 
 
-### MCP-based Agents
+### MCP-Based Agents
 
 <details>
 <summary><b>(Click to expand)</b> MCP-based agents of <b>level 2</b> that call external services via an MCP tool server (local or remote).</summary>

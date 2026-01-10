@@ -333,6 +333,6 @@ GPT should output `{}`, the agent should not call MCP, and you should see:
 
 You can use these three scenarios to verify:
 
-* that arXiv is called via MCP when the intent is clearly “search arxiv” (even with different field names), and
+* that arXiv is called via MCP when the intent is clearly "search arxiv" (even with different field names), and
 * that no call is made when the request is purely explanatory.
 

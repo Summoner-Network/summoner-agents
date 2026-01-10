@@ -440,5 +440,5 @@ In this case, GPT should output `{}` as tool args, the agent will not call Notio
 
 You can use these three scenarios to verify:
 
-* that Notion is called when the intent is clearly “search/query/list something inside my Notion workspace” (even with raw page IDs or different field names), and
+* that Notion is called when the intent is clearly "search/query/list something inside my Notion workspace" (even with raw page IDs or different field names), and
 * that no call is made when the request is purely explanatory and does not require workspace access.

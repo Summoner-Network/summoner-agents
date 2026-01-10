@@ -161,7 +161,7 @@ A multi-peer **handshake** agent that uses [`db_sdk.py`](./db_sdk.py) to manage 
     ```
 
     > 📝 **Note:**
-    > Because the queued sender fires *after* receives, you should see less overlap than with the background sender: clusters of receive logs followed by a single “queued send tick” that emits the appropriate messages.
+    > Because the queued sender fires *after* receives, you should see less overlap than with the background sender: clusters of receive logs followed by a single "queued send tick" that emits the appropriate messages.
 
     > 📝 **Note:**
     > The drivers are declared with `multi=True`, so one tick can emit **multiple payloads** (e.g., an initiator message, a responder message, and the broadcast register).

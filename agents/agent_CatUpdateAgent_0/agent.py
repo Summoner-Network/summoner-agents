@@ -14,16 +14,13 @@ from summoner_web_viz import WebGraphVisualizer
 # -----------------------------------------------------------------------------
 # Minimal config
 # -----------------------------------------------------------------------------
-AGENT_ID = "CatUpdateAgent"
+AGENT_ID = "CatUpdateAgent_0"
 llm_client = LLMClient(debug=True)
 viz = WebGraphVisualizer(title=f"{AGENT_ID} Graph", port=8765)
 
 # -----------------------------------------------------------------------------
 # Graph tokens (objects, 1-cells, 2-cells)
 # -----------------------------------------------------------------------------
-ARROWS_1 = {"f", "g", "h", "p", "q"}
-ARROWS_2 = {"eta_f", "mu_f", "eta_g", "mu_g"}
-
 # Routes (1-level)
 ROUTE_F = " A --[ f ]--> B "
 ROUTE_G = " A --[ g ]--> B "
@@ -182,9 +179,6 @@ def _subset_dict(payload: Any, allowed: Sequence[str]) -> Dict[str, Any]:
     if not isinstance(payload, dict):
         return {}
     return {k: payload[k] for k in allowed if k in payload}
-
-def _has_any_keys(payload: Any, keys: set[str]) -> bool:
-    return isinstance(payload, dict) and any(k in payload for k in keys)
 
 # -----------------------------------------------------------------------------
 # Deterministic incident parsing for robust demo (no LLM needed for your example)

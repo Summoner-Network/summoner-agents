@@ -31,7 +31,7 @@
 #
 # CONCURRENCY MODEL (important!)
 #   - We split sending into two loops to avoid races:
-#       * tick_background_sender: periodic “maintenance” (register, finalize close/finish, reconnect).
+#       * tick_background_sender: periodic "maintenance" (register, finalize close/finish, reconnect).
 #       * queued_sender: event-driven (on Trigger.ok/error) for the chatty steps (confirm/request/respond/conclude).
 #   - Receivers clear local_nonce immediately after accepting a peer nonce.
 #     The next my_nonce is minted in queued_sender, guaranteeing we never reuse a stale local_nonce.
@@ -456,7 +456,7 @@ async def handle_close(payload: dict) -> Optional[Event]:
           * Persist peer_reference (initiator's), clear nonces, zero counters.
           * Delete NonceEvent log for this peer (exchange complete).
       - Retry path:
-          * Any non-close traffic while waiting counts as a “wait tick” (we bump finalize_retry_count).
+          * Any non-close traffic while waiting counts as a "wait tick" (we bump finalize_retry_count).
           * If finalize_retry_count > RESP_FINAL_LIMIT, we wipe both refs and return to resp_ready
             to prevent stale reconnect loops under unreliable transports.
 
@@ -663,7 +663,7 @@ async def finish_to_idle(payload: dict) -> Optional[Event]:
 @client.send(route="sending", multi=True)
 async def tick_background_sender() -> list[dict]:
     """
-    Background sender (periodic “maintenance”).
+    Background sender (periodic "maintenance").
       - Initiator: handles reconnect attempts and the close loop (finish ACK retries).
       - Responder: sends finish when in resp_finalize (we already stored peer_reference).
       - Also broadcasts 'register' every tick so new peers can discover us.

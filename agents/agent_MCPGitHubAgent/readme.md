@@ -404,7 +404,7 @@ In Terminal 2 (`InputAgent`), type:
 > {"instruction":"Explain what the Summoner-Network/agent-sdk project does conceptually."}
 ```
 
-Here the request is descriptive rather than “show latest changes”. The `format_prompt` tells GPT to only request a commits lookup when it clearly makes sense.
+Here the request is descriptive rather than "show latest changes". The `format_prompt` tells GPT to only request a commits lookup when it clearly makes sense.
 
 In this case, GPT should output `{}` as tool args, the agent will not call MCP, and the response will look like:
 
@@ -422,9 +422,9 @@ In this case, GPT should output `{}` as tool args, the agent will not call MCP, 
 >
 ```
 
-### Scenario D — InputAgent, explicit “no tool” request
+### Scenario D — InputAgent, explicit "no tool" request
 
-This scenario makes the “do not call tools unless needed” behavior obvious.
+This scenario makes the "do not call tools unless needed" behavior obvious.
 
 In Terminal 2, type:
 
@@ -442,6 +442,6 @@ Expected behavior:
 
 You can use these scenarios to verify:
 
-* that MCP is called when the intent is clearly “show recent commits for this repo” (even with different field names or plain strings),
+* that MCP is called when the intent is clearly "show recent commits for this repo" (even with different field names or plain strings),
 * that no call is made when the request is explanatory or explicitly prohibits tool usage, and
 * that the agent remains a deterministic tool router with guardrails, while MCP cleanly hosts the actual tool implementation.

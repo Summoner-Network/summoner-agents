@@ -65,7 +65,7 @@ async def watch_topic(session, topic, seen_map):
         arxiv_id = e["id"].split("/")[-1]
         title    = e["title"].strip().replace("\n", " ")
         published = e["published"][:10]
-        print(f"[{published}] arXiv:{arxiv_id} – “{title}”")
+        print(f"[{published}] arXiv:{arxiv_id} – "{title}"")
 
         # Build metadata dict
         authors = [a["name"] for a in e.get("author", [])]

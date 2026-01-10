@@ -304,7 +304,7 @@ def build_channel_policy_clause() -> str:
 
     # ------------------------------------------------------------------
     # Allowed channels: dynamic allowlist (channels that have succeeded).
-    # If empty, we fall back to the rule “any non-blocked channel is allowed”.
+    # If empty, we fall back to the rule "any non-blocked channel is allowed".
     # ------------------------------------------------------------------
     if allowed:
         allowed_str = ", ".join(allowed)

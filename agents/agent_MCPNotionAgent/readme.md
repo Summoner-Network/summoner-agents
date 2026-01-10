@@ -390,5 +390,5 @@ Expected behavior:
 
 You can use these scenarios to verify:
 
-* that MCP is called when the intent is clearly “search/query/list something inside my Notion workspace”, and
+* that MCP is called when the intent is clearly "search/query/list something inside my Notion workspace", and
 * that no call is made when the request is purely explanatory and does not require workspace access.

@@ -1,4 +1,4 @@
-# `CatUpdateAgent`
+# `CatUpdateAgent_0`
 
 A minimal Summoner client that traverses a **2-categorical supply-chain workflow** and exposes its current `states` through a **globular** graph visualization. The agent listens on category-structured routes (four objects, five 1-cells, and four 2-cells), calls an LLM to **extract** structured incident and logistics fields (see [`llm_call.py`](./llm_call.py)), and lets a deterministic **automaton** decide how to traverse both **transitions** (1-cells) and **transitions between transitions** (2-cells) (see [`agent.py`](./agent.py)). It renders the current position in a browser window where **objects are nodes**, **arrows are directed edges**, and **arrow labels are circled bubbles attached to edges** (see [`summoner_web_viz.py`](./summoner_web_viz.py)). Occupied tokens in `states` are colored **green**; non-occupied tokens are **gray**.
 
@@ -244,7 +244,7 @@ python server.py
 Then start the agent:
 
 ```bash
-python agents/agent_CatUpdateAgent/agent.py
+python agents/agent_CatUpdateAgent_0/agent.py
 ```
 
 A browser window should open automatically at:
@@ -260,7 +260,7 @@ Optional CLI flag:
 Example:
 
 ```bash
-python agents/agent_CatUpdateAgent/agent.py --config configs/client_config.json
+python agents/agent_CatUpdateAgent_0/agent.py --config configs/client_config.json
 ```
 
 ## Simulation Scenarios
@@ -272,7 +272,7 @@ These scenarios run a minimal loop with a server, this agent, and an input-prese
 python server.py
 
 # Terminal 2
-python agents/agent_CatUpdateAgent/agent.py
+python agents/agent_CatUpdateAgent_0/agent.py
 
 # Terminal 3
 python agents/agent_InputAgent/agent.py
@@ -316,7 +316,7 @@ In the visualization:
    <img width="150" src="../../assets/img/cat_2_struct_D_p_f_green.png" alt="..." style="vertical-align: middle;" />
 </p>
 
-This is deliberate. It provides an "audit trail" in the globular view without requiring a database or a long-term memory subsystem.
+This is deliberate. Persisting the decision tokens across later stages provides an audit trail without requiring a database or a long-term memory subsystem.
 
 > [!NOTE]
 > **Pressing Enter does nothing.** Empty strings are ignored. This prevents accidental advancement during live demos.
@@ -361,9 +361,9 @@ This step is here to show a hard guardrail: if the message does not carry incide
 **Expected messages:**
 
 ```text
-[Received] {'message': 'Stayed on A via f (incident insufficient for DC selection, or supplier path better)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'Stayed on A via g (incident insufficient for supplier selection, or DC path better)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'A processed and forgotten', 'from': 'CatUpdateAgent'}
+[Received] {'message': 'Stayed on A via f (incident insufficient for DC selection, or supplier path better)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'Stayed on A via g (incident insufficient for supplier selection, or DC path better)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'A processed and forgotten', 'from': 'CatUpdateAgent_0'}
 ```
 
 **Interpretation:**
@@ -397,9 +397,9 @@ This is the first "real" business decision: choose between DC (`f`) and supplier
 **Expected messages:**
 
 ```text
-[Received] {'message': 'Moved A -> B via f (regional DC selected)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'Stayed on A via g (incident insufficient for supplier selection, or DC path better)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'A processed and forgotten', 'from': 'CatUpdateAgent'}
+[Received] {'message': 'Moved A -> B via f (regional DC selected)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'Stayed on A via g (incident insufficient for supplier selection, or DC path better)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'A processed and forgotten', 'from': 'CatUpdateAgent_0'}
 ```
 
 **Interpretation:**
@@ -435,9 +435,9 @@ This is the 2-cell decision that attaches policy intent to the chosen plan. Here
 **Expected messages:**
 
 ```text
-[Received] {'message': 'Selected eta_f: expedite authorization (intent -> p)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'Stayed on B via h (waiting for ops readiness fields)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'B processed and forgotten', 'from': 'CatUpdateAgent'}
+[Received] {'message': 'Selected eta_f: expedite authorization (intent -> p)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'Stayed on B via h (waiting for ops readiness fields)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'B processed and forgotten', 'from': 'CatUpdateAgent_0'}
 ```
 
 **Interpretation:**
@@ -482,8 +482,8 @@ Now we provide the operational readiness signal. This lets the agent progress to
 **Expected messages:**
 
 ```text
-[Received] {'message': 'Moved B -> C via h (ops ready: pick/pack + compliance complete)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'B processed and forgotten', 'from': 'CatUpdateAgent'}
+[Received] {'message': 'Moved B -> C via h (ops ready: pick/pack + compliance complete)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'B processed and forgotten', 'from': 'CatUpdateAgent_0'}
 ```
 
 **Interpretation:**
@@ -526,9 +526,9 @@ In practice, policy and ops readiness can arrive together (same event, same payl
 **Expected messages (typical):**
 
 ```text
-[Received] {'message': 'Selected eta_f: expedite authorization (intent -> p)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'Moved B -> C via h (ops ready: pick/pack + compliance complete)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'B processed and forgotten', 'from': 'CatUpdateAgent'}
+[Received] {'message': 'Selected eta_f: expedite authorization (intent -> p)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'Moved B -> C via h (ops ready: pick/pack + compliance complete)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'B processed and forgotten', 'from': 'CatUpdateAgent_0'}
 ```
 
 **Interpretation:**
@@ -560,9 +560,9 @@ Now we provide feasibility. The agent must execute shipping in a way that follow
 **Expected messages:**
 
 ```text
-[Received] {'message': 'Moved C -> D via p (premium shipment executed)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'C processed and forgotten', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'Stayed on C via q (not chosen, or feasibility missing)', 'from': 'CatUpdateAgent'}
+[Received] {'message': 'Moved C -> D via p (premium shipment executed)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'C processed and forgotten', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'Stayed on C via q (not chosen, or feasibility missing)', 'from': 'CatUpdateAgent_0'}
 ```
 
 **Interpretation:**
@@ -607,7 +607,7 @@ At `D`, you send one more message. This is the "scoring harness" step. It is whe
 A representative shape (content will match your run's stored fields):
 
 ```text
-[Received] {'message': "{'scenario': 'critical_spare_part_fulfillment', 'path': {'stage': 'D', 'source_choice': 'f', 'amendment_choice': 'eta_f', 'intent_lane': 'p', 'shipment_lane': 'p', 'exception': None}, 'case': {...}, 'policy': {...}, 'ops': {...}, 'feasibility': {...}, 'evaluation': {'ground_truth_checks': {...}, 'all_matches': True}}", 'from': 'CatUpdateAgent'}
+[Received] {'message': "{'scenario': 'critical_spare_part_fulfillment', 'path': {'stage': 'D', 'source_choice': 'f', 'amendment_choice': 'eta_f', 'intent_lane': 'p', 'shipment_lane': 'p', 'exception': None}, 'case': {...}, 'policy': {...}, 'ops': {...}, 'feasibility': {...}, 'evaluation': {'ground_truth_checks': {...}, 'all_matches': True}}", 'from': 'CatUpdateAgent_0'}
 ```
 
 Example payload emitted by the agent:
@@ -658,7 +658,7 @@ Example payload emitted by the agent:
       "has_exception": false
     }
   },
-  "from": "CatUpdateAgent"
+  "from": "CatUpdateAgent_0"
 }
 ```
 
@@ -734,9 +734,9 @@ Same guardrail as Workflow 1. This shows that the agent does not "hallucinate mo
 **Expected messages:**
 
 ```text
-[Received] {'message': 'Stayed on A via f (incident insufficient for DC selection, or supplier path better)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'Stayed on A via g (incident insufficient for supplier selection, or DC path better)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'A processed and forgotten', 'from': 'CatUpdateAgent'}
+[Received] {'message': 'Stayed on A via f (incident insufficient for DC selection, or supplier path better)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'Stayed on A via g (incident insufficient for supplier selection, or DC path better)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'A processed and forgotten', 'from': 'CatUpdateAgent_0'}
 ```
 
 **Interpretation:**
@@ -767,9 +767,9 @@ You can reuse the exact same incident as Workflow 1 to keep the comparison clean
 **Expected messages:**
 
 ```text
-[Received] {'message': 'Moved A -> B via f (regional DC selected)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'Stayed on A via g (incident insufficient for supplier selection, or DC path better)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'A processed and forgotten', 'from': 'CatUpdateAgent'}
+[Received] {'message': 'Moved A -> B via f (regional DC selected)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'Stayed on A via g (incident insufficient for supplier selection, or DC path better)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'A processed and forgotten', 'from': 'CatUpdateAgent_0'}
 ```
 
 **Interpretation:**
@@ -800,9 +800,9 @@ Here we send policy fields that make expedite unjustified. The key point is that
 **Expected messages:**
 
 ```text
-[Received] {'message': 'Selected mu_f: consolidation mandate (intent -> q)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'Stayed on B via h (waiting for ops readiness fields)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'B processed and forgotten', 'from': 'CatUpdateAgent'}
+[Received] {'message': 'Selected mu_f: consolidation mandate (intent -> q)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'Stayed on B via h (waiting for ops readiness fields)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'B processed and forgotten', 'from': 'CatUpdateAgent_0'}
 ```
 
 **Interpretation:**
@@ -842,8 +842,8 @@ Now we provide the operational readiness signal that allows the workflow to prog
 **Expected messages:**
 
 ```text
-[Received] {'message': 'Moved B -> C via h (ops ready: pick/pack + compliance complete)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'B processed and forgotten', 'from': 'CatUpdateAgent'}
+[Received] {'message': 'Moved B -> C via h (ops ready: pick/pack + compliance complete)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'B processed and forgotten', 'from': 'CatUpdateAgent_0'}
 ```
 
 **Interpretation:**
@@ -883,9 +883,9 @@ As in Workflow 1, policy and ops readiness can arrive in a single payload. This 
 **Expected messages (typical):**
 
 ```text
-[Received] {'message': 'Selected mu_f: consolidation mandate (intent -> q)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'Moved B -> C via h (ops ready: pick/pack + compliance complete)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'B processed and forgotten', 'from': 'CatUpdateAgent'}
+[Received] {'message': 'Selected mu_f: consolidation mandate (intent -> q)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'Moved B -> C via h (ops ready: pick/pack + compliance complete)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'B processed and forgotten', 'from': 'CatUpdateAgent_0'}
 ```
 
 **Interpretation:**
@@ -915,9 +915,9 @@ Now we provide feasibility. Since the recorded intent is `q`, and economy is ava
 **Expected messages:**
 
 ```text
-[Received] {'message': 'Stayed on C via p (not chosen, or feasibility missing)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'Moved C -> D via q (economy shipment executed)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'C processed and forgotten', 'from': 'CatUpdateAgent'}
+[Received] {'message': 'Stayed on C via p (not chosen, or feasibility missing)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'Moved C -> D via q (economy shipment executed)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'C processed and forgotten', 'from': 'CatUpdateAgent_0'}
 ```
 
 **Interpretation:**
@@ -1010,9 +1010,9 @@ Same guardrail as the other workflows.
 **Expected messages:**
 
 ```text
-[Received] {'message': 'Stayed on A via f (incident insufficient for DC selection, or supplier path better)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'Stayed on A via g (incident insufficient for supplier selection, or DC path better)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'A processed and forgotten', 'from': 'CatUpdateAgent'}
+[Received] {'message': 'Stayed on A via f (incident insufficient for DC selection, or supplier path better)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'Stayed on A via g (incident insufficient for supplier selection, or DC path better)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'A processed and forgotten', 'from': 'CatUpdateAgent_0'}
 ```
 
 **Interpretation:**
@@ -1043,9 +1043,9 @@ Here the quantity requirement forces supplier sourcing because DC on-hand cannot
 **Expected messages:**
 
 ```text
-[Received] {'message': 'Stayed on A via f (incident insufficient for DC selection, or supplier path better)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'Moved A -> B via g (supplier selected)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'A processed and forgotten', 'from': 'CatUpdateAgent'}
+[Received] {'message': 'Stayed on A via f (incident insufficient for DC selection, or supplier path better)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'Moved A -> B via g (supplier selected)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'A processed and forgotten', 'from': 'CatUpdateAgent_0'}
 ```
 
 **Interpretation:**
@@ -1078,9 +1078,9 @@ Now we attach an expedite clause to the supplier plan. This is the 2-cell select
 **Expected messages:**
 
 ```text
-[Received] {'message': 'Selected eta_g: supplier expedite clause (intent -> p)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'Stayed on B via h (waiting for ops readiness fields)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'B processed and forgotten', 'from': 'CatUpdateAgent'}
+[Received] {'message': 'Selected eta_g: supplier expedite clause (intent -> p)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'Stayed on B via h (waiting for ops readiness fields)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'B processed and forgotten', 'from': 'CatUpdateAgent_0'}
 ```
 
 **Interpretation:**
@@ -1120,8 +1120,8 @@ Now we provide the operational readiness signal.
 **Expected messages:**
 
 ```text
-[Received] {'message': 'Moved B -> C via h (ops ready: pick/pack + compliance complete)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'B processed and forgotten', 'from': 'CatUpdateAgent'}
+[Received] {'message': 'Moved B -> C via h (ops ready: pick/pack + compliance complete)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'B processed and forgotten', 'from': 'CatUpdateAgent_0'}
 ```
 
 **Interpretation:**
@@ -1160,9 +1160,9 @@ This is common operationally: a manager's policy call and the readiness state ar
 **Expected messages (typical):**
 
 ```text
-[Received] {'message': 'Selected eta_g: supplier expedite clause (intent -> p)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'Moved B -> C via h (ops ready: pick/pack + compliance complete)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'B processed and forgotten', 'from': 'CatUpdateAgent'}
+[Received] {'message': 'Selected eta_g: supplier expedite clause (intent -> p)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'Moved B -> C via h (ops ready: pick/pack + compliance complete)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'B processed and forgotten', 'from': 'CatUpdateAgent_0'}
 ```
 
 **Interpretation:**
@@ -1192,9 +1192,9 @@ Now we provide feasibility. Since intent is `p`, premium shipping executes if pr
 **Expected messages:**
 
 ```text
-[Received] {'message': 'Moved C -> D via p (premium shipment executed)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'C processed and forgotten', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'Stayed on C via q (not chosen, or feasibility missing)', 'from': 'CatUpdateAgent'}
+[Received] {'message': 'Moved C -> D via p (premium shipment executed)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'C processed and forgotten', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'Stayed on C via q (not chosen, or feasibility missing)', 'from': 'CatUpdateAgent_0'}
 ```
 
 **Interpretation:**
@@ -1286,9 +1286,9 @@ Same guardrail as the other workflows.
 **Expected messages:**
 
 ```text
-[Received] {'message': 'Stayed on A via f (incident insufficient for DC selection, or supplier path better)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'Stayed on A via g (incident insufficient for supplier selection, or DC path better)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'A processed and forgotten', 'from': 'CatUpdateAgent'}
+[Received] {'message': 'Stayed on A via f (incident insufficient for DC selection, or supplier path better)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'Stayed on A via g (incident insufficient for supplier selection, or DC path better)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'A processed and forgotten', 'from': 'CatUpdateAgent_0'}
 ```
 
 **Interpretation:**
@@ -1319,9 +1319,9 @@ Reuse the same incident as Workflow 3 so the only delta is policy.
 **Expected messages:**
 
 ```text
-[Received] {'message': 'Stayed on A via f (incident insufficient for DC selection, or supplier path better)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'Moved A -> B via g (supplier selected)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'A processed and forgotten', 'from': 'CatUpdateAgent'}
+[Received] {'message': 'Stayed on A via f (incident insufficient for DC selection, or supplier path better)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'Moved A -> B via g (supplier selected)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'A processed and forgotten', 'from': 'CatUpdateAgent_0'}
 ```
 
 **Interpretation:**
@@ -1354,9 +1354,9 @@ Here the policy payload is "economy leaning": downtime cost is low and risk is l
 **Expected messages:**
 
 ```text
-[Received] {'message': 'Selected mu_g: standard clause (intent -> q)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'Stayed on B via h (waiting for ops readiness fields)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'B processed and forgotten', 'from': 'CatUpdateAgent'}
+[Received] {'message': 'Selected mu_g: standard clause (intent -> q)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'Stayed on B via h (waiting for ops readiness fields)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'B processed and forgotten', 'from': 'CatUpdateAgent_0'}
 ```
 
 **Interpretation:**
@@ -1396,8 +1396,8 @@ Now we provide the operational readiness signal.
 **Expected messages:**
 
 ```text
-[Received] {'message': 'Moved B -> C via h (ops ready: pick/pack + compliance complete)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'B processed and forgotten', 'from': 'CatUpdateAgent'}
+[Received] {'message': 'Moved B -> C via h (ops ready: pick/pack + compliance complete)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'B processed and forgotten', 'from': 'CatUpdateAgent_0'}
 ```
 
 **Interpretation:**
@@ -1436,9 +1436,9 @@ This is often the most realistic: the same update includes "do not expedite" plu
 **Expected messages (typical):**
 
 ```text
-[Received] {'message': 'Selected mu_g: standard clause (intent -> q)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'Moved B -> C via h (ops ready: pick/pack + compliance complete)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'B processed and forgotten', 'from': 'CatUpdateAgent'}
+[Received] {'message': 'Selected mu_g: standard clause (intent -> q)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'Moved B -> C via h (ops ready: pick/pack + compliance complete)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'B processed and forgotten', 'from': 'CatUpdateAgent_0'}
 ```
 
 **Interpretation:**
@@ -1468,9 +1468,9 @@ Now we provide feasibility. Since intent is `q`, economy shipping executes if ec
 **Expected messages:**
 
 ```text
-[Received] {'message': 'Stayed on C via p (not chosen, or feasibility missing)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'Moved C -> D via q (economy shipment executed)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'C processed and forgotten', 'from': 'CatUpdateAgent'}
+[Received] {'message': 'Stayed on C via p (not chosen, or feasibility missing)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'Moved C -> D via q (economy shipment executed)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'C processed and forgotten', 'from': 'CatUpdateAgent_0'}
 ```
 
 **Interpretation:**
@@ -1568,9 +1568,9 @@ Expected:
 Typical message pattern:
 
 ```text
-[Received] {'message': 'Selected eta_f: expedite authorization (intent -> p)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'Moved B -> C via h (ops ready: pick/pack + compliance complete)', 'from': 'CatUpdateAgent'}
-[Received] {'message': 'B processed and forgotten', 'from': 'CatUpdateAgent'}
+[Received] {'message': 'Selected eta_f: expedite authorization (intent -> p)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'Moved B -> C via h (ops ready: pick/pack + compliance complete)', 'from': 'CatUpdateAgent_0'}
+[Received] {'message': 'B processed and forgotten', 'from': 'CatUpdateAgent_0'}
 ```
 
 Interpretation:

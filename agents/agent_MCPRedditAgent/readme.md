@@ -1,4 +1,4 @@
-You’re right. My previous edit didn’t go far enough, and I missed the renaming consistency.
+You're right. My previous edit didn't go far enough, and I missed the renaming consistency.
 
 Below is a **minimal, careful conversion** of your README that:
 
@@ -43,7 +43,7 @@ The agent also uses an identity tag from [`id.json`](./id.json) and is designed 
 
 > [!NOTE]
 > **Reddit credentials required (used by the MCP server).**
-> To let `MCPRedditAgent` retrieve Reddit content, you must create a Reddit “script” application and store the credentials in your `.env` (the MCP server reads these):
+> To let `MCPRedditAgent` retrieve Reddit content, you must create a Reddit "script" application and store the credentials in your `.env` (the MCP server reads these):
 >
 > 1. Go to your Reddit app preferences: [https://www.reddit.com/prefs/apps/](https://www.reddit.com/prefs/apps/).
 > 2. Click **create application** at the bottom.
@@ -450,9 +450,9 @@ The agent calls `subreddit('all').search(...)` and returns:
 
 This scenario checks the mapping:
 
-* “most relevant” → `sort="relevance"`,
-* “past week” → `time_filter="week"`,
-* “up to 10 results” → `limit=10`.
+* "most relevant" → `sort="relevance"`,
+* "past week" → `time_filter="week"`,
+* "up to 10 results" → `limit=10`.
 
 
 ### Scenario C — InputAgent, comments on a specific Reddit thread
@@ -544,6 +544,6 @@ In this case, GPT should output `{}` as tool args, the agent will not call Reddi
 
 You can use these scenarios to verify:
 
-* that Reddit is called when the intent is clearly “show posts / search / fetch comments on Reddit”, and that the call is executed via the MCP tool `reddit_handle_request`, and
+* that Reddit is called when the intent is clearly "show posts / search / fetch comments on Reddit", and that the call is executed via the MCP tool `reddit_handle_request`, and
 * that no call is made (and therefore no MCP tool call is attempted) when the request is purely explanatory and does not require contacting Reddit.
 
