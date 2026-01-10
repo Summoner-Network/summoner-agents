@@ -1,6 +1,6 @@
 {
-    "host": null,
-    "port": null,
+    "host": "host.docker.internal",
+    "port": 8888,
 
     "logger": {
         "log_level": "INFO",
@@ -27,10 +27,10 @@
         },
 
         "sender": {
-        "concurrency_limit": 16,
-        "batch_drain": false,
-        "queue_maxsize": 128,
-        "event_bridge_maxsize": 2000,
+        "concurrency_limit": 50,
+        "batch_drain": true,
+        "queue_maxsize": 50,
+        "event_bridge_maxsize": 1000,
         "max_worker_errors": 3
         },
 
@@ -46,7 +46,7 @@
 
     "api": {
         
-        "base_url": "https://summoner.org",
+        "base_url": "http://127.0.0.1:8080",
         "credentials": {
             "username": "your-agent-username",
             "password": "your-strong-password"

@@ -1,0 +1,23 @@
+{
+    "host": "127.0.0.1",
+    "port": 8888,
+
+    "version": "python",
+
+    "logger": {
+        "log_level": "INFO",
+
+        "enable_console_log": true,
+        "console_log_format": "\u001b[92m%(asctime)s\u001b[0m - \u001b[94m%(name)s\u001b[0m - %(levelname)s - %(message)s",
+
+        "enable_file_log": true,
+        "enable_json_log": true,
+        "log_file_path": "logs/",
+        "log_format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+
+        "max_file_size": 1000000,
+        "backup_count": 3,
+        "date_format": "%Y-%m-%d %H:%M:%S.%3f",
+        "log_keys": null
+    }
+}
