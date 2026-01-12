@@ -199,9 +199,9 @@
     "on_actions": [
       "Stay"
     ],
-    "source": "@client.send(route=\"A--[ab]-->B\", on_actions={Action.STAY}, on_triggers={Trigger.ok})\nasync def send_ab_move() -> dict:\n    return {\"from\": \"A\", \"to\": \"B\", \"via\": \"ab\", \"action\": \"STAY\", \"agent\": AGENT_ID}\n",
+    "source": "@client.send(route=\"A--[ab]-->B\", on_actions={Action.STAY}, on_triggers={Trigger.ok})\nasync def send_ab_stay() -> dict:\n    return {\"from\": \"A\", \"to\": \"B\", \"via\": \"ab\", \"action\": \"STAY\", \"agent\": AGENT_ID}\n",
     "module": "__main__",
-    "fn_name": "send_ab_move"
+    "fn_name": "send_ab_stay"
   },
   {
     "type": "send",
@@ -213,9 +213,9 @@
     "on_actions": [
       "Stay"
     ],
-    "source": "@client.send(route=\"B--[bc]-->C\", on_actions={Action.STAY}, on_triggers={Trigger.ok})\nasync def send_bc_move() -> dict:\n    return {\"from\": \"B\", \"to\": \"C\", \"via\": \"bc\", \"action\": \"STAY\", \"agent\": AGENT_ID}\n",
+    "source": "@client.send(route=\"B--[bc]-->C\", on_actions={Action.STAY}, on_triggers={Trigger.ok})\nasync def send_bc_stay() -> dict:\n    return {\"from\": \"B\", \"to\": \"C\", \"via\": \"bc\", \"action\": \"STAY\", \"agent\": AGENT_ID}\n",
     "module": "__main__",
-    "fn_name": "send_bc_move"
+    "fn_name": "send_bc_stay"
   },
   {
     "type": "send",
@@ -227,9 +227,9 @@
     "on_actions": [
       "Stay"
     ],
-    "source": "@client.send(route=\"C--[cd]-->D\", on_actions={Action.STAY}, on_triggers={Trigger.ok})\nasync def send_cd_move() -> dict:\n    return {\"from\": \"C\", \"to\": \"D\", \"via\": \"cd\", \"action\": \"STAY\", \"agent\": AGENT_ID}\n",
+    "source": "@client.send(route=\"C--[cd]-->D\", on_actions={Action.STAY}, on_triggers={Trigger.ok})\nasync def send_cd_stay() -> dict:\n    return {\"from\": \"C\", \"to\": \"D\", \"via\": \"cd\", \"action\": \"STAY\", \"agent\": AGENT_ID}\n",
     "module": "__main__",
-    "fn_name": "send_cd_move"
+    "fn_name": "send_cd_stay"
   },
   {
     "type": "send",
@@ -241,9 +241,9 @@
     "on_actions": [
       "Stay"
     ],
-    "source": "@client.send(route=\"D--[da]-->A\", on_actions={Action.STAY}, on_triggers={Trigger.ok})\nasync def send_da_move() -> dict:\n    return {\"from\": \"D\", \"to\": \"A\", \"via\": \"da\", \"action\": \"STAY\", \"agent\": AGENT_ID}\n",
+    "source": "@client.send(route=\"D--[da]-->A\", on_actions={Action.STAY}, on_triggers={Trigger.ok})\nasync def send_da_stay() -> dict:\n    return {\"from\": \"D\", \"to\": \"A\", \"via\": \"da\", \"action\": \"STAY\", \"agent\": AGENT_ID}\n",
     "module": "__main__",
-    "fn_name": "send_da_move"
+    "fn_name": "send_da_stay"
   },
   {
     "type": "send",
@@ -311,9 +311,9 @@
     "on_actions": [
       "Stay"
     ],
-    "source": "@client.send(route=\"A--[ae]-->E\", on_actions={Action.STAY}, on_triggers={Trigger.ok})\nasync def send_ae_move() -> dict:\n    return {\"from\": \"A\", \"to\": \"E\", \"via\": \"ae\", \"action\": \"STAY\", \"agent\": AGENT_ID}\n",
+    "source": "@client.send(route=\"A--[ae]-->E\", on_actions={Action.STAY}, on_triggers={Trigger.ok})\nasync def send_ae_stay() -> dict:\n    return {\"from\": \"A\", \"to\": \"E\", \"via\": \"ae\", \"action\": \"STAY\", \"agent\": AGENT_ID}\n",
     "module": "__main__",
-    "fn_name": "send_ae_move"
+    "fn_name": "send_ae_stay"
   },
   {
     "type": "send",
@@ -325,9 +325,9 @@
     "on_actions": [
       "Stay"
     ],
-    "source": "@client.send(route=\"E--[ec]-->C\", on_actions={Action.STAY}, on_triggers={Trigger.ok})\nasync def send_ec_move() -> dict:\n    return {\"from\": \"E\", \"to\": \"C\", \"via\": \"ec\", \"action\": \"STAY\", \"agent\": AGENT_ID}\n",
+    "source": "@client.send(route=\"E--[ec]-->C\", on_actions={Action.STAY}, on_triggers={Trigger.ok})\nasync def send_ec_stay() -> dict:\n    return {\"from\": \"E\", \"to\": \"C\", \"via\": \"ec\", \"action\": \"STAY\", \"agent\": AGENT_ID}\n",
     "module": "__main__",
-    "fn_name": "send_ec_move"
+    "fn_name": "send_ec_stay"
   },
   {
     "type": "send",
@@ -339,9 +339,9 @@
     "on_actions": [
       "Stay"
     ],
-    "source": "@client.send(route=\"C--[cf]-->F\", on_actions={Action.STAY}, on_triggers={Trigger.ok})\nasync def send_cf_move() -> dict:\n    return {\"from\": \"C\", \"to\": \"F\", \"via\": \"cf\", \"action\": \"STAY\", \"agent\": AGENT_ID}\n",
+    "source": "@client.send(route=\"C--[cf]-->F\", on_actions={Action.STAY}, on_triggers={Trigger.ok})\nasync def send_cf_stay() -> dict:\n    return {\"from\": \"C\", \"to\": \"F\", \"via\": \"cf\", \"action\": \"STAY\", \"agent\": AGENT_ID}\n",
     "module": "__main__",
-    "fn_name": "send_cf_move"
+    "fn_name": "send_cf_stay"
   },
   {
     "type": "send",
@@ -353,9 +353,9 @@
     "on_actions": [
       "Stay"
     ],
-    "source": "@client.send(route=\"F--[fa]-->A\", on_actions={Action.STAY}, on_triggers={Trigger.ok})\nasync def send_fa_move() -> dict:\n    return {\"from\": \"F\", \"to\": \"A\", \"via\": \"fa\", \"action\": \"STAY\", \"agent\": AGENT_ID}\n",
+    "source": "@client.send(route=\"F--[fa]-->A\", on_actions={Action.STAY}, on_triggers={Trigger.ok})\nasync def send_fa_stay() -> dict:\n    return {\"from\": \"F\", \"to\": \"A\", \"via\": \"fa\", \"action\": \"STAY\", \"agent\": AGENT_ID}\n",
     "module": "__main__",
-    "fn_name": "send_fa_move"
+    "fn_name": "send_fa_stay"
   },
   {
     "type": "send",

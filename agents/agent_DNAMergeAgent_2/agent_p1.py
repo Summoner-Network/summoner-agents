@@ -101,19 +101,19 @@ async def send_da_move() -> dict:
     return {"from": "D", "to": "A", "via": "da", "action": "MOVE", "agent": AGENT_ID}
 
 @client.send(route="A--[ab]-->B", on_actions={Action.STAY}, on_triggers={Trigger.ok})
-async def send_ab_move() -> dict:
+async def send_ab_stay() -> dict:
     return {"from": "A", "to": "B", "via": "ab", "action": "STAY", "agent": AGENT_ID}
 
 @client.send(route="B--[bc]-->C", on_actions={Action.STAY}, on_triggers={Trigger.ok})
-async def send_bc_move() -> dict:
+async def send_bc_stay() -> dict:
     return {"from": "B", "to": "C", "via": "bc", "action": "STAY", "agent": AGENT_ID}
 
 @client.send(route="C--[cd]-->D", on_actions={Action.STAY}, on_triggers={Trigger.ok})
-async def send_cd_move() -> dict:
+async def send_cd_stay() -> dict:
     return {"from": "C", "to": "D", "via": "cd", "action": "STAY", "agent": AGENT_ID}
 
 @client.send(route="D--[da]-->A", on_actions={Action.STAY}, on_triggers={Trigger.ok})
-async def send_da_move() -> dict:
+async def send_da_stay() -> dict:
     return {"from": "D", "to": "A", "via": "da", "action": "STAY", "agent": AGENT_ID}
 
 @client.send(route="A", on_actions={Action.TEST}, on_triggers={Trigger.ok})
