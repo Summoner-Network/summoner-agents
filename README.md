@@ -23,7 +23,7 @@
     * [Security and Handshake Agents](#security-and-handshake-agents)
     * [API Agents](#api-agents)
     * [MCP-Based Agents](#mcp-based-agents)
-    * [DNA-Induced Agents 🚧 (planned)](#dna-induced-agents)
+    * [DNA-Induced Agents](#dna-induced-agents)
 
 
 ## SDK Setup
@@ -186,7 +186,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 
 ## Agent Collection
 
-There are 52 agents available in this repo.
+There are 56 agents available in this repo.
 
 ### Legend
 
@@ -988,9 +988,7 @@ Click to show the legend.
 </p>
 
 
-<a id="dna-induced-agents"></a>
-
-### DNA-Induced Agents 🚧
+### DNA-Induced Agents
 
 <details>
 <summary><b>(Click to expand)</b> Agents of <b>level 3</b> showcasing the use of agentic DNA to merge or clone agent code.</summary>
@@ -1016,12 +1014,44 @@ Click to show the legend.
     </thead>
     <tbody>
     <tr>
-        <td><code><strong>MergeAgent</strong></code></td>
-        <td style="font-size: 0.8em;">...</td>
-        <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
-        <td><code>core</code></td>
-        <td><img src="https://img.shields.io/badge/patching-%20?color=d67863" alt=""></td>
-        <td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td>
+    <td><code><strong><a href="agents/agent_DNACloneAgent_0/">DNACloneAgent_0</a></strong></code></td>
+    <td style="font-size: 0.8em;">
+        Clones an existing agent by replaying its exported agent definition (DNA) via <code>ClientTranslation</code>, without importing the original source file.
+    </td>
+    <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
+    <td><code>core</code> <code>flows</code> <code>translation</code> <code>dna</code></td>
+    <td><img src="https://img.shields.io/badge/patching-%20?color=d67863" alt=""></td>
+    <td>✗</td><td>✗</td><td>✅</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
+    <td><code><strong><a href="agents/agent_DNAMergeAgent_0/">DNAMergeAgent_0</a></strong></code></td>
+    <td style="font-size: 0.8em;">
+        Minimal merge example: combines two exported agent definitions (DNA) into a single client that contains the union of routes.
+    </td>
+    <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
+    <td><code>core</code> <code>flows</code> <code>merge</code> <code>dna</code></td>
+    <td><img src="https://img.shields.io/badge/patching-%20?color=d67863" alt=""></td>
+    <td>✗</td><td>✗</td><td>✅</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
+    <td><code><strong><a href="agents/agent_DNAMergeAgent_1/">DNAMergeAgent_1</a></strong></code></td>
+    <td style="font-size: 0.8em;">
+        Merge example focusing on conflict handling and precedence: demonstrates how overlapping routes are resolved when combining two DNA sources.
+    </td>
+    <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
+    <td><code>core</code> <code>flows</code> <code>merge</code> <code>priority</code> <code>dna</code></td>
+    <td><img src="https://img.shields.io/badge/patching-%20?color=d67863" alt=""></td>
+    <td>✗</td><td>✗</td><td>✅</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
+    <td><code><strong><a href="agents/agent_DNAMergeAgent_2/">DNAMergeAgent_2</a></strong></code></td>
+    <td style="font-size: 0.8em;">
+        Full merge scenario with two subgraphs and shared objects: a single input can trigger multiple handlers originating from the two merged DNA sources.
+    </td>
+    <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
+    <td><code>core</code> <code>flows</code> <code>merge</code> <code>dispatch</code> <code>dna</code></td>
+    <td><img src="https://img.shields.io/badge/patching-%20?color=d67863" alt=""></td>
+    <td>✗</td><td>✗</td><td>✅</td><td>✗</td><td>✗</td><td>✅</td><td>✅</td>
     </tr>
     </tbody>
 </table>

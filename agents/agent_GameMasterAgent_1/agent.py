@@ -1,7 +1,7 @@
 import asyncio, time, math, random
 from typing import Dict, Any, Optional
 from summoner.client import SummonerClient
-from summoner.protocol.process import Direction
+from summoner.protocol import Direction
 import argparse
 
 MAP_W, MAP_H = 10000, 8000

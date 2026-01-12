@@ -2,7 +2,7 @@ import os, sys, time, threading, asyncio, random
 import pygame
 from typing import Any, Dict, Optional
 from summoner.client import SummonerClient
-from summoner.protocol.process import Direction
+from summoner.protocol import Direction
 from summoner.client import SummonerClient
 import argparse
 

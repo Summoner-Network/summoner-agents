@@ -3,7 +3,7 @@ import pygame
 from typing import Any, Dict, Optional
 
 from summoner.client import SummonerClient
-from summoner.protocol.process import Direction
+from summoner.protocol import Direction
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 

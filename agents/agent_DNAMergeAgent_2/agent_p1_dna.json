@@ -1,0 +1,272 @@
+[
+  {
+    "type": "__context__",
+    "var_name": "client",
+    "imports": [
+      "from summoner.protocol.process import Node",
+      "from summoner.protocol.triggers import Event",
+      "from summoner.protocol.triggers import Move",
+      "from summoner.protocol.triggers import Stay",
+      "from summoner.protocol.triggers import Test",
+      "from typing import *",
+      "from typing import Any",
+      "from typing import Union"
+    ],
+    "globals": {
+      "state": "A",
+      "AGENT_ID": "DNAMergeAgent_p1"
+    },
+    "recipes": {
+      "OBJECTS": "set(Node(x) for x in ['A', 'B', 'C', 'D', 'E', 'F'])"
+    },
+    "missing": [
+      "Trigger",
+      "_content",
+      "viz"
+    ]
+  },
+  {
+    "type": "upload_states",
+    "source": "@client.upload_states()\nasync def upload_states(_: Any) -> Node:\n    global state\n    viz.push_states([Node(state)])\n    return Node(state)\n",
+    "module": "__main__",
+    "fn_name": "upload_states"
+  },
+  {
+    "type": "download_states",
+    "source": "@client.download_states()\nasync def download_states(possible_states: list[Node]) -> None:\n    global state\n    ps = set(possible_states or [])\n    arrows = [n for n in ps if n not in OBJECTS]\n    candidates = sorted([n for n in ps if n in OBJECTS], key=lambda n: str(n))\n    if not candidates:\n        return\n    if Node(state) in candidates and len(candidates) > 1:\n        candidates = [n for n in candidates if n != Node(state)]\n    state = str(candidates[0])\n    viz.push_states([Node(state)] + arrows)\n",
+    "module": "__main__",
+    "fn_name": "download_states"
+  },
+  {
+    "type": "receive",
+    "route": "A --[ ab ]--> B",
+    "priority": [],
+    "source": "@client.receive(route=\" A --[ ab ]--> B \")\nasync def ab(msg: Union[str, dict]) -> Event:\n    cmd = _content(msg)\n    return Move(Trigger.ok) if cmd == \"ab\" else Stay(Trigger.ok)\n",
+    "module": "__main__",
+    "fn_name": "ab"
+  },
+  {
+    "type": "receive",
+    "route": "B --[ bc ]--> C",
+    "priority": [],
+    "source": "@client.receive(route=\" B --[ bc ]--> C \")\nasync def bc(msg: Union[str, dict]) -> Event:\n    cmd = _content(msg)\n    return Move(Trigger.ok) if cmd == \"bc\" else Stay(Trigger.ok)\n",
+    "module": "__main__",
+    "fn_name": "bc"
+  },
+  {
+    "type": "receive",
+    "route": "C --[ cd ]--> D",
+    "priority": [],
+    "source": "@client.receive(route=\" C --[ cd ]--> D \")\nasync def cd(msg: Union[str, dict]) -> Event:\n    cmd = _content(msg)\n    return Move(Trigger.ok) if cmd == \"cd\" else Stay(Trigger.ok)\n",
+    "module": "__main__",
+    "fn_name": "cd"
+  },
+  {
+    "type": "receive",
+    "route": "D --[ da ]--> A",
+    "priority": [],
+    "source": "@client.receive(route=\" D --[ da ]--> A \")\nasync def da(msg: Union[str, dict]) -> Event:\n    cmd = _content(msg)\n    return Move(Trigger.ok) if cmd == \"da\" else Stay(Trigger.ok)\n",
+    "module": "__main__",
+    "fn_name": "da"
+  },
+  {
+    "type": "receive",
+    "route": "A",
+    "priority": [],
+    "source": "@client.receive(route=\"A\")\nasync def obj_A(_: Any) -> Event:\n    return Test(Trigger.ok)\n",
+    "module": "__main__",
+    "fn_name": "obj_A"
+  },
+  {
+    "type": "receive",
+    "route": "B",
+    "priority": [],
+    "source": "@client.receive(route=\"B\")\nasync def obj_B(_: Any) -> Event:\n    return Test(Trigger.ok)\n",
+    "module": "__main__",
+    "fn_name": "obj_B"
+  },
+  {
+    "type": "receive",
+    "route": "C",
+    "priority": [],
+    "source": "@client.receive(route=\"C\")\nasync def obj_C(_: Any) -> Event:\n    return Test(Trigger.ok)\n",
+    "module": "__main__",
+    "fn_name": "obj_C"
+  },
+  {
+    "type": "receive",
+    "route": "D",
+    "priority": [],
+    "source": "@client.receive(route=\"D\")\nasync def obj_D(_: Any) -> Event:\n    return Test(Trigger.ok)\n",
+    "module": "__main__",
+    "fn_name": "obj_D"
+  },
+  {
+    "type": "send",
+    "route": "A--[ab]-->B",
+    "multi": false,
+    "on_triggers": [
+      "ok"
+    ],
+    "on_actions": [
+      "Move"
+    ],
+    "source": "@client.send(route=\"A--[ab]-->B\", on_actions={Action.MOVE}, on_triggers={Trigger.ok})\nasync def send_ab_move() -> dict:\n    return {\"from\": \"A\", \"to\": \"B\", \"via\": \"ab\", \"action\": \"MOVE\", \"agent\": AGENT_ID}\n",
+    "module": "__main__",
+    "fn_name": "send_ab_move"
+  },
+  {
+    "type": "send",
+    "route": "B--[bc]-->C",
+    "multi": false,
+    "on_triggers": [
+      "ok"
+    ],
+    "on_actions": [
+      "Move"
+    ],
+    "source": "@client.send(route=\"B--[bc]-->C\", on_actions={Action.MOVE}, on_triggers={Trigger.ok})\nasync def send_bc_move() -> dict:\n    return {\"from\": \"B\", \"to\": \"C\", \"via\": \"bc\", \"action\": \"MOVE\", \"agent\": AGENT_ID}\n",
+    "module": "__main__",
+    "fn_name": "send_bc_move"
+  },
+  {
+    "type": "send",
+    "route": "C--[cd]-->D",
+    "multi": false,
+    "on_triggers": [
+      "ok"
+    ],
+    "on_actions": [
+      "Move"
+    ],
+    "source": "@client.send(route=\"C--[cd]-->D\", on_actions={Action.MOVE}, on_triggers={Trigger.ok})\nasync def send_cd_move() -> dict:\n    return {\"from\": \"C\", \"to\": \"D\", \"via\": \"cd\", \"action\": \"MOVE\", \"agent\": AGENT_ID}\n",
+    "module": "__main__",
+    "fn_name": "send_cd_move"
+  },
+  {
+    "type": "send",
+    "route": "D--[da]-->A",
+    "multi": false,
+    "on_triggers": [
+      "ok"
+    ],
+    "on_actions": [
+      "Move"
+    ],
+    "source": "@client.send(route=\"D--[da]-->A\", on_actions={Action.MOVE}, on_triggers={Trigger.ok})\nasync def send_da_move() -> dict:\n    return {\"from\": \"D\", \"to\": \"A\", \"via\": \"da\", \"action\": \"MOVE\", \"agent\": AGENT_ID}\n",
+    "module": "__main__",
+    "fn_name": "send_da_move"
+  },
+  {
+    "type": "send",
+    "route": "A--[ab]-->B",
+    "multi": false,
+    "on_triggers": [
+      "ok"
+    ],
+    "on_actions": [
+      "Stay"
+    ],
+    "source": "@client.send(route=\"A--[ab]-->B\", on_actions={Action.STAY}, on_triggers={Trigger.ok})\nasync def send_ab_move() -> dict:\n    return {\"from\": \"A\", \"to\": \"B\", \"via\": \"ab\", \"action\": \"STAY\", \"agent\": AGENT_ID}\n",
+    "module": "__main__",
+    "fn_name": "send_ab_move"
+  },
+  {
+    "type": "send",
+    "route": "B--[bc]-->C",
+    "multi": false,
+    "on_triggers": [
+      "ok"
+    ],
+    "on_actions": [
+      "Stay"
+    ],
+    "source": "@client.send(route=\"B--[bc]-->C\", on_actions={Action.STAY}, on_triggers={Trigger.ok})\nasync def send_bc_move() -> dict:\n    return {\"from\": \"B\", \"to\": \"C\", \"via\": \"bc\", \"action\": \"STAY\", \"agent\": AGENT_ID}\n",
+    "module": "__main__",
+    "fn_name": "send_bc_move"
+  },
+  {
+    "type": "send",
+    "route": "C--[cd]-->D",
+    "multi": false,
+    "on_triggers": [
+      "ok"
+    ],
+    "on_actions": [
+      "Stay"
+    ],
+    "source": "@client.send(route=\"C--[cd]-->D\", on_actions={Action.STAY}, on_triggers={Trigger.ok})\nasync def send_cd_move() -> dict:\n    return {\"from\": \"C\", \"to\": \"D\", \"via\": \"cd\", \"action\": \"STAY\", \"agent\": AGENT_ID}\n",
+    "module": "__main__",
+    "fn_name": "send_cd_move"
+  },
+  {
+    "type": "send",
+    "route": "D--[da]-->A",
+    "multi": false,
+    "on_triggers": [
+      "ok"
+    ],
+    "on_actions": [
+      "Stay"
+    ],
+    "source": "@client.send(route=\"D--[da]-->A\", on_actions={Action.STAY}, on_triggers={Trigger.ok})\nasync def send_da_move() -> dict:\n    return {\"from\": \"D\", \"to\": \"A\", \"via\": \"da\", \"action\": \"STAY\", \"agent\": AGENT_ID}\n",
+    "module": "__main__",
+    "fn_name": "send_da_move"
+  },
+  {
+    "type": "send",
+    "route": "A",
+    "multi": false,
+    "on_triggers": [
+      "ok"
+    ],
+    "on_actions": [
+      "Test"
+    ],
+    "source": "@client.send(route=\"A\", on_actions={Action.TEST}, on_triggers={Trigger.ok})\nasync def send_A_test() -> dict:\n    return {\"node\": \"A\", \"action\": \"TEST\", \"agent\": AGENT_ID}\n",
+    "module": "__main__",
+    "fn_name": "send_A_test"
+  },
+  {
+    "type": "send",
+    "route": "B",
+    "multi": false,
+    "on_triggers": [
+      "ok"
+    ],
+    "on_actions": [
+      "Test"
+    ],
+    "source": "@client.send(route=\"B\", on_actions={Action.TEST}, on_triggers={Trigger.ok})\nasync def send_B_test() -> dict:\n    return {\"node\": \"B\", \"action\": \"TEST\", \"agent\": AGENT_ID}\n",
+    "module": "__main__",
+    "fn_name": "send_B_test"
+  },
+  {
+    "type": "send",
+    "route": "C",
+    "multi": false,
+    "on_triggers": [
+      "ok"
+    ],
+    "on_actions": [
+      "Test"
+    ],
+    "source": "@client.send(route=\"C\", on_actions={Action.TEST}, on_triggers={Trigger.ok})\nasync def send_C_test() -> dict:\n    return {\"node\": \"C\", \"action\": \"TEST\", \"agent\": AGENT_ID}\n",
+    "module": "__main__",
+    "fn_name": "send_C_test"
+  },
+  {
+    "type": "send",
+    "route": "D",
+    "multi": false,
+    "on_triggers": [
+      "ok"
+    ],
+    "on_actions": [
+      "Test"
+    ],
+    "source": "@client.send(route=\"D\", on_actions={Action.TEST}, on_triggers={Trigger.ok})\nasync def send_D_test() -> dict:\n    return {\"node\": \"D\", \"action\": \"TEST\", \"agent\": AGENT_ID}\n",
+    "module": "__main__",
+    "fn_name": "send_D_test"
+  }
+]
