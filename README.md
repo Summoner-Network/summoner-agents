@@ -186,7 +186,7 @@ python agents/agent_<name>/agent.py --config configs/<specific_config>.json
 
 ## Agent Collection
 
-There are 56 agents available in this repo.
+There are 58 agents available in this repo.
 
 ### Legend
 
@@ -216,7 +216,7 @@ Click to show the legend.
 ### Core Messaging Agents
 
 <details>
-<summary><b>(Click to expand)</b> Agents of <b>level 1 and 2</b> introducing core messaging primitives like <code>@send</code>, <code>@receive</code>, and <code>@hook</code>.</summary>
+<summary><b>(Click to expand)</b> Agents of <b>level 1-3</b> introducing core messaging primitives like <code>@send</code>, <code>@receive</code>, and <code>@hook</code>.</summary>
 <br>
 
 <div style="display: flex; justify-content: center;">
@@ -284,7 +284,7 @@ Click to show the legend.
         <td><img src="https://img.shields.io/badge/LVL_1-%20?color=2fc56c" alt=""></td>
          <td><code>core</code></td>
         <td><img src="https://img.shields.io/badge/Redirect-%20?color=482fc5"alt=""></td>
-        <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+        <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td>
     </tr>
     <tr>
         <td><code><strong><a href="agents/agent_EchoAgent_1/">EchoAgent_1</a></strong></code></td>
@@ -302,11 +302,33 @@ Click to show the legend.
         <td><img src="https://img.shields.io/badge/Redirect-%20?color=482fc5"alt=""></td>
         <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
     </tr>
+    <tr>
+        <td><code><strong><a href="agents/agent_StreamAgent_0/">StreamAgent_0</a></strong></code></td>
+        <td style="font-size: 0.8em;">Derived from <code>EchoAgent_0</code>; triggers an LLM stream on <code>@receive</code>, buffers token events in an <code>asyncio.Queue</code>, and emits them via <code>@send</code> (queue-wait with timeout).</td>
+        <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
+        <td><code>core</code> <code>streaming</code> <code>llm</code></td>
+        <td><img src="https://img.shields.io/badge/Redirect-%20?color=482fc5" alt=""></td>
+        <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td>
+    </tr>
+    <tr>
+        <td><code><strong><a href="agents/agent_StreamAgent_1/">StreamAgent_1</a></strong></code></td>
+        <td style="font-size: 0.8em;">Same as <code>StreamAgent_0</code> but uses a polling <code>@send</code> loop (<code>sleep</code> + <code>get_nowait</code>) to make the emission cadence easy to rate-limit.</td>
+        <td><img src="https://img.shields.io/badge/LVL_3-%20?color=dfa018" alt=""></td>
+        <td><code>core</code> <code>streaming</code> <code>llm</code></td>
+        <td><img src="https://img.shields.io/badge/Redirect-%20?color=482fc5" alt=""></td>
+        <td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✗</td><td>✅</td><td>✅</td>
+    </tr>
     </tbody>
 </table>
 </div>
 
 </details>
+
+<p align="center">
+<img width="550px" src="assets/mov2gif/gifs/demo_stream_framed.gif" />
+</p>
+
+
 
 ### Chat Agents
 
@@ -470,7 +492,7 @@ Click to show the legend.
 ### [Graph-Based](https://en.wikipedia.org/wiki/Graph_theory) (or [Category-Based](https://en.wikipedia.org/wiki/Category_theory)) Agents 
 
 <details>
-<summary><b>(Click to expand)</b> Agents of <b>level 3–5</b> that treat orchestration as a typed state machine: nodes are workflow stages, edges are transitions or decision-making choices, and "edges between edges" encode path-dependent amendments between decisions.</summary>
+<summary><b>(Click to expand)</b> Agents of <b>level 3-5</b> that treat orchestration as a typed state machine: nodes are workflow stages, edges are transitions or decision-making choices, and "edges between edges" encode path-dependent amendments between decisions.</summary>
 <br>
 
 <div style="display: flex; justify-content: center;">
@@ -604,7 +626,7 @@ Click to show the legend.
 ### MMO-game agents
 
 <details>
-<summary><b>(Click to expand)</b> Agents of <b>level 3–4</b> that implement a shared 2D sandbox: game masters simulate and broadcast world state while players send keyboard input and render a local view using <code>@receive</code>, <code>@send</code>, and <code>@hook</code>.</summary>
+<summary><b>(Click to expand)</b> Agents of <b>level 3-4</b> that implement a shared 2D sandbox: game masters simulate and broadcast world state while players send keyboard input and render a local view using <code>@receive</code>, <code>@send</code>, and <code>@hook</code>.</summary>
 <br>
 
 <div style="display: flex; justify-content: center;">
