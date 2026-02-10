@@ -7,7 +7,7 @@ This repository provides a **GitHub template** that includes `build_sdk.sh`, a o
 * Bash shell (Linux/macOS)
 * `git`, `python3` in your `PATH`
 * A `build.txt` file listing your native-module repo URLs (one per line)
-* Optionally a `test_build.txt` (for quick self-tests against the starter template)
+* Optionally a `test_build.txt` (for quick self-tests against the extension template)
 * *(Optional)* `uv` if you want to use `--uv` (Linux/macOS only)
 
 > [!NOTE]
@@ -162,7 +162,7 @@ source build_sdk.sh delete --venv .venv
 **What it does**
 
 1. Clones `https://github.com/Summoner-Network/summoner-core.git` into `summoner-sdk/`.
-2. Reads either **`build.txt`** (for your real native modules) or **`test_build.txt`** (for a quick starter-template smoke test), and clones each listed repo into `native_build/`.
+2. Reads either **`build.txt`** (for your real native modules) or **`test_build.txt`** (for a quick `extension-template` smoke test), and clones each listed repo into `native_build/`.
 3. Copies every `tooling/<pkg>/` folder into `summoner-sdk/summoner/<pkg>/`, rewriting imports (`tooling.pkg` → `pkg`).
 4. Creates a Python virtualenv (if missing).
 
@@ -204,7 +204,7 @@ source build_sdk.sh setup --uv --server v1_1_0 --venv .venv
 # Explicitly use build.txt
 source build_sdk.sh setup build
 
-# Use test_build.txt for a quick demo against the starter template
+# Use test_build.txt for a quick demo against the extension template
 source build_sdk.sh setup test_build
 
 # With uv + test_build
@@ -328,7 +328,7 @@ source build_sdk.sh setup
 # 2. Develop your native modules under tooling/
 #    (edit code, commit, etc.)
 
-# 3. If you want to test against the starter template only:
+# 3. If you want to test against the extension template only:
 source build_sdk.sh setup test_build
 
 # 4. Run a quick demo server
@@ -357,7 +357,7 @@ https://github.com/Summoner-Network/summoner-agentclass.git
 For basic smoke testing, your `test_build.txt` can be minimal:
 
 ```txt
-https://github.com/Summoner-Network/starter-template.git
+https://github.com/Summoner-Network/extension-template.git
 ```
 
 ### Filtered Format (include specific folders)

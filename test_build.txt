@@ -1,1 +1,1 @@
-https://github.com/Summoner-Network/starter-template.git
+https://github.com/Summoner-Network/extension-template.git
