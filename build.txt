@@ -1,4 +1,7 @@
-# https://github.com/Summoner-Network/summoner-smart-tools.git:
-# smart_tools
-https://github.com/Summoner-Network/summoner-agentclass.git
+# Modules building on the top of the core SDK
+https://github.com/Summoner-Network/extension-agentclass.git
 # aurora
+
+# Utility modules such as state visualization, agent tools, and related helpers
+# https://github.com/Summoner-Network/extension-utilities.git:
+# visionary

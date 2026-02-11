@@ -350,8 +350,8 @@ To include all available features from a repository — meaning every folder und
 
 ```txt
 # Include all tooling features from these repos
-https://github.com/Summoner-Network/summoner-smart-tools.git
-https://github.com/Summoner-Network/summoner-agentclass.git
+https://github.com/Summoner-Network/extension-utilities.git
+https://github.com/Summoner-Network/extension-agentclass.git
 ```
 
 For basic smoke testing, your `test_build.txt` can be minimal:
@@ -377,12 +377,11 @@ Only the listed subfolders will be copied — any nonexistent folders will be sk
 
 ```txt
 # Full repo usage (includes all features)
-https://github.com/Summoner-Network/summoner-smart-tools.git
+https://github.com/Summoner-Network/extension-utilities.git
 
 # Filtered usage (only feature_x and feature_y if present)
-https://github.com/Summoner-Network/summoner-agentclass.git:
-feature_x
-feature_y
+https://github.com/Summoner-Network/extension-agentclass.git:
+aurora
 ```
 
 This format gives you fine-grained control over which modules are included in the SDK build, making it easy to tailor your environment to specific use cases or test scenarios.
