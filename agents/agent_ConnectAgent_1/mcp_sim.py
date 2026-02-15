@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-# mcp_sim.py — interactive shim for ConnectAgent_1 (raw aiosqlite)
-
 import argparse
 import asyncio
 from pathlib import Path

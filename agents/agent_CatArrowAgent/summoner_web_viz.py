@@ -1,4 +1,3 @@
-# summoner_web_viz.py
 from __future__ import annotations
 
 import json
