@@ -170,33 +170,33 @@ clone_native() {
 # Merge one native repo’s tooling/
 # ─────────────────────────────────────────────────────
 merge_tooling() {
-  repo_url=$1; shift
-  features="$*"
-  # extract “name” from URL
-  name=${repo_url##*/}
+  local repo_url=$1; shift
+  local features=("$@")
+
+  local name=${repo_url##*/}
   name=${name%.git}
-  srcdir="native_build/$name/tooling"
+  local srcdir="native_build/$name/tooling"
+
   if [ ! -d "$srcdir" ]; then
     echo "⚠️  No tooling/ in $name, skipping"
     return
   fi
 
   echo "  🔀 Processing tooling in $name"
-  if [ -z "$features" ]; then
-    # copy everything
+
+  if ((${#features[@]} == 0)); then
     for pkg_dir in "$srcdir"/*; do
       [ -d "$pkg_dir" ] || continue
-      pkg=${pkg_dir##*/}
-      dest="$SRC/summoner/$pkg"
+      local pkg=${pkg_dir##*/}
+      local dest="$SRC/summoner/$pkg"
       echo "    🚚 Adding package: $pkg"
       cp -R "$pkg_dir" "$dest"
       rewrite_imports "$pkg" "$dest"
     done
   else
-    # only copy listed features
-    for pkg in $features; do
+    for pkg in "${features[@]}"; do
       if [ -d "$srcdir/$pkg" ]; then
-        dest="$SRC/summoner/$pkg"
+        local dest="$SRC/summoner/$pkg"
         echo "    🚚 Adding package: $pkg"
         cp -R "$srcdir/$pkg" "$dest"
         rewrite_imports "$pkg" "$dest"
@@ -239,57 +239,47 @@ bootstrap() {
   mkdir -p native_build
   mkdir -p "$SRC/summoner"
 
-  current_url=
-  current_features=
+  current_url=""
+  current_features=()
 
   while IFS= read -r raw_line || [ -n "$raw_line" ]; do
-    # strip DOS CR
-    # line=${raw_line%$'\r'}
-    line=${raw_line%
-    }
-    # trim leading/trailing whitespace
-    set -- $line
-    line=$*
+    # 1) drop CR (Windows line endings)
+    line=${raw_line%$'\r'}
 
-    # skip empty or comment
-    case "$line" in
-      ''|\#*) continue ;;
-    esac
+    # 2) drop inline comments (everything after first #)
+    line=${line%%#*}
 
-    case "$line" in
-      *.git:)
-        # a URL with trailing ':' → finish previous block
-        if [ -n "$current_url" ]; then
-          clone_native "$current_url"
-          merge_tooling "$current_url" $current_features
-        fi
-        current_url=${line%:}
-        current_features=
-        ;;
-      *.git)
-        # a bare URL → also finish previous, start new
-        if [ -n "$current_url" ]; then
-          clone_native "$current_url"
-          merge_tooling "$current_url" $current_features
-        fi
-        current_url=$line
-        current_features=
-        ;;
-      *)
-        # a feature name → accumulate
-        if [ -z "$current_features" ]; then
-          current_features=$line
-        else
-          current_features="$current_features $line"
-        fi
-        ;;
-    esac
+    # 3) trim leading/trailing whitespace
+    line="${line#"${line%%[![:space:]]*}"}"
+    line="${line%"${line##*[![:space:]]}"}"
+
+    # skip empty
+    [[ -z "$line" ]] && continue
+
+    if [[ "$line" == *.git: ]]; then
+      # flush previous block
+      if [[ -n "$current_url" ]]; then
+        clone_native "$current_url"
+        merge_tooling "$current_url" "${current_features[@]}"
+      fi
+      current_url="${line%:}"
+      current_features=()
+    elif [[ "$line" == *.git ]]; then
+      if [[ -n "$current_url" ]]; then
+        clone_native "$current_url"
+        merge_tooling "$current_url" "${current_features[@]}"
+      fi
+      current_url="$line"
+      current_features=()
+    else
+      current_features+=("$line")
+    fi
   done < "$BUILD_LIST"
 
   # final repo
-  if [ -n "$current_url" ]; then
+  if [[ -n "$current_url" ]]; then
     clone_native "$current_url"
-    merge_tooling "$current_url" $current_features
+    merge_tooling "$current_url" "${current_features[@]}"
   fi
 
   # ─────────────────────────────────────────────────────

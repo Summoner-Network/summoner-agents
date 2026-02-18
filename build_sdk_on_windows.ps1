@@ -155,14 +155,19 @@ function Rewrite-Imports([string]$pkg, [string]$dir) {
 function Clone-Native([string]$url) {
   $name = [IO.Path]::GetFileNameWithoutExtension($url)
   Write-Host ("Cloning native repo: {0}" -f $name)
-  $dest = Join-Path $ROOT ("native_build/{0}" -f $name)
+  $nativeRoot = Join-Path $ROOT 'native_build'
+  New-Item -ItemType Directory -Force -Path $nativeRoot | Out-Null
+
+  $dest = Join-Path $nativeRoot $name
   git clone --depth 1 $url $dest
 }
 
 # Merge repo's tooling/<pkg> into $SRC/summoner/<pkg>
 function Merge-Tooling([string]$repoUrl, [string[]]$features) {
   $name = [IO.Path]::GetFileNameWithoutExtension($repoUrl)
-  $srcdir = Join-Path $ROOT ("native_build/{0}/tooling" -f $name)
+  $nativeRoot = Join-Path $ROOT 'native_build'
+  $srcdir = Join-Path (Join-Path (Join-Path $nativeRoot $name) 'tooling') ''
+  $srcdir = $srcdir.TrimEnd('\')  # normalize
   if (-not (Test-Path $srcdir)) {
     Write-Host "No tooling/ directory in repo; skipping"
     return
@@ -249,8 +254,14 @@ function Bootstrap {
   Write-Host "  Sanitized build list:"
   Get-Content $BUILD_LIST -Raw |
     ForEach-Object { $_ -split "(`r`n|`n)" } |
-    ForEach-Object { $_.Trim() } |
-    Where-Object { $_ -and ($_ -notmatch '^[ \t]*#') } |
+    ForEach-Object {
+      $l = $_.Trim()
+      $l = $l -replace '^\uFEFF', ''
+      $l = $l -replace '#.*$', ''
+      $l = $l.Trim()
+      $l
+    } |
+    Where-Object { $_ } |
     ForEach-Object { Write-Host ("    {0}" -f $_) }
   Write-Host ""
 
@@ -267,9 +278,17 @@ function Bootstrap {
   $lines = Get-Content $BUILD_LIST -Raw | ForEach-Object { $_ -split "(`r`n|`n)" }
   foreach ($rawLine in $lines) {
     if ($null -eq $rawLine) { continue }
+
+    # Normalize:
+    # - Trim whitespace
+    # - Strip UTF-8 BOM if present (can break first-line matching)
+    # - Strip inline comments (# ...)
     $line = $rawLine.Trim()
+    $line = $line -replace '^\uFEFF', ''
+    $line = $line -replace '#.*$', ''
+    $line = $line.Trim()
+
     if (-not $line) { continue }
-    if ($line -match '^[ \t]*#') { continue }
 
     if ($line -match '\.git:$') {
       if ($currentUrl) {
