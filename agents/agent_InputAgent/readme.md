@@ -1,4 +1,4 @@
-# `InputAgent` — README
+# `InputAgent`
 
 A minimal input agent with two prompt modes—**single-line** and **multi-line**—that also **tries to parse JSON** before sending. If the user's input parses as JSON (after stripping newlines), it sends a Python object (e.g., `dict`, `list`); otherwise it sends the raw string. This makes it handy for interacting with agents that expect structured payloads.
 

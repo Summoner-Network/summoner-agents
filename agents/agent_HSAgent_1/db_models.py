@@ -1,4 +1,3 @@
-# db_models.py
 from db_sdk import Model, Field
 
 class RoleState(Model):

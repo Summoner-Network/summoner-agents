@@ -1,4 +1,3 @@
-# mcp_server.py
 import warnings
 warnings.filterwarnings("ignore", message=r".*supports OpenSSL.*LibreSSL.*")
 
